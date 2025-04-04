@@ -1,0 +1,904 @@
+﻿<Page x:Class="Invoice.SettingsPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+      xmlns:local="clr-namespace:Invoice"
+      xmlns:vm="clr-namespace:Invoice.ViewModels"
+      xmlns:conv="clr-namespace:Invoice.Converters"
+      xmlns:ui="http://schemas.modernwpf.com/2019"
+      mc:Ignorable="d"
+      d:Background="White"
+      d:DesignHeight="600"
+      d:DesignWidth="800"
+      FontFamily="Biz UDGothic"
+      Title="Settings">
+    <Page.Resources>
+        <Style x:Key="DataGridTextBoxStyle"
+               TargetType="TextBox"
+               BasedOn="{StaticResource DefaultTextBoxStyle}">
+            <Setter Property="BorderThickness"
+                    Value="0" />
+            <Setter Property="Background"
+                    Value="Transparent" />
+            <Setter Property="HorizontalContentAlignment"
+                    Value="Center" />
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver"
+                            Value="True">
+                    <Setter Property="Background"
+                            Value="Transparent" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="CustomDataGridCellStyle"
+               TargetType="DataGridCell" 
+               BasedOn="{StaticResource DefaultDataGridCellStyle}">
+            <Setter Property="OverridesDefaultStyle"
+                    Value="True" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="DataGridCell">
+                        <ui:DataGridCellPresenter Background="{TemplateBinding Background}"
+                                                    CurrencyVisualBrush="{DynamicResource DataGridCurrencyVisualPrimaryBrush}"
+                                                    CurrencyVisualThickness="0"
+                                                    FocusVisualPrimaryBrush="{DynamicResource DataGridCellFocusVisualPrimaryBrush}"
+                                                    FocusVisualPrimaryThickness="0"
+                                                    FocusVisualSecondaryBrush="{DynamicResource DataGridCellFocusVisualSecondaryBrush}"
+                                                    FocusVisualSecondaryThickness="0"
+                                                    IsCurrencyVisualVisible="{TemplateBinding IsSelected}"
+                                                    IsFocusVisualVisible="{TemplateBinding IsKeyboardFocusWithin}"
+                                                    MinHeight="{TemplateBinding MinHeight}"
+                                                    SnapsToDevicePixels="True" />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="CustomDataGridColumnHeaderStyle"
+               TargetType="{x:Type DataGridColumnHeader}">
+            <Setter Property="FontSize"
+                    Value="15" />
+            <Setter Property="HorizontalContentAlignment"
+                    Value="Center" />
+            <Setter Property="Padding"
+                    Value="0" />
+            <Setter Property="Margin"
+                    Value="0" />
+        </Style>
+        <Style x:Key="DefaultDataGrid"
+               TargetType="DataGrid" 
+               BasedOn="{StaticResource DefaultDataGridStyle}">
+            <Setter Property="Background" Value="#09000000"/>
+            <Setter Property="CanUserResizeColumns" Value="False"/>
+            <Setter Property="AutoGenerateColumns" Value="False"/>
+            <Setter Property="VerticalAlignment" Value="Stretch"/>
+            <Setter Property="SelectionUnit" Value="FullRow"/>
+            <Setter Property="AlternatingRowBackground" Value="#0C000000"/>
+            <Setter Property="BorderBrush" Value="#0C000000"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="ColumnHeaderHeight" Value="28"/>
+            <Setter Property="CanUserDeleteRows" Value="False"/>
+            <Setter Property="CellStyle" Value="{StaticResource CustomDataGridCellStyle}"/>
+            <Setter Property="ColumnHeaderStyle" Value="{StaticResource CustomDataGridColumnHeaderStyle}"/>
+            <Setter Property="RowHeaderWidth"
+                    Value="0" />
+        </Style>
+        <DataTemplate x:Key="DataGridColumnCheckBoxTemplate">
+            <CheckBox x:Name="GridRowCheckBox"
+                      IsChecked="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected, Mode=TwoWay}"
+                      PreviewMouseLeftButtonDown="GridRowCheckBox_PreviewMouseLeftButtonDown"
+                      Width="20">
+                <CheckBox.Resources>
+                    <Style TargetType="CheckBox"
+                           BasedOn="{StaticResource DefaultCheckBoxStyle}">
+                        <Setter Property="HorizontalAlignment"
+                                Value="Center" />
+                        <Setter Property="Width"
+                                Value="20" />
+                        <Setter Property="Content">
+                            <Setter.Value>
+                                <TextBlock Width="0"
+                                           Visibility="Collapsed" />
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                    <Style TargetType="Grid">
+                        <Setter Property="Width"
+                                Value="20" />
+                    </Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Width"
+                                Value="20" />
+                    </Style>
+                </CheckBox.Resources>
+            </CheckBox>
+        </DataTemplate>
+    </Page.Resources>
+    
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="155" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0"
+              x:Name="NavigationGrid"
+              Background="#4CAF50">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition />
+            </Grid.RowDefinitions>
+            <Label FontSize="32px"
+                   FontWeight="Bold"
+                   Foreground="White"
+                   HorizontalAlignment="Center"
+                   Margin="0,40,0,25"
+                   FontFamily="BIZ UDGothic">設 定</Label>
+            <StackPanel Grid.Row="1"
+                        Height="30"
+                        VerticalAlignment="Top"
+                        HorizontalAlignment="Center"
+                        Orientation="Horizontal"
+                        Background="Transparent">
+                <StackPanel.Resources>
+                    <Style TargetType="Label">
+                        <Setter Property="Foreground"
+                                Value="White" />
+                        <Setter Property="Margin"
+                                Value="7,0" />
+                        <Setter Property="VerticalAlignment"
+                                Value="Center" />
+                        <Setter Property="Cursor"
+                                Value="Hand" />
+                        <Setter Property="HorizontalContentAlignment"
+                                Value="Center" />
+                        <Setter Property="FontSize"
+                                Value="16px" />
+                    </Style>
+                </StackPanel.Resources>
+                <Label x:Name="DashBoardLabel"
+                       MouseLeftButtonUp="Label_MouseLeftButtonUp">ダッシュボード</Label>
+                <Label x:Name="CustomerLabel"
+                       MouseLeftButtonUp="Label_MouseLeftButtonUp">利用者管理</Label>
+                <Label x:Name="InvoiceLabel"
+                       MouseLeftButtonUp="Label_MouseLeftButtonUp">請求書管理</Label>
+                <Label x:Name="PaymentLabel"
+                       MouseLeftButtonUp="Label_MouseLeftButtonUp">入金管理</Label>
+                <Label x:Name="SettingsLabel"
+                       MouseLeftButtonUp="Label_MouseLeftButtonUp">設定</Label>
+            </StackPanel>
+        </Grid>
+        <Grid Grid.Row="1"
+              x:Name="ItemPageContentsGrid">
+            <TabControl TabStripPlacement="Top"
+                        FontSize="15">
+                <TabControl.Resources>
+                    <Style TargetType="TabPanel">
+                        <Setter Property="OverridesDefaultStyle"
+                                Value="True" />
+                        <Setter Property="Margin"
+                                Value="20,8" />
+                        <Setter Property="Background"
+                                Value="AliceBlue" />
+                    </Style>
+                </TabControl.Resources>
+
+                <TabItem x:Name="ItemSettingsTab">
+                    <TabItem.Header>
+                        <Grid Width="100"
+                              Height="30"
+                              VerticalAlignment="Stretch">
+                            <TextBlock VerticalAlignment="Center"
+                                       Text="請求項目" />
+                        </Grid>
+                    </TabItem.Header>
+
+                    <Grid Width="700"
+                          x:Name="ItemSettingsGrid">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <Label Grid.Row="0"
+                               Content="請求項目設定"
+                               FontSize="24"
+                               FontWeight="Bold"
+                               Margin="0,20,0,10" />
+
+                        <DataGrid Grid.Row="1"
+                                  MouseDoubleClick="ItemListDataGrid_MouseDoubleClick"
+                                  x:Name="ItemListDataGrid"
+                                  ItemsSource="{Binding SettingsVM.ItemClassList}"
+                                  Style="{StaticResource DefaultDataGrid}">
+
+                            <DataGrid.Columns>
+                                <DataGridTemplateColumn Width="30"
+                                                        CellTemplate="{StaticResource DataGridColumnCheckBoxTemplate}">
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="項目名"
+                                                        Width="300">
+                                    <DataGridTemplateColumn.CellTemplate>
+
+                                        <DataTemplate>
+                                            <TextBlock HorizontalAlignment="Left"
+                                                       VerticalAlignment="Center"
+                                                       Padding="5,0"
+                                                       Text="{Binding ItemName,Mode=TwoWay}" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+
+                                </DataGridTemplateColumn>
+
+                                <DataGridTemplateColumn Header="コード"
+                                                        Width="80">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+
+                                            <TextBlock HorizontalAlignment="Center"
+                                                       VerticalAlignment="Center"
+                                                       Text="{Binding ItemCode}" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <DataGridTemplateColumn Header="単位"
+                                                        Width="55">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock HorizontalAlignment="Left"
+                                                       VerticalAlignment="Center"
+                                                       Padding="5,0,0,0"
+                                                       Text="{Binding Unit}" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <DataGridTemplateColumn Header="単価"
+                                                        Width="80">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock x:Name="UnitPliceTextBlock"
+                                                       HorizontalAlignment="Right"
+                                                       VerticalAlignment="Center"
+                                                       Padding="0,0,5,0"
+                                                       Text="{Binding UnitPrice,StringFormat={}@{0:N0}}" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="税種"
+                                                        Width="80">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock HorizontalAlignment="Center"
+                                                       VerticalAlignment="Center"
+                                                       Padding="5,0,0,0"
+                                                       Text="{Binding TaxTypeName}" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                            </DataGrid.Columns>
+
+                        </DataGrid>
+
+                        <StackPanel Grid.Row="2"
+                                    Orientation="Horizontal"
+                                    HorizontalAlignment="Right">
+                            <Button x:Name="AddItemButton"
+                                    Content="新規項目登録"
+                                    Width="130"
+                                    Height="30"
+                                    Margin="5,10"
+                                    Click="AddItemButton_Click" />
+                            <Button x:Name="EditItemButton"
+                                    Content="項目編集"
+                                    Width="130"
+                                    Height="30"
+                                    Margin="5,10"
+                                    Click="EditItemButton_Click" />
+                            <Button x:Name="DeleteItemButton"
+                                    Content="項目削除"
+                                    Width="130"
+                                    Height="30"
+                                    Margin="5,10"
+                                    Click="DeleteItemButton_Click" />
+                        </StackPanel>
+                    </Grid>
+                </TabItem>
+
+                <TabItem x:Name="TaxSettingsTab">
+                    <TabItem.Header>
+                        <Grid Width="100"
+                              Height="30"
+                              VerticalAlignment="Stretch">
+                            <TextBlock VerticalAlignment="Center"><Run Language="ja-jp"
+                                                                       Text="税項目" /></TextBlock>
+                        </Grid>
+                    </TabItem.Header>
+
+                    <Grid Width="700"
+                          x:Name="TaxSettingsGrid">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Label Grid.Row="0"
+                               Content="税項目設定"
+                               FontSize="24px"
+                               FontWeight="Bold"
+                               Margin="0,20,0,10"/>
+                        <DataGrid x:Name="TaxListDataGrid"
+                                  ItemsSource="{Binding SettingsVM.TaxTypeClassList}"
+                                  CanUserAddRows="True"
+                                  AddingNewItem="TaxListDataGrid_AddingNewItem"
+                                  InitializingNewItem="TaxListDataGrid_InitializingNewItem"
+                                  Grid.Row="1"
+                                                                     Width="300"
+                                  Style="{StaticResource DefaultDataGrid}"
+                                  PreparingCellForEdit="TaxListDataGrid_PreparingCellForEdit">
+                            <DataGrid.Resources>
+                                <Style TargetType="Grid"
+                                       BasedOn="{StaticResource DefaultScrollBarStyle}">
+                                    <Setter Property="Visibility"
+                                            Value="Collapsed" />
+                                </Style>
+                            </DataGrid.Resources>
+
+                            <DataGrid.Columns>
+                                <DataGridTemplateColumn Width="30"
+                                                        CellTemplate="{StaticResource DataGridColumnCheckBoxTemplate}">
+                                    <DataGridTemplateColumn.Header>
+                                        <TextBlock Text="" />
+                                    </DataGridTemplateColumn.Header>
+
+                                </DataGridTemplateColumn>
+                                <DataGridTextColumn Header="税種"
+                                                    Width="134"
+                                                    Binding="{Binding TaxTypeName,Mode=TwoWay}">
+                                    <DataGridTextColumn.CellStyle>
+                                        <Style TargetType="DataGridCell" BasedOn="{StaticResource CustomDataGridCellStyle}">
+                                            <Setter Property="HorizontalAlignment"
+                                                    Value="Center" />
+                                        </Style>
+                                    </DataGridTextColumn.CellStyle>
+                                </DataGridTextColumn>
+                                <DataGridTextColumn Header="税率"
+                                                    Width="134"
+                                                    Binding="{Binding TaxRate, StringFormat={}{0:P1},Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                                    InputMethod.InputScope="Number">
+                                    <DataGridTextColumn.CellStyle>
+                                        <Style TargetType="DataGridCell"
+                                               BasedOn="{StaticResource CustomDataGridCellStyle}">
+                                            <Setter Property="HorizontalAlignment"
+                                                    Value="Center" />
+                                        </Style>
+                                    </DataGridTextColumn.CellStyle>
+                                </DataGridTextColumn>
+
+                                
+
+                                <DataGridTemplateColumn Header="税率"
+                                                        Width="134">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBox x:Name="TaxRateTextBox" HorizontalAlignment="Center"
+                                                     Style="{StaticResource DataGridTextBoxStyle}"
+                                                     VerticalAlignment="Center"
+                                                     InputMethod.InputScope="Number"
+                                                     InputMethod.IsInputMethodEnabled="False"
+                                                     GotKeyboardFocus="TaxRateTextBox_GotKeyboardFocus"
+                                                     Text="{Binding TaxRate,StringFormat={}{0:P1},Mode=TwoWay,UpdateSourceTrigger=LostFocus}" 
+                                                     />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                            </DataGrid.Columns>
+
+                        </DataGrid>
+
+                        <StackPanel x:Name="TaxTabButtonStackPanel"
+                                    Grid.Row="2"
+                                        Orientation="Horizontal"
+                                        HorizontalAlignment="Right">
+                                <Button x:Name="ApplyTaxButton"
+                                        Content="変更適用"
+                                        Width="130"
+                                        Height="30"
+                                        Margin="5,10"
+                                        Click="ApplyTaxButton_Click" />
+                                <Button x:Name="DeleteTaxButton"
+                                        Content="項目削除"
+                                        Width="130"
+                                        Height="30"
+                                        Margin="5,10"
+                                        Click="DeleteTaxButton_Click" />
+                        </StackPanel>
+
+                    </Grid>
+                </TabItem>
+                
+                <TabItem x:Name="SlipNumberSettingsTab">
+                    <TabItem.Header>
+                        <Grid Width="100"
+                              Height="30"
+                              VerticalAlignment="Stretch">
+                            <TextBlock VerticalAlignment="Center"><Run Language="ja-jp"
+                                                                       Text="伝票番号" /></TextBlock>
+                        </Grid>
+                    </TabItem.Header>
+
+                    <Grid Width="700"
+                          x:Name="SlipNumberSettingsGrid">
+                        <Grid.Resources>
+                            <Style TargetType="TextBox"
+                                   BasedOn="{StaticResource DefaultTextBoxStyle}">
+                                <Setter Property="FontSize"
+                                        Value="17" />
+                                <Setter Property="BorderThickness"
+                                        Value="0" />
+                                <Setter Property="Background"
+                                        Value="#0C000000" />
+                                <Setter Property="Margin"
+                                        Value="0,0,20,0" />
+                                <Setter Property="HorizontalAlignment"
+                                        Value="Left" />
+                            </Style>
+
+                        </Grid.Resources>
+                        
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Label Grid.Row="0"
+                               Content="伝票番号"
+                               FontSize="24px"
+                               FontWeight="Bold"
+                               Margin="0,20,0,10" />
+                        <Grid x:Name="InvoiceNumbersGrid"
+                              Grid.Row="1"
+                              Margin="0,0,0,13">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition />
+                                <ColumnDefinition />
+                                <ColumnDefinition />
+                                <ColumnDefinition />
+                            </Grid.ColumnDefinitions>
+                            <Label Grid.Column="0"
+                                   Content="請求書番号"
+                                   FontSize="20"
+                                   VerticalAlignment="Center"
+                                   VerticalContentAlignment="Center"
+                                   FontWeight="Bold"
+                                   Height="40" />
+                            <Grid Grid.Column="1">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition />
+                                    <RowDefinition />
+                                </Grid.RowDefinitions>
+                                <TextBlock Grid.Row="0"
+                                           Text="プレフィックス"
+                                           Height="20" />
+                                <TextBox x:Name="InvoicePrefix"
+                                         HorizontalAlignment="Left"
+                                         
+                                         Grid.Row="1"
+                                         Text="{Binding SettingsVM.SlipNumberInfo.InvoicePrefix, Mode=TwoWay}"
+                                         Width="100" />
+                            </Grid>
+                            <Grid Grid.Column="2">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition />
+                                    <RowDefinition />
+                                </Grid.RowDefinitions>
+                                <TextBlock Grid.Row="0"
+                                           Height="20"
+                                           Text="最終番号" />
+                                <TextBox x:Name="InvoiceNumber"
+                                         Grid.Row="1"
+                                         Text="{Binding SettingsVM.SlipNumberInfo.InvoiceLatest, Mode=TwoWay}"
+                                         HorizontalAlignment="Left"
+                                         Width="100" />
+                            </Grid>
+                            <Grid Grid.Column="3">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition />
+                                    <RowDefinition />
+                                </Grid.RowDefinitions>
+                                <TextBlock Grid.Row="0"
+                                           Text="サフィックス"
+                                           Height="20" />
+                                <TextBox x:Name="InvoiceSuffix"
+                                         Grid.Row="1"
+                                         BorderThickness="0"
+                                         Text="{Binding SettingsVM.SlipNumberInfo.InvoiceSuffix, Mode=TwoWay}"
+                                         HorizontalAlignment="Left"
+                                         HorizontalContentAlignment="Center"
+                                         Width="100" />
+                            </Grid>
+                        </Grid>
+                        <Grid x:Name="ReceiptNumbersGrid"
+                              Grid.Row="2"
+                              Margin="0,0,0,13">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition />
+                                <ColumnDefinition />
+                                <ColumnDefinition />
+                                <ColumnDefinition />
+                            </Grid.ColumnDefinitions>
+                            <Label Grid.Column="0"
+                                    Content="領収書番号"
+                                    FontSize="20"
+                                    VerticalAlignment="Center"
+                                    VerticalContentAlignment="Center"
+                                    FontWeight="Bold"
+                                    Height="40" />
+                            <Grid Grid.Column="1">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition />
+                                    <RowDefinition />
+                                </Grid.RowDefinitions>
+                                <TextBlock Grid.Row="0"
+                                            Text="プレフィックス"
+                                            Height="20" />
+                                <TextBox x:Name="ReceiptPrefix"
+                                            HorizontalAlignment="Left"
+                                            Grid.Row="1"
+                                            Text="{Binding SettingsVM.SlipNumberInfo.ReceiptPrefix, Mode=TwoWay}"
+                                            Width="100" />
+                            </Grid>
+                            <Grid Grid.Column="2">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition />
+                                    <RowDefinition />
+                                </Grid.RowDefinitions>
+                                <TextBlock Grid.Row="0"
+                                            Height="20"
+                                            Text="最終番号" />
+                                <TextBox x:Name="ReceiptNumber"
+                                         Grid.Row="1"
+                                         Text="{Binding SettingsVM.SlipNumberInfo.ReceiptLatest, Mode=TwoWay}"
+                                         HorizontalAlignment="Left"
+                                         Width="100" />
+                            </Grid>
+                            <Grid Grid.Column="3">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition />
+                                    <RowDefinition />
+                                </Grid.RowDefinitions>
+                                <TextBlock Grid.Row="0"
+                                            Text="サフィックス"
+                                            Height="20" />
+                                <TextBox x:Name="ReceiptSuffix"
+                                         Grid.Row="1"
+                                            BorderThickness="0"
+                                         Text="{Binding SettingsVM.SlipNumberInfo.ReceiptSuffix, Mode=TwoWay}"
+                                            HorizontalAlignment="Left"
+                                            HorizontalContentAlignment="Center"
+                                            Width="100" />
+                            </Grid>
+                        </Grid>
+                        <StackPanel x:Name="SlipNumberTabButtonStackPanel"
+                                    Grid.Row="3"
+                                    Orientation="Horizontal"
+                                    HorizontalAlignment="Right">
+                            <Button x:Name="ApplySlipNumberButton"
+                                    Content="変更適用"
+                                    Width="130"
+                                    Height="30"
+                                    Margin="5,10"
+                                    Click="ApplySlipNumberButton_Click" />
+                        </StackPanel>
+
+                    </Grid>
+                </TabItem>
+
+                <TabItem x:Name="PaymentTitleTab">
+                    <TabItem.Header>
+                        <Grid Width="100"
+                              Height="30"
+                              VerticalAlignment="Stretch">
+                            <TextBlock VerticalAlignment="Center"><Run Language="ja-jp"
+                                                                       Text="入金項目" /></TextBlock>
+                        </Grid>
+                    </TabItem.Header>
+
+                    <Grid Width="700"
+                          x:Name="PaymentTitleSettingsGrid">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Label Grid.Row="0"
+                               Content="入金項目設定"
+                               FontSize="24px"
+                               FontWeight="Bold"
+                               Margin="0,20,0,10" />
+                        <DataGrid x:Name="PaymentMethodListDataGrid"
+                                  ItemsSource="{Binding SettingsVM.PaymentMethodClassList}"
+                                  Grid.Row="1"
+                                  Width="300"
+                                  CanUserAddRows="True"
+                                  Style="{StaticResource DefaultDataGrid}">
+
+                            <DataGrid.Columns>
+                                <DataGridTemplateColumn Width="30"
+                                                        CellTemplate="{StaticResource DataGridColumnCheckBoxTemplate}">
+                                    <DataGridTemplateColumn.Header>
+                                        <TextBlock Text="" />
+                                    </DataGridTemplateColumn.Header>
+                                </DataGridTemplateColumn>
+                                <DataGridTextColumn Header="入金科目"
+                                                    Width="268"
+                                                    Binding="{Binding MethodName,Mode=TwoWay}">
+                                    <DataGridTextColumn.CellStyle>
+                                        <Style TargetType="DataGridCell"
+                                               BasedOn="{StaticResource CustomDataGridCellStyle}">
+                                            <Setter Property="HorizontalAlignment"
+                                                    Value="Center" />
+                                        </Style>
+                                    </DataGridTextColumn.CellStyle>
+                                </DataGridTextColumn>
+                            </DataGrid.Columns>
+
+                        </DataGrid>
+
+                        <StackPanel x:Name="PaymentTitleTabButtonStackPanel"
+                                    Grid.Row="2"
+                                    Orientation="Horizontal"
+                                    HorizontalAlignment="Right">
+                            <Button x:Name="ApplyPaymentTitleButton"
+                                    Content="変更適用"
+                                    Width="130"
+                                    Height="30"
+                                    Margin="5,10"
+                                    Click="ApplyPaymentTitleButton_Click" />
+                            <Button x:Name="DeletePaymentTitleButton"
+                                    Content="項目削除"
+                                    Width="130"
+                                    Height="30"
+                                    Margin="5,10"
+                                    Click="DeletePaymentTitleButton_Click" />
+                        </StackPanel>
+                    </Grid>
+                </TabItem>
+                
+                <TabItem x:Name="TransactionTitleTab">
+                    <TabItem.Header>
+                        <Grid Width="100"
+                              Height="30"
+                              VerticalAlignment="Stretch">
+                            <TextBlock VerticalAlignment="Center"><Run Language="ja-jp"
+                                                                       Text="決済項目" /></TextBlock>
+                        </Grid>
+                    </TabItem.Header>
+
+                    <Grid Width="700"
+                          x:Name="TransactionTitleSettingsGrid">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Label Grid.Row="0"
+                               Content="決済項目設定"
+                               FontSize="24px"
+                               FontWeight="Bold"
+                               Margin="0,20,0,10" />
+                        <DataGrid x:Name="TransactionMethodListDataGrid"
+                                  Grid.Row="1"
+                                  Width="300"
+                                  ItemsSource="{Binding SettingsVM.TransactionTypeClassList}"
+                                  CanUserAddRows="True"
+                                  Style="{StaticResource DefaultDataGrid}">
+
+
+                            <DataGrid.Columns>
+                                <DataGridTemplateColumn Width="30"
+                                                        CellTemplate="{StaticResource DataGridColumnCheckBoxTemplate}">
+                                    <DataGridTemplateColumn.Header>
+                                        <TextBlock Text="" />
+                                    </DataGridTemplateColumn.Header>
+                                </DataGridTemplateColumn>
+
+                                <DataGridTemplateColumn Header="決済科目"
+                                                        Width="268">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+
+                                            <TextBox HorizontalAlignment="Center"
+                                                     VerticalAlignment="Center"
+                                                     Style="{StaticResource DataGridTextBoxStyle}"
+                                                     Text="{Binding TransactionName}" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                            </DataGrid.Columns>
+
+                        </DataGrid>
+
+                        <StackPanel x:Name="TransactionTitleTabButtonStackPanel"
+                                    Grid.Row="2"
+                                    Orientation="Horizontal"
+                                    HorizontalAlignment="Right">
+                            <Button x:Name="ApplyTransactionTitleButton"
+                                    Content="変更適用"
+                                    Width="130"
+                                    Height="30"
+                                    Margin="5,10"
+                                    Click="ApplyTransactionTitleButton_Click" />
+                            <Button x:Name="DeleteTransactionTitleButton"
+                                    Content="項目削除"
+                                    Width="130"
+                                    Height="30"
+                                    Margin="5,10"
+                                    Click="DeleteTransactionTitleButton_Click" />
+                        </StackPanel>
+
+                    </Grid>
+                </TabItem>
+
+            </TabControl>
+        </Grid>
+
+        <!-- 請求項目 DetailPane -->
+        <Border Grid.Row="1"
+                x:Name="ItemDetailPane"
+                Background="AliceBlue"
+                BorderBrush="Gray"
+                BorderThickness="1"
+                Height="200"
+                VerticalAlignment="Bottom"
+                Visibility="Visible"
+                RenderTransformOrigin="0.5,1">
+            <Border.RenderTransform>
+                <TranslateTransform x:Name="EditItemPaneTransform"
+                                    d:Y="200"
+                                    Y="{Binding ElementName=ItemDetailPane,Path=Height}" />
+            </Border.RenderTransform>
+
+            <Grid Margin="20">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <Grid.Resources>
+                    <Style TargetType="StackPanel">
+                        <Setter Property="Orientation"
+                                Value="Horizontal" />
+                        <Setter Property="Margin"
+                                Value="0,0,0,10" />
+                    </Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Margin"
+                                Value="0,0,0,2" />
+                    </Style>
+                    <Style TargetType="TextBox"
+                           BasedOn="{StaticResource DefaultTextBoxStyle}">
+                        <Setter Property="FontSize"
+                                Value="17" />
+                        <Setter Property="BorderThickness"
+                                Value="0" />
+                        <Setter Property="Background"
+                                Value="#0C000000" />
+                        <Setter Property="Margin"
+                                Value="0,0,20,0" />
+                        <Setter Property="HorizontalAlignment"
+                                Value="Left" />
+                    </Style>
+                </Grid.Resources>
+
+                <Grid Grid.Row="0"
+                      Margin="0,0,0,13">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+                    <Label Grid.Column ="0"
+                           Content="{Binding SettingsVM.PaneTitle}"
+                           FontSize="20"
+                           FontWeight="Bold"
+                           Margin="0,0,0,0" />
+                    <Grid Grid.Column="1">
+                        <Grid.RowDefinitions>
+                            <RowDefinition />
+                            <RowDefinition />
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0"
+                                   Text="項目名" />
+                        <TextBox x:Name="ItemNameTextBox"
+                                 HorizontalAlignment="Left"
+                                 Grid.Row="1"
+                                 Text="{Binding SettingsVM.SelectedItem.ItemName, Mode=TwoWay}"
+                                 Width="200" />
+                    </Grid>
+                    <Grid Grid.Column="2">
+                        <Grid.RowDefinitions>
+                            <RowDefinition />
+                            <RowDefinition />
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0"
+                                   Text="単価" />
+                        <TextBox x:Name="UnitPriceTextBox"
+                                 Grid.Row="1"
+                                 Text="{Binding SettingsVM.SelectedItem.UnitPrice, Mode=TwoWay}"
+                                 HorizontalAlignment="Left"
+                                 Width="100" />
+                    </Grid>
+                    <Grid Grid.Column="3">
+                        <Grid.RowDefinitions>
+                            <RowDefinition />
+                            <RowDefinition />
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0"
+                                   Text="税種" />
+                        <ComboBox x:Name="TaxTypeIdTextBox"
+                                 Grid.Row="1"
+                                  ItemsSource="{Binding SettingsVM.TaxTypeClassList}"
+                                  DisplayMemberPath="TaxTypeName"
+                                  SelectedValuePath="TaxTypeId"
+                                  SelectedValue="{Binding SettingsVM.SelectedItem.TaxTypeId,Mode=TwoWay}"
+                                  BorderThickness="0"
+                                  Background="#0C000000"
+                                  HorizontalContentAlignment="Center"
+                                  Width="100" />
+                    </Grid>
+                </Grid>
+                <Grid Grid.Row="1"
+                      Margin="0,0,0,5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+                    <Grid Grid.Column="1">
+                        <Grid.RowDefinitions>
+                            <RowDefinition />
+                            <RowDefinition />
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0" Text="コード" />
+                        <TextBox x:Name="ItemCodeTextBox"
+                                 Grid.Row="1"
+                                 Text="{Binding SettingsVM.SelectedItem.ItemCode, Mode=TwoWay}"
+                                 HorizontalContentAlignment="Center"
+                                 Width="50" />
+                    </Grid>
+                    <Grid Grid.Column="2">
+                        <Grid.RowDefinitions>
+                            <RowDefinition />
+                            <RowDefinition />
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0" Text="単位" />
+                        <TextBox x:Name="UnitTextBox"
+                                 Grid.Row="1"
+                                 Text="{Binding SettingsVM.SelectedItem.Unit, Mode=TwoWay}"
+                                 HorizontalContentAlignment="Center"
+                                 Width="50" />
+                    </Grid>
+                </Grid>
+                <Grid Grid.Row="2">
+                    <StackPanel Orientation="Horizontal"
+                                HorizontalAlignment="Right">
+                        <Button Content="{Binding SettingsVM.SaveButtonText}"
+                                Width="80"
+                                Margin="0,0,10,0"
+                                Click="SaveItemButton_Click" />
+                        <Button Content="キャンセル"
+                                Width="80"
+                                Click="CancelItemButton_Click" />
+                    </StackPanel>
+                </Grid>
+            </Grid>
+        </Border>
+    </Grid>
+</Page>
