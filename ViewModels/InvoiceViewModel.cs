@@ -30,7 +30,7 @@ namespace Invoice.ViewModels
             var balances = BalanceClass.GetAllBalances();
             BalanceClassList = new ObservableCollection<BalanceClass>(balances);
 
-            var invoiceList = InvoiceClass.GetInvoices();
+            var invoiceList = InvoiceClass.GetAllInvoice();
             InvoiceClassList = new ObservableCollection<InvoiceClass>(invoiceList);
             DepositFromInvoicePage = false;
 
@@ -239,7 +239,7 @@ namespace Invoice.ViewModels
         public void ReloadInvoiceList()
         {
             InvoiceClassList.Clear();
-            var invoices = InvoiceClass.GetInvoices();
+            var invoices = InvoiceClass.GetAllInvoice();
             foreach (var invoice in invoices)
             {
                 var mainWindow = Application.Current.MainWindow as MainWindow;

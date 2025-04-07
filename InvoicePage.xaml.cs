@@ -65,6 +65,7 @@ namespace Invoice
             mainWindow = Application.Current.MainWindow as MainWindow;
             DateBox.Value = MonthDiff(BaseDate, DateTime.Now);
             CurrentInvoice = vm.CurrentInvoice;
+            InvoiceFilter(new InvoiceFiterParam());
 
         }
         private void InvoiceFilter(InvoiceFiterParam param)
@@ -130,7 +131,7 @@ namespace Invoice
         public static int MonthDiff(DateTime FromDate, DateTime ToDate)
         {
             // 月差計算（年差考慮(差分1年 → 12(ヶ月)加算)）
-            int iRet = (FromDate.Month + (ToDate.Year - FromDate.Year) * 12) - FromDate.Month+1;
+            int iRet = ((ToDate.Year - FromDate.Year) * 12) + ToDate.Month - 2;
             return iRet;
         }
         private void ShowDatailPane()
