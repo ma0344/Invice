@@ -19,8 +19,8 @@ namespace Invoice.ViewModels
             TaxTypeClassList = new ObservableCollection<TaxTypeClass>(taxList);
             var transactionType = TransactionTypeClass.GetTransactionTypes();
             TransactionTypeClassList = new ObservableCollection<TransactionTypeClass>(transactionType);
-            var paymentMethods = PaymentMethodClass.GetPaymentMethods();
-            PaymentMethodClassList = new ObservableCollection<PaymentMethodClass>(paymentMethods);
+            //var paymentMethods = PaymentMethodClass.GetPaymentMethods();
+            //PaymentMethodClassList = new ObservableCollection<PaymentMethodClass>(paymentMethods);
             var statusInfos = InvoiceStatusClass.GetInvoiceStatuses();
             foreach (var inf in statusInfos)
             {
@@ -29,6 +29,14 @@ namespace Invoice.ViewModels
             InvoiceStatusClassList = new ObservableCollection<InvoiceStatusClass>(statusInfos);
             SelectedItem = new ItemClass();
             ReloadItems();
+            DefaultItemsList = new ObservableCollection<DefaultItemsClass>(DefaultItemsClass.GetDefaultItems());
+            foreach (var item in DefaultItemsList)
+            {
+                item.ItemName = ItemClassList.Where(x => x.ItemId == item.ItemId).FirstOrDefault().ItemName;
+                item.ItemCode = ItemClassList.Where(x => x.ItemId == item.ItemId).FirstOrDefault().ItemCode;
+                item.TaxTypeName = TaxTypeClassList.Where(x => x.TaxTypeId == item.TaxTypeId).FirstOrDefault().TaxTypeName;
+                item.SelectedTax = TaxTypeClassList.Where(x => x.TaxTypeId == item.TaxTypeId).FirstOrDefault();
+            }
 
         }
         private void InvoiceStatus_Changed(object sender, PropertyChangedEventArgs e)
@@ -47,16 +55,20 @@ namespace Invoice.ViewModels
             }
         }
 
-        private ObservableCollection<PaymentMethodClass> _PaymentMethodClassList = [];
-        public ObservableCollection<PaymentMethodClass> PaymentMethodClassList
+        public void SlipnumberInfoReload()
         {
-            get { return _PaymentMethodClassList; }
-            set
-            {
-                _PaymentMethodClassList = value;
-                OnPropertyChanged(nameof(PaymentMethodClassList));
-            }
+            SlipNumberInfo = SlipNumberClass.GetSlipNumberInfo();
         }
+        //private ObservableCollection<PaymentMethodClass> _PaymentMethodClassList = [];
+        //public ObservableCollection<PaymentMethodClass> PaymentMethodClassList
+        //{
+        //    get { return _PaymentMethodClassList; }
+        //    set
+        //    {
+        //        _PaymentMethodClassList = value;
+        //        OnPropertyChanged(nameof(PaymentMethodClassList));
+        //    }
+        //}
 
 
         private ObservableCollection<TaxTypeClass> _TaxTypeClassList;
@@ -110,6 +122,17 @@ namespace Invoice.ViewModels
         }
 
 
+        private ObservableCollection<DefaultItemsClass> _DefaultItemsList = [];
+        public ObservableCollection<DefaultItemsClass> DefaultItemsList
+        {
+            get => _DefaultItemsList;
+            set
+            {
+                _DefaultItemsList = value;
+                OnPropertyChanged(nameof(DefaultItemsList));
+            }
+        }
+
         private ItemClass _selectedItem = new();
         public ItemClass SelectedItem
         {
@@ -132,6 +155,18 @@ namespace Invoice.ViewModels
             }
         }
 
+        public void ReloadDefaultItems()
+        {
+            DefaultItemsList.Clear();
+            var items = DefaultItemsClass.GetDefaultItems();
+            foreach (var item in items)
+            {
+                item.ItemName = ItemClassList.Where(x => x.ItemId == item.ItemId).FirstOrDefault().ItemName;
+                item.ItemCode = ItemClassList.Where(x => x.ItemId == item.ItemId).FirstOrDefault().ItemCode;
+                item.TaxTypeName = TaxTypeClassList.Where(x => x.TaxTypeId == item.TaxTypeId).FirstOrDefault().TaxTypeName;
+                DefaultItemsList.Add(item);
+            }
+        }
 
         private string _saveButtonText = "保存";
         public string SaveButtonText

@@ -6,19 +6,16 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
-	  <StartupObject>Invoice.Program</StartupObject>
+	<StartupObject>Invoice.Program</StartupObject>
+	<SatelliteResourceLanguages>ja</SatelliteResourceLanguages>
     <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Remove="Git\**" />
-    <Compile Remove="新しいフォルダー\**" />
     <EmbeddedResource Remove="Git\**" />
-    <EmbeddedResource Remove="新しいフォルダー\**" />
     <None Remove="Git\**" />
-    <None Remove="新しいフォルダー\**" />
     <Page Remove="Git\**" />
-    <Page Remove="新しいフォルダー\**" />
   </ItemGroup>
 
   <ItemGroup>

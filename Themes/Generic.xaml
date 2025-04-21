@@ -1,0 +1,52 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:customControl="clr-namespace:Invoice.CustomControl"
+    xmlns:ui="http://schemas.modernwpf.com/2019">
+
+
+    <Style TargetType="{x:Type customControl:CustomCalendar}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type customControl:CustomCalendar}">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}">
+						<Calendar DisplayDate="{Binding DisplayDate, RelativeSource={RelativeSource TemplatedParent}}"
+                                  SelectedDate="{Binding SelectedDate, RelativeSource={RelativeSource TemplatedParent}}"
+                                  DisplayMode="{Binding DisplayMode, RelativeSource={RelativeSource TemplatedParent}}" />
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="{x:Type customControl:DateNumberBox}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type customControl:DateNumberBox}">
+                    <Grid Background="{TemplateBinding Background}">
+                        <ui:NumberBox TextAlignment="{Binding TextAlignment, RelativeSource={RelativeSource TemplatedParent}}"
+                                      Text="{TemplateBinding Text}"
+                                      Minimum="{Binding Minimum, RelativeSource={RelativeSource TemplatedParent}}"
+                                      Maximum="{Binding Maximum, RelativeSource={RelativeSource TemplatedParent}}"
+                                      SpinButtonPlacementMode="{Binding SpinButtonPlacementMode, RelativeSource={RelativeSource TemplatedParent}}"
+                                      HorizontalAlignment="{Binding HorizontalAlignment, RelativeSource={RelativeSource TemplatedParent}}"
+                                      VerticalAlignment="{Binding VerticalAlignment, RelativeSource={RelativeSource TemplatedParent}}"
+                                      FontSize="{Binding FontSize, RelativeSource={RelativeSource TemplatedParent}}"
+                                      Value="{Binding Value, RelativeSource={RelativeSource TemplatedParent}}"
+                                      Tag="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"
+                                      IsEnabled="{Binding IsEnabled, RelativeSource={RelativeSource TemplatedParent}}"
+                                      Width="{Binding Width, RelativeSource={RelativeSource TemplatedParent}}"
+                                      Height="{Binding Height, RelativeSource={RelativeSource TemplatedParent}}"
+                                      HorizontalContentAlignment="{Binding HorizontalContentAlignment, RelativeSource={RelativeSource TemplatedParent}}"
+                                      VerticalContentAlignment="{Binding VerticalContentAlignment, RelativeSource={RelativeSource TemplatedParent}}"
+                                      LargeChange="{Binding LargeChange, RelativeSource={RelativeSource TemplatedParent}}"
+                                      SmallChange="{Binding SmallChange, RelativeSource={RelativeSource TemplatedParent}}" />
+
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+</ResourceDictionary>

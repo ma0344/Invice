@@ -89,8 +89,8 @@ namespace Invoice
         private void SettingsPage_Loaded(object sender, RoutedEventArgs e)
         {
             this.TaxListDataGrid.Loaded += DataGrid_Loaded;
-            this.PaymentMethodListDataGrid.Loaded += DataGrid_Loaded;
             this.TransactionMethodListDataGrid.Loaded += DataGrid_Loaded;
+            vm.SlipnumberInfoReload();
         }
 
         private void Label_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
@@ -283,38 +283,38 @@ namespace Invoice
 
         private void ApplyPaymentTitleButton_Click(object sender, RoutedEventArgs e)
         {
-            var orgPaymentList = PaymentMethodClass.GetPaymentMethods();
-            var newPaymentList = vm.PaymentMethodClassList;
-            foreach (var payment in newPaymentList)
-            {
-                if (payment.PaymentMethodId != 0)
-                {
-                    if (orgPaymentList.FirstOrDefault(x => x.PaymentMethodId == payment.PaymentMethodId) is PaymentMethodClass orgPayment)
-                    {
-                        if (orgPayment.MethodName != payment.MethodName)
-                            payment.UpdatePaymentMethod();
-                    }
-                }
-                else
-                    payment.PaymentMethodId = PaymentMethodClass.AddPaymentMethod(payment);
-            }
+            //var orgPaymentList = PaymentMethodClass.GetPaymentMethods();
+            //var newPaymentList = vm.PaymentMethodClassList;
+            //foreach (var payment in newPaymentList)
+            //{
+            //    if (payment.PaymentMethodId != 0)
+            //    {
+            //        if (orgPaymentList.FirstOrDefault(x => x.PaymentMethodId == payment.PaymentMethodId) is PaymentMethodClass orgPayment)
+            //        {
+            //            if (orgPayment.MethodName != payment.MethodName)
+            //                payment.UpdatePaymentMethod();
+            //        }
+            //    }
+            //    else
+            //        payment.PaymentMethodId = PaymentMethodClass.AddPaymentMethod(payment);
+            //}
         }
 
         private void DeletePaymentTitleButton_Click(object sender, RoutedEventArgs e)
         {
-            var selectedItemIds = PaymentMethodListDataGrid.SelectedItems
-                .OfType<PaymentMethodClass>()
-                .Select(payment => payment.PaymentMethodId)
-                .ToList();
-            foreach (var id in selectedItemIds)
-            {
-                var paymentMethodItem = vm.PaymentMethodClassList.FirstOrDefault(x => x.PaymentMethodId == id);
-                if (paymentMethodItem != null)
-                {
-                    paymentMethodItem.DeletePaymentMethod();
-                    vm.PaymentMethodClassList.Remove(paymentMethodItem);
-                }
-            }
+            //var selectedItemIds = PaymentMethodListDataGrid.SelectedItems
+            //    .OfType<PaymentMethodClass>()
+            //    .Select(payment => payment.PaymentMethodId)
+            //    .ToList();
+            //foreach (var id in selectedItemIds)
+            //{
+            //    var paymentMethodItem = vm.PaymentMethodClassList.FirstOrDefault(x => x.PaymentMethodId == id);
+            //    if (paymentMethodItem != null)
+            //    {
+            //        paymentMethodItem.DeletePaymentMethod();
+            //        vm.PaymentMethodClassList.Remove(paymentMethodItem);
+            //    }
+            //}
         }
 
         private void ApplyTransactionTitleButton_Click(object sender, RoutedEventArgs e)
@@ -383,6 +383,133 @@ namespace Invoice
                 }
             }
         }
+
+        private void AddDefaultInvoiceItemButton_Click(object sender, RoutedEventArgs e)
+        {
+            if(vm == null) return;
+            var newItem = new DefaultItemsClass();
+            newItem.ItemOrder = vm.DefaultItemsList.Count + 1;
+            vm.DefaultItemsList.Add(newItem);
+        }
+
+        private void DeleteDefaultInvoiceItemButton_Click(object sender, RoutedEventArgs e)
+        {
+            var dataGrid = DefaultInvoiceItemsDataGrid;
+            var selectedItems = dataGrid.SelectedItems.OfType<DefaultItemsClass>().ToList();
+            List<int> orderList = [];
+            selectedItems.ForEach(x => { if (x is DefaultItemsClass item) orderList.Add(item.ItemOrder); });
+            orderList.Sort((a, b) => b - a);
+            foreach (var itemOrder in orderList)
+            {
+                var item = vm.DefaultItemsList[itemOrder - 1];
+                var id = item.DefaultItemsId;
+                vm.DefaultItemsList.Remove(item);
+            }
+            int order = 1;
+            foreach (var item in dataGrid.Items)
+            {
+                if (item is InvoiceItemClass invoiceItem) invoiceItem.ItemOrder = order++;
+            }
+        }
+
+        private void SaveDefaultInvoiceItemsButton_Click(object sender, RoutedEventArgs e)
+        {
+            var dataGrid = DefaultInvoiceItemsDataGrid;
+            var selectedItems = dataGrid.Items.OfType<DefaultItemsClass>().ToList();
+            DefaultItemsClass.AddDefaultItems(selectedItems);
+            vm.ReloadDefaultItems();
+        }
+
+        private void DefaultInvoiceItemsCancelButton_Click(object sender, RoutedEventArgs e)
+        {
+            vm.ReloadDefaultItems();
+        }
+
+        private void SelectAllCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            var dataGrid = DefaultInvoiceItemsDataGrid;
+            foreach (var item in dataGrid.Items)
+            {
+                var container = dataGrid.ItemContainerGenerator.ContainerFromItem(item);
+                if (container is DataGridRow row)
+                {
+
+                    row.IsSelected = true;
+                    VisualTreeHelperExtensions.FindVisualChildByName<CheckBox>(row, "GridRowCheckBox").IsChecked = true;
+                }
+            }
+        }
+
+        private void SelectAllCheckBox_Unchecked(object sender, RoutedEventArgs e)
+        {
+            var dataGrid = DefaultInvoiceItemsDataGrid;
+            foreach (var item in dataGrid.Items)
+            {
+                var container = dataGrid.ItemContainerGenerator.ContainerFromItem(item);
+                if (container is DataGridRow row)
+                {
+                    row.IsSelected = false;
+                    VisualTreeHelperExtensions.FindVisualChildByName<CheckBox>(row, "GridRowCheckBox").IsChecked = false;
+
+                }
+            }
+
+        }
+
+        private void InvoiceCheckBox_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            var checkBox = sender as CheckBox;
+            var InvoiceItem = checkBox.FindAscendant<DataGridRow>();
+            if (InvoiceItem != null)
+            {
+                InvoiceItem.IsSelected = checkBox.IsChecked == false;
+            }
+            e.Handled = true;
+        }
+
+        private void InvoiceItemName_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+
+            //if (isInitializing) return;
+
+            if (sender is ComboBox comboBox)
+            {
+                var selectedItem = comboBox.SelectedItem;
+                var invoiceItem = comboBox.DataContext as DefaultItemsClass;
+                //if (isInitializing) return;
+                if (invoiceItem != null && selectedItem != null)
+                {
+                    //if (invoiceItem.ItemId == selectedItem.ItemId && invoiceItem.ItemTotal != 0) return;
+                    ItemClass comboBoxSelectedItem = new();
+                    if (selectedItem is DefaultItemsClass item)
+                        comboBoxSelectedItem = vm.ItemClassList.FirstOrDefault(i => i.ItemId == item.ItemId);
+                    else
+                        comboBoxSelectedItem = selectedItem as ItemClass;
+
+                    invoiceItem.SetItem(comboBoxSelectedItem);
+                    invoiceItem.ReTotal(invoiceItem);
+                    var contentPresenter = comboBox.TemplatedParent as ContentPresenter;
+                    var dataGridCell = contentPresenter.Parent as DataGridCell;
+                    var dataGridCellsPanel = VisualTreeHelper.GetParent(dataGridCell) as DataGridCellsPanel;
+                    var taxTypeNameComboBox = TaxTypeNameComboBox as DataGridComboBoxColumn;
+                    var itemSource = taxTypeNameComboBox.ItemsSource as ListCollectionView;
+                    itemSource.MoveCurrentToFirst();
+                    //var taxTypeNameComboBox = VisualTreeHelperExtensions.FindVisualChildByName<ComboBox>(dataGridCellsPanel, "TaxTypeNameComboBox") as ComboBox;
+                    //taxTypeNameComboBox.Text = invoiceItem.TaxTypeName;
+                }
+                else
+                {
+                    if (comboBox.DataContext == null) return;
+                    if (comboBox.DataContext.ToString() == "{DataGrid.NewItemPlaceholder}")
+                    {
+                        //invoiceItem = new InvoiceItemClass();
+                        //invoiceItem.SetItem(comboBox.SelectedItem as ItemClass);
+                    }
+                }
+            }
+
+        }
+
     }
     public static class VisualTreeHelperWrapper
     {

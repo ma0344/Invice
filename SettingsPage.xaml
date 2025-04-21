@@ -14,6 +14,49 @@
       FontFamily="Biz UDGothic"
       Title="Settings">
     <Page.Resources>
+        <Style TargetType="Button"
+               BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="FontFamily"
+                    Value="Biz UDGothic" />
+        </Style>
+        <CollectionViewSource Source="{Binding SettingsVM.TransactionTypeClassList}"
+                              x:Key="TransactionTypeWithoutPlaceHolder" />
+        <CollectionViewSource Source="{Binding SettingsVM.ItemClassList}"
+                              x:Key="ItemClassList" />
+        <CollectionViewSource Source="{Binding SettingsVM.TaxTypeClassList}"
+                              x:Key="TaxTypeListWithoutPlaceHolder" />
+        <Style x:Key="CustomDataGridCellStyle"
+               TargetType="DataGridCell"
+               BasedOn="{StaticResource DefaultDataGridCellStyle}">
+            <Setter Property="OverridesDefaultStyle"
+                    Value="True" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="DataGridCell">
+                        <ui:DataGridCellPresenter Background="{TemplateBinding Background}"
+                                                  CurrencyVisualBrush="{DynamicResource DataGridCurrencyVisualPrimaryBrush}"
+                                                  CurrencyVisualThickness="0"
+                                                  FocusVisualPrimaryBrush="{DynamicResource DataGridCellFocusVisualPrimaryBrush}"
+                                                  FocusVisualPrimaryThickness="0"
+                                                  FocusVisualSecondaryBrush="{DynamicResource DataGridCellFocusVisualSecondaryBrush}"
+                                                  FocusVisualSecondaryThickness="0"
+                                                  IsCurrencyVisualVisible="{TemplateBinding IsSelected}"
+                                                  IsFocusVisualVisible="{TemplateBinding IsKeyboardFocusWithin}"
+                                                  MinHeight="{TemplateBinding MinHeight}"
+                                                  SnapsToDevicePixels="True" />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style TargetType="DataGridCell"
+               x:Key="CustomDataGridCellstyleR"
+               BasedOn="{StaticResource CustomDataGridCellStyle}">
+            <Setter Property="HorizontalAlignment"
+                    Value="Right" />
+            <Setter Property="Padding"
+                    Value="0,0,5,0" />
+        </Style>
+
         <Style x:Key="DataGridTextBoxStyle"
                TargetType="TextBox"
                BasedOn="{StaticResource DefaultTextBoxStyle}">
@@ -30,29 +73,6 @@
                             Value="Transparent" />
                 </Trigger>
             </Style.Triggers>
-        </Style>
-        <Style x:Key="CustomDataGridCellStyle"
-               TargetType="DataGridCell" 
-               BasedOn="{StaticResource DefaultDataGridCellStyle}">
-            <Setter Property="OverridesDefaultStyle"
-                    Value="True" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="DataGridCell">
-                        <ui:DataGridCellPresenter Background="{TemplateBinding Background}"
-                                                    CurrencyVisualBrush="{DynamicResource DataGridCurrencyVisualPrimaryBrush}"
-                                                    CurrencyVisualThickness="0"
-                                                    FocusVisualPrimaryBrush="{DynamicResource DataGridCellFocusVisualPrimaryBrush}"
-                                                    FocusVisualPrimaryThickness="0"
-                                                    FocusVisualSecondaryBrush="{DynamicResource DataGridCellFocusVisualSecondaryBrush}"
-                                                    FocusVisualSecondaryThickness="0"
-                                                    IsCurrencyVisualVisible="{TemplateBinding IsSelected}"
-                                                    IsFocusVisualVisible="{TemplateBinding IsKeyboardFocusWithin}"
-                                                    MinHeight="{TemplateBinding MinHeight}"
-                                                    SnapsToDevicePixels="True" />
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
         </Style>
         <Style x:Key="CustomDataGridColumnHeaderStyle"
                TargetType="{x:Type DataGridColumnHeader}">
@@ -171,7 +191,8 @@
         <Grid Grid.Row="1"
               x:Name="ItemPageContentsGrid">
             <TabControl TabStripPlacement="Top"
-                        FontSize="15">
+                        FontSize="15"
+                        d:SelectedIndex="3">
                 <TabControl.Resources>
                     <Style TargetType="TabPanel">
                         <Setter Property="OverridesDefaultStyle"
@@ -597,74 +618,204 @@
                     </Grid>
                 </TabItem>
 
-                <TabItem x:Name="PaymentTitleTab">
+                <TabItem x:Name="DefaultInvoiceItemsTab">
                     <TabItem.Header>
                         <Grid Width="100"
                               Height="30"
                               VerticalAlignment="Stretch">
                             <TextBlock VerticalAlignment="Center"><Run Language="ja-jp"
-                                                                       Text="入金項目" /></TextBlock>
+                                                                       Text="初期請求項目" /></TextBlock>
                         </Grid>
                     </TabItem.Header>
 
                     <Grid Width="700"
-                          x:Name="PaymentTitleSettingsGrid">
+                          x:Name="DefaultItemsSettingGrid">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="*" />
                             <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
                         <Label Grid.Row="0"
-                               Content="入金項目設定"
+                               Content="請求項目初期設定"
                                FontSize="24px"
                                FontWeight="Bold"
                                Margin="0,20,0,10" />
-                        <DataGrid x:Name="PaymentMethodListDataGrid"
-                                  ItemsSource="{Binding SettingsVM.PaymentMethodClassList}"
+                        <DataGrid x:Name="DefaultInvoiceItemsDataGrid"
+                                  VerticalAlignment="Stretch"
                                   Grid.Row="1"
-                                  Width="300"
-                                  CanUserAddRows="True"
-                                  Style="{StaticResource DefaultDataGrid}">
+                                  Margin="0,5,0,0"
+                                  CanUserAddRows="False"
+                                  CanUserResizeColumns="False"
+                                  AutoGenerateColumns="False"
+                                  BorderBrush="Gray"
+                                  BorderThickness="1"
+                                  ItemsSource="{Binding SettingsVM.DefaultItemsList,Mode=TwoWay}"
+                                  AlternatingRowBackground="#0C000000"
+                                  ColumnHeaderHeight="30"
+                                  CanUserDeleteRows="False"
+                                  RowHeaderWidth="0">
+                            <DataGrid.ColumnHeaderStyle>
+                                <Style TargetType="{x:Type DataGridColumnHeader}">
+                                    <Setter Property="FontSize"
+                                            Value="15" />
+                                    <Setter Property="HorizontalContentAlignment"
+                                            Value="Center" />
+                                </Style>
+                            </DataGrid.ColumnHeaderStyle>
 
                             <DataGrid.Columns>
-                                <DataGridTemplateColumn Width="30"
-                                                        CellTemplate="{StaticResource DataGridColumnCheckBoxTemplate}">
+
+                                <DataGridTemplateColumn  Width="30">
                                     <DataGridTemplateColumn.Header>
-                                        <TextBlock Text="" />
+
+                                        <CheckBox x:Name="SelectAllItemCheckBox"
+                                                  Checked="SelectAllCheckBox_Checked"
+                                                  Unchecked="SelectAllCheckBox_Unchecked" />
                                     </DataGridTemplateColumn.Header>
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <CheckBox x:Name="GridRowCheckBox"
+                                                      IsChecked="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected, Mode=TwoWay}"
+                                                      PreviewMouseLeftButtonDown="InvoiceCheckBox_PreviewMouseLeftButtonDown"
+                                                      Width="20">
+                                                <CheckBox.Resources>
+                                                    <Style TargetType="CheckBox"
+                                                           BasedOn="{StaticResource DefaultCheckBoxStyle}">
+                                                        <Setter Property="HorizontalAlignment"
+                                                                Value="Center" />
+                                                        <Setter Property="Width"
+                                                                Value="20" />
+                                                        <Setter Property="Content">
+                                                            <Setter.Value>
+                                                                <TextBlock Width="0"
+                                                                           Visibility="Collapsed" />
+                                                            </Setter.Value>
+                                                        </Setter>
+                                                    </Style>
+                                                    <Style TargetType="Grid">
+                                                        <Setter Property="Width"
+                                                                Value="20" />
+                                                    </Style>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="Width"
+                                                                Value="20" />
+                                                    </Style>
+                                                </CheckBox.Resources>
+                                            </CheckBox>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+
                                 </DataGridTemplateColumn>
-                                <DataGridTextColumn Header="入金科目"
-                                                    Width="268"
-                                                    Binding="{Binding MethodName,Mode=TwoWay}">
-                                    <DataGridTextColumn.CellStyle>
-                                        <Style TargetType="DataGridCell"
-                                               BasedOn="{StaticResource CustomDataGridCellStyle}">
-                                            <Setter Property="HorizontalAlignment"
-                                                    Value="Center" />
-                                        </Style>
-                                    </DataGridTextColumn.CellStyle>
-                                </DataGridTextColumn>
+                                <DataGridTemplateColumn Header="請求項目"
+                                                        Width="200*">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <ComboBox x:Name="InvoiceItemName"
+                                                      ItemsSource="{Binding Source={StaticResource ItemClassList}}"
+                                                      DisplayMemberPath="ItemName"
+                                                      SelectedValuePath="ItemId"
+                                                      SelectedValue="{Binding ItemId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                      BorderThickness="0"
+                                                      HorizontalAlignment="Stretch"
+                                                      Background="Transparent"
+                                                      InputMethod.PreferredImeState="Off"
+                                                      IsSynchronizedWithCurrentItem="False"
+                                                      SelectionChanged="InvoiceItemName_SelectionChanged" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTextColumn Header="単価"
+                                                    Width="80*"
+                                                    Binding="{Binding UnitPrice,Mode=TwoWay,StringFormat={}@{0:N0}}"
+                                                    CellStyle="{StaticResource CustomDataGridCellstyleR}"
+                                                    InputMethod.PreferredImeState="Off"
+                                                    AutomationProperties.IsRequiredForForm="True" />
+                                <DataGridTextColumn Header="数量"
+                                                    Width="60*"
+                                                    InputMethod.PreferredImeState="Off"
+                                                    Binding="{Binding Quantity,Mode=TwoWay,StringFormat={}{0:N0}}"
+                                                    CellStyle="{StaticResource CustomDataGridCellstyleR}"
+                                                    AutomationProperties.IsRequiredForForm="True" />
+                                <DataGridTextColumn Header="単位"
+                                                    Width="50*"
+                                                    InputMethod.PreferredImeState="Off"
+                                                    Binding="{Binding Unit,Mode=TwoWay}"
+                                                    CellStyle="{StaticResource CustomDataGridCellStyle}"
+                                                    AutomationProperties.IsRequiredForForm="True" />
+                                <DataGridTextColumn Header="小計"
+                                                    Width="90*"
+                                                    IsReadOnly="True"
+                                                    CellStyle="{StaticResource CustomDataGridCellstyleR}"
+                                                    Binding="{Binding ItemSubTotal,StringFormat={}{0:N0}}" />
+                                <DataGridComboBoxColumn Header="税種"
+                                                        Width="100*"
+                                                        x:Name="TaxTypeNameComboBox"
+                                                        ItemsSource="{Binding Source={StaticResource TaxTypeListWithoutPlaceHolder}}"
+                                                        DisplayMemberPath="TaxTypeName"
+                                                        SelectedValuePath="TaxTypeId"
+                                                        InputMethod.PreferredImeState="Off"
+                                                        SelectedValueBinding="{Binding TaxTypeId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <DataGridTextColumn Header="税額"
+                                                    Width="50*"
+                                                    IsReadOnly="True"
+                                                    Binding="{Binding Tax, StringFormat={}{0:N0}}"
+                                                    CellStyle="{StaticResource CustomDataGridCellstyleR}" />
+
+                                <DataGridTextColumn Header="項目計"
+                                                    Width="90*"
+                                                    IsReadOnly="True"
+                                                    Binding="{Binding ItemTotal,StringFormat={}{0:N0}}"
+                                                    CellStyle="{StaticResource CustomDataGridCellstyleR}" />
                             </DataGrid.Columns>
-
                         </DataGrid>
+                        <Grid Grid.Row="4"
+                              HorizontalAlignment="Stretch"
+                              Margin="0,0,0,0"
+                              VerticalAlignment="Bottom">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
 
-                        <StackPanel x:Name="PaymentTitleTabButtonStackPanel"
-                                    Grid.Row="2"
-                                    Orientation="Horizontal"
-                                    HorizontalAlignment="Right">
-                            <Button x:Name="ApplyPaymentTitleButton"
-                                    Content="変更適用"
-                                    Width="130"
-                                    Height="30"
-                                    Margin="5,10"
-                                    Click="ApplyPaymentTitleButton_Click" />
-                            <Button x:Name="DeletePaymentTitleButton"
+                            <Button Grid.Column="0"
+                                    Margin="2,0"
+                                    x:Name="AddDefaultInvoiceItemButton"
+                                    Content="項目追加"
+                                    Width="90"
+                                    VerticalAlignment="Bottom"
+                                    Click="AddDefaultInvoiceItemButton_Click"
+                                    Height="32" />
+                            <Button Grid.Column="1"
+                                    Margin="2,0"
+                                    x:Name="DeleteDefaultInvoiceItemButton"
                                     Content="項目削除"
-                                    Width="130"
-                                    Height="30"
-                                    Margin="5,10"
-                                    Click="DeletePaymentTitleButton_Click" />
-                        </StackPanel>
+                                    Width="90"
+                                    VerticalAlignment="Bottom"
+                                    Click="DeleteDefaultInvoiceItemButton_Click"
+                                    Height="32" />
+                            <Button Grid.Column="3"
+                                    x:Name="SaveDefaultInvoiceItemsButton"
+                                    Margin="2,0"
+                                    d:Content="保存"
+                                    Content="{Binding InvoiceVM.SaveButtonText}"
+                                    Width="90"
+                                    VerticalAlignment="Bottom"
+                                    Click="SaveDefaultInvoiceItemsButton_Click"
+                                    Height="32" />
+                            <Button Grid.Column="4"
+                                    x:Name="DefaultInvoiceItemsCancelButton"
+                                    Margin="2,0"
+                                    Content="キャンセル"
+                                    Width="90"
+                                    VerticalAlignment="Bottom"
+                                    Click="DefaultInvoiceItemsCancelButton_Click"
+                                    Height="32" />
+
+                        </Grid>
                     </Grid>
                 </TabItem>
                 

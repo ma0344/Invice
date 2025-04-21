@@ -13,6 +13,47 @@
     d:DesignWidth="800"
     FontFamily="Biz UDGothic"
     Title="Customer">
+    <Page.Resources>
+        <Style x:Key="CustomDataGridCellStyle"
+               TargetType="DataGridCell"
+               BasedOn="{StaticResource DefaultDataGridCellStyle}">
+            <Setter Property="OverridesDefaultStyle"
+                    Value="True" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="DataGridCell">
+                        <ui:DataGridCellPresenter Background="{TemplateBinding Background}"
+                                                  CurrencyVisualBrush="{DynamicResource DataGridCurrencyVisualPrimaryBrush}"
+                                                  CurrencyVisualThickness="0"
+                                                  FocusVisualPrimaryBrush="{DynamicResource DataGridCellFocusVisualPrimaryBrush}"
+                                                  FocusVisualPrimaryThickness="0"
+                                                  FocusVisualSecondaryBrush="{DynamicResource DataGridCellFocusVisualSecondaryBrush}"
+                                                  FocusVisualSecondaryThickness="0"
+                                                  IsCurrencyVisualVisible="{TemplateBinding IsSelected}"
+                                                  IsFocusVisualVisible="{TemplateBinding IsKeyboardFocusWithin}"
+                                                  MinHeight="{TemplateBinding MinHeight}"
+                                                  SnapsToDevicePixels="True" />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>        <Style TargetType="DataGridCell"
+               x:Key="Cellstyle_HorizontalAlignRight"
+               BasedOn="{StaticResource CustomDataGridCellStyle}">
+            <Setter Property="HorizontalAlignment"
+                    Value="Right" />
+            <Setter Property="Padding"
+                    Value="0,0,5,0" />
+        </Style>
+        <Style TargetType="DataGridCell"
+               x:Key="Cellstyle_HorizontalAlignCenter"
+               BasedOn="{StaticResource CustomDataGridCellStyle}">
+            <Setter Property="HorizontalAlignment"
+                    Value="Center" />
+            <Setter Property="Padding"
+                    Value="0,0,0,0" />
+        </Style>
+
+    </Page.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition
@@ -132,6 +173,7 @@
                 Grid.Row="2"
                 ItemsSource="{Binding CustomerVM.CustomerCollectionViewSource.View}"
                 AlternatingRowBackground="#0C000000"
+                MouseDoubleClick="CustomerListView_MouseDoubleClick"
                 ColumnHeaderHeight="28"
                 RowHeaderWidth="0"
                 CanUserAddRows="False"
@@ -146,7 +188,8 @@
                 FontSize="20"
                 Width="500"
                 MaxWidth="500"
-                MinWidth="500">
+                MinWidth="500"
+                >
                 <DataGrid.CellStyle>
                     <Style
                         TargetType="DataGridCell"
@@ -333,6 +376,7 @@
 
             </StackPanel>
         </Grid>
+        
         <Border
             x:Name="CustomerDetailPane"
             Grid.Row="1"
@@ -347,6 +391,7 @@
                     x:Name="CustomerDetailPaneTransform"
                     Y="{Binding RelativeSource={RelativeSource AncestorType=Border}, Path=Height}" />
             </Border.RenderTransform>
+            
             <StackPanel
                 Orientation="Vertical"
                 Margin="20">
@@ -460,6 +505,125 @@
 
                 </StackPanel>
             </StackPanel>
+        </Border>
+        <Border x:Name="CustomerBalancePane"
+                Grid.Row="1"
+                Background="White"
+                BorderBrush="Gray"
+                BorderThickness="1"
+                Height="400"
+                VerticalAlignment="Bottom"
+                RenderTransformOrigin="0.5,1"
+                >
+            <Border.RenderTransform>
+                <TranslateTransform x:Name="CustomerBalancePaneTransform"
+                                    Y="{Binding RelativeSource={RelativeSource AncestorType=Border}, Path=Height}" />
+            </Border.RenderTransform>
+            <Grid x:Name="CustomerBalancePaneGrid">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <DataGrid x:Name="CustomerBalanceDataGrid"
+                          Grid.Row="0"
+                          VerticalAlignment="Stretch"
+                          Margin="10,5,10,0"
+                          CanUserAddRows="False"
+                          CanUserResizeColumns="False"
+                          AutoGenerateColumns="False"
+                          BorderBrush="Gray"
+                          BorderThickness="1"
+                          ItemsSource="{Binding CustomerVM.BalanceCollectionViewSource.View}"
+                          AlternatingRowBackground="#0C000000"
+                          ColumnHeaderHeight="30"
+                          CanUserDeleteRows="False"
+                          RowHeaderWidth="0">
+                    <DataGrid.ColumnHeaderStyle>
+                        <Style TargetType="{x:Type DataGridColumnHeader}">
+                            <Setter Property="FontSize"
+                                    Value="15" />
+                            <Setter Property="HorizontalContentAlignment"
+                                    Value="Center" />
+                        </Style>
+                    </DataGrid.ColumnHeaderStyle>
+                    <DataGrid.CellStyle>
+                        <Style TargetType="DataGridCell">
+                            
+                        </Style>
+                    </DataGrid.CellStyle>
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="日付"
+                                            Binding="{Binding DateString}"
+                                            IsReadOnly="True"
+                                            CellStyle="{StaticResource Cellstyle_HorizontalAlignCenter}"
+                                            Width="200*"/>
+                        <DataGridTextColumn Header="氏名"
+                                            Binding="{Binding CustomerName}"
+                                            IsReadOnly="True"
+                                            CellStyle="{StaticResource Cellstyle_HorizontalAlignCenter}"
+                                            Width="150*"/>
+                        <DataGridTextColumn Header="伝票番号"
+                                            Binding="{Binding SlipNumber}"
+                                            IsReadOnly="True"
+                                            CellStyle="{StaticResource Cellstyle_HorizontalAlignCenter}"
+                                            Width="100*"/>
+                        <DataGridTextColumn Header="取引種別"
+                                            Width="100*"
+                                            Binding="{Binding TransactionTypeName}"
+                                            IsReadOnly="True"
+                                            CellStyle="{StaticResource Cellstyle_HorizontalAlignCenter}"/>
+                        <DataGridTextColumn Header="借方"
+                                            Width="100*"
+                                            Binding="{Binding DebitAmount, StringFormat={}{0:N0}}"
+                                            IsReadOnly="True"
+                                            CellStyle="{StaticResource Cellstyle_HorizontalAlignRight}"/>
+                        <DataGridTextColumn Header="貸方"
+                                            Width="100*"
+                                            Binding="{Binding CreditAmount, StringFormat={}{0:N0}}"
+                                            IsReadOnly="True"
+                                            CellStyle="{StaticResource Cellstyle_HorizontalAlignRight}"/>
+
+                    </DataGrid.Columns>
+                </DataGrid>
+                <Grid Grid.Row="1"
+>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="1"
+                               FontSize="20"
+                               FontWeight="Bold"
+                               VerticalAlignment="Center"
+                               Text="未収残高"/>
+                    <Border Grid.Column="2"
+                            BorderThickness="0.5"
+                            BorderBrush="Black"
+                            CornerRadius="2"
+                            HorizontalAlignment="Right"
+                            Width="150"
+                            Height="35"
+                            Margin="20,0">
+                            <TextBlock
+                                VerticalAlignment="Center"   
+                                TextAlignment="Right"
+                                Padding="0,0,10,0"
+                                FontSize="20"
+                                FontWeight="Bold"
+                                Text="{Binding CustomerVM.CustomerBalance, StringFormat={}\\{0:N0}, Mode=OneWay}"/>
+                            
+                    </Border>
+                    <Button x:Name="BackToCustomerListButton"
+                            Grid.Column="3"
+                            Margin="0,10,20,10"
+                            Height="30"
+                            Width="100"
+                            Click="BackToCustomerListButton_Click"
+                            Content="戻る"/>
+                </Grid>
+            </Grid>
         </Border>
     </Grid>
 </Page>

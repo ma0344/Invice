@@ -52,14 +52,14 @@ namespace Invoice.ViewModels
             }
         }
 
-        private PaymentClass _paymentDetailData;
-        public PaymentClass PaymentDetailData
+        private PaymentClass _CurrentPayment;
+        public PaymentClass CurrentPayment
         {
-            get { return _paymentDetailData; }
+            get { return _CurrentPayment; }
             set
             {
-                _paymentDetailData = value;
-                OnPropertyChanged(nameof(PaymentDetailData));
+                _CurrentPayment = value;
+                OnPropertyChanged(nameof(CurrentPayment));
             }
         }
 
@@ -84,25 +84,16 @@ namespace Invoice.ViewModels
                 OnPropertyChanged(nameof(PaneTitle));
             }
         }
+        
+        private DateTime _FilterDate = DateTime.Now;
 
-        private string _ViewDate = "";
-        public string ViewDate
+        public DateTime FilterDate
         {
-            get { return _ViewDate; }
+            get { return _FilterDate; }
             set
             {
-                _ViewDate = value;
-                OnPropertyChanged(nameof(ViewDate));
-            }
-        }
-        private string _InvoiceViewDate = "";
-        public string InvoiceViewDate
-        {
-            get { return _InvoiceViewDate; }
-            set
-            {
-                _InvoiceViewDate = value;
-                OnPropertyChanged(nameof(InvoiceViewDate));
+                _FilterDate = value;
+                OnPropertyChanged(nameof(FilterDate));
             }
         }
 

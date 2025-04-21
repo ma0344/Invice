@@ -19,23 +19,40 @@ using System.Security.Cryptography.X509Certificates;
 using System.ComponentModel.Design;
 using System.Collections.Specialized;
 using System.Collections.ObjectModel;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+using System.Reflection;
+using System.Diagnostics;
+using PdfSharp.Quality;
 
 namespace Invoice
 {
-
+    public enum TypeOfID
+    {
+        Instans = 0,
+        Customer = 1,
+        Invoice = 2,
+        Payment = 3,
+        Deposit = 4
+    }
 
     // T_BALANCE テーブルに対応するクラス
     public class BalanceClass
     {
         public int BalanceId { get; set; }
         public int CustomerId { get; set; }
-        public int InvoiceId { get; set; }
-        public int PaymentId { get; set; }
+        public int? InvoiceId { get; set; }
+        public int? PaymentId { get; set; }
+        public int? DepositId { get; set; }
         public string SlipNumber { get; set; }
         public int DebOrCreId { get; set; }
         public DateTime TransactionDate { get; set; }
         public int TransactionTypeId { get; set; }
         public int TransactionAmount { get; set; }
+        public string CustomerName { get; set;}
+        public string TransactionTypeName { get; set;}
+        public string DateString => TransactionDate.ToShortDateString();
+        public decimal? DebitAmount => DebOrCreId == 1 ? TransactionAmount : (decimal?)null;
+        public decimal? CreditAmount => DebOrCreId == 2 ? TransactionAmount : (decimal?)null;
 
         // データベースから全てのレコードを取得
         public static List<BalanceClass> GetAllBalances()
@@ -52,8 +69,9 @@ namespace Invoice
                 {
                     BalanceId = reader.GetInt32("BALANCE_ID"),
                     CustomerId = reader.GetInt32("CUSTOMER_ID"),
-                    InvoiceId = reader.IsDBNull("INVOICE_ID") ? 0 : reader.GetInt32("INVOICE_ID"),
-                    PaymentId = reader.IsDBNull("PAYMENT_ID") ? 0 : reader.GetInt32("PAYMENT_ID"),
+                    InvoiceId = reader.IsDBNull("INVOICE_ID") ? null : reader.GetInt32("INVOICE_ID"),
+                    PaymentId = reader.IsDBNull("PAYMENT_ID") ? null : reader.GetInt32("PAYMENT_ID"),
+                    DepositId = reader.IsDBNull("DEPOSIT_ID") ? null : reader.GetInt32("DEPOSIT_ID"),
                     SlipNumber = reader.IsDBNull("SLIP_NUMBER") ? "" : reader.GetString("SLIP_NUMBER"),
                     DebOrCreId = reader.GetInt32("DEBIT_OR_CREDIT_ID"),
                     TransactionDate = reader.GetDateTime("TRANSACTION_DATE"),
@@ -63,6 +81,17 @@ namespace Invoice
                 balances.Add(balance);
             }
             return balances;
+        }
+
+        public static int GetBalanceById(TypeOfID type, int id)
+        {
+            using var command = QueryBuilder.CommandBuilder("SELECT *", "T_BALANCE", type, id);
+            using var reader = command.ExecuteReader();
+            if (reader.Read())
+            {
+                return reader.GetInt32("BALANCE_ID");
+            }
+            return 0;
         }
 
         public static List<BalanceClass> GetBalancesByCustomerId(int customerId)
@@ -81,7 +110,10 @@ namespace Invoice
                 {
                     BalanceId = reader.GetInt32("BALANCE_ID"),
                     CustomerId = reader.GetInt32("CUSTOMER_ID"),
-                    InvoiceId = reader.GetInt32("INVOICE_ID"),
+                    InvoiceId = reader.IsDBNull("INVOICE_ID") ? null : reader.GetInt32("INVOICE_ID"),
+                    PaymentId = reader.IsDBNull("PAYMENT_ID") ? null : reader.GetInt32("PAYMENT_ID"),
+                    DepositId = reader.IsDBNull("DEPOSIT_ID") ? null : reader.GetInt32("DEPOSIT_ID"),
+                    SlipNumber = reader.IsDBNull("SLIP_NUMBER") ? "" : reader.GetString("SLIP_NUMBER"),
                     DebOrCreId = reader.GetInt32("DEBIT_OR_CREDIT_ID"),
                     TransactionDate = reader.GetDateTime("TRANSACTION_DATE"),
                     TransactionTypeId = reader.GetInt32("TRANSACTION_TYPE_ID"),
@@ -91,25 +123,91 @@ namespace Invoice
             }
             return balances;
         }
-
-        // 新しいレコードを追加
-        public void AddBalance()
+        
+        public static int GetBalanceByCustomerIdUntilDate(int customerId, DateTime date)
         {
             string connectionString = ConnectionInfo.Builder.ConnectionString;
             using var connection = new MySqlConnection(connectionString);
             connection.Open();
-            string query = @"INSERT INTO T_BALANCE (CUSTOMER_ID, INVOICE_ID, SLIP_NUMBER, DEBIT_OR_CREDIT_ID, TRANSACTION_DATE, TRANSACTION_TYPE_ID, TRANSACTION_AMOUNT)
-                             VALUES (@CustomerId, @InvoiceId, @SlipNumber, @DebOrCreId, @TransactionDate, @TransactionTypeId, @TransactionAmount)";
+            string query = "SELECT SUM(TRANSACTION_AMOUNT) FROM T_BALANCE WHERE CUSTOMER_ID = @CustomerId AND TRANSACTION_DATE <= @Date";
             using var command = new MySqlCommand(query, connection);
-            command.Parameters.AddWithValue("@CustomerId", CustomerId);
-            command.Parameters.AddWithValue("@InvoiceId", InvoiceId);
-            command.Parameters.AddWithValue("@DebOrCreId", DebOrCreId);
-            command.Parameters.AddWithValue("@SlipNumber", SlipNumber);
-            command.Parameters.AddWithValue("@TransactionDate", TransactionDate);
-            command.Parameters.AddWithValue("@TransactionTypeId", TransactionTypeId);
-            command.Parameters.AddWithValue("@TransactionAmount", TransactionAmount);
+            command.Parameters.AddWithValue("@CustomerId", customerId);
+            command.Parameters.AddWithValue("@Date", date);
+            return Convert.ToInt32(command.ExecuteScalar());
+        }
+        // 新しいレコードを追加
+        public static bool TryAddBalance(object obj)
+        {
+            try
+            {
+                var balance = new BalanceClass();
+                if (obj is PaymentClass payment)
+                {
+                    balance.CustomerId = payment.CustomerId;
+                    balance.InvoiceId = payment.InvoiceId;
+                    balance.PaymentId = payment.PaymentId;
+                    balance.DepositId = payment.DepositId;
+                    balance.DebOrCreId = 2;
+                    balance.SlipNumber = payment.SlipNumber;
+                    balance.TransactionDate = payment.PaymentDate;
+                    balance.TransactionTypeId = payment.TransactionTypeId;
+                    balance.TransactionAmount = payment.PaymentAmount;
+                }
+                else if (obj is InvoiceClass invoice)
+                {
+                    balance.CustomerId = invoice.CustomerId;
+                    balance.InvoiceId = invoice.InvoiceId;
+                    balance.PaymentId = null;
+                    balance.DepositId = null;
+                    balance.DebOrCreId = 1;
+                    balance.SlipNumber = invoice.SlipNumber;
+                    balance.TransactionDate = invoice.IssueDate ?? DateTime.Now;
+                    balance.TransactionTypeId = invoice.TransactionTypeId ?? 0;
+                    balance.TransactionAmount = invoice.InvoiceTotal ?? 0;
+                }
+                else if (obj is DepositClass deposit)
+                {
+                    balance.CustomerId = deposit.CustomerId;
+                    balance.InvoiceId = deposit.InvoiceId;
+                    balance.PaymentId = deposit.PaymentId;
+                    balance.DepositId = deposit.DepositId;
+                    balance.DebOrCreId = deposit.DebOrCreId;
+                    balance.SlipNumber = deposit.SlipNumber;
+                    balance.TransactionDate = deposit.DepositDate;
+                    balance.TransactionTypeId = 2;
+                    balance.TransactionAmount = deposit.DepositAmount;
+                }
+                else
+                {
+                    throw new ArgumentException("Invalid object type");
+                }
+                    AddBalance(balance);
+                return true;
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show(e.Message);
+                return false;
+            }
+        }
+        public static void AddBalance(BalanceClass balance)
+        {
+            string connectionString = ConnectionInfo.Builder.ConnectionString;
+            using var connection = new MySqlConnection(connectionString);
+            connection.Open();
+            string query = @"INSERT INTO T_BALANCE (CUSTOMER_ID, INVOICE_ID, PAYMENT_ID, DEPOSIT_ID, SLIP_NUMBER, DEBIT_OR_CREDIT_ID, TRANSACTION_DATE, TRANSACTION_TYPE_ID, TRANSACTION_AMOUNT) VALUES (@CustomerId, @InvoiceId, @PaymentId, @DepositId, @SlipNumber, @DebOrCreId, @TransactionDate, @TransactionTypeId, @TransactionAmount)";
+            using var command = new MySqlCommand(query, connection);
+            command.Parameters.AddWithValue("@CustomerId", balance.CustomerId);
+            command.Parameters.AddWithValue("@InvoiceId", balance.InvoiceId);
+            command.Parameters.AddWithValue("@PaymentId", balance.PaymentId);
+            command.Parameters.AddWithValue("@DepositId", balance.DepositId);
+            command.Parameters.AddWithValue("@DebOrCreId", balance.DebOrCreId);
+            command.Parameters.AddWithValue("@SlipNumber", balance.SlipNumber);
+            command.Parameters.AddWithValue("@TransactionDate", balance.TransactionDate);
+            command.Parameters.AddWithValue("@TransactionTypeId", balance.TransactionTypeId);
+            command.Parameters.AddWithValue("@TransactionAmount", balance.TransactionAmount);
             command.ExecuteNonQuery();
-            BalanceId = (int)command.LastInsertedId;
+            balance.BalanceId = (int)command.LastInsertedId;
         }
 
         // レコードを更新
@@ -118,15 +216,93 @@ namespace Invoice
             string connectionString = ConnectionInfo.Builder.ConnectionString;
             using var connection = new MySqlConnection(connectionString);
             connection.Open();
-            string query = @"UPDATE T_BALANCE SET CUSTOMER_ID = @CustomerId, INVOICE_ID = @InvoiceId, DEBIT_OR_CREDIT_ID = DebOrCreId, TRANSACTION_DATE = @TransactionDate, TRANSACTION_TYPE_ID = @TransactionTypeId, TRANSACTION_AMOUNT = @TransactionAmount WHERE BALANCE_ID = @BalanceId";
+            string query = @"UPDATE T_BALANCE SET CUSTOMER_ID = @CustomerId, INVOICE_ID = @InvoiceId, PAYMENT_ID = @PaymentId, DEPOSIT_ID = @DepositId, DEBIT_OR_CREDIT_ID = @DebOrCreId, SLIP_NUMBER = @SlipNumber, TRANSACTION_DATE = @TransactionDate, TRANSACTION_TYPE_ID = @TransactionTypeId, TRANSACTION_AMOUNT = @TransactionAmount WHERE BALANCE_ID = @BalanceId";
             using var command = new MySqlCommand(query, connection);
             command.Parameters.AddWithValue("@CustomerId", CustomerId);
             command.Parameters.AddWithValue("@InvoiceId", InvoiceId);
+            command.Parameters.AddWithValue("@PaymentId", PaymentId);
+            command.Parameters.AddWithValue("@DepositId", DepositId);
             command.Parameters.AddWithValue("@DebOrCreId", DebOrCreId);
             command.Parameters.AddWithValue("@TransactionDate", TransactionDate);
             command.Parameters.AddWithValue("@TransactionTypeId", TransactionTypeId);
             command.Parameters.AddWithValue("@TransactionAmount", TransactionAmount);
             command.Parameters.AddWithValue("@BalanceId", BalanceId);
+            command.ExecuteNonQuery();
+        }
+
+        public static void TryUpdateBalance(object? obj)
+        {
+            try
+            {
+                var balance = new BalanceClass();
+                if (obj is PaymentClass payment)
+                {
+                    balance.BalanceId = BalanceClass.GetBalanceById(TypeOfID.Payment, payment.PaymentId);
+                    balance.CustomerId = payment.CustomerId;
+                    balance.InvoiceId = payment.InvoiceId;
+                    balance.PaymentId = payment.PaymentId;
+                    balance.DepositId = payment.DepositId;
+                    balance.DebOrCreId = 2;
+                    balance.SlipNumber = payment.SlipNumber;
+                    balance.TransactionDate = payment.PaymentDate;
+                    balance.TransactionTypeId = 2;
+                    balance.TransactionAmount = payment.PaymentAmount;
+                }
+                else if (obj is InvoiceClass invoice)
+                {
+                    balance.BalanceId = BalanceClass.GetBalanceById(TypeOfID.Invoice, invoice.InvoiceId);
+                    balance.CustomerId = invoice.CustomerId;
+                    balance.InvoiceId = invoice.InvoiceId;
+                    balance.PaymentId = null;
+                    balance.DepositId = null;
+                    balance.DebOrCreId = 1;
+                    balance.SlipNumber = invoice.SlipNumber;
+                    balance.TransactionDate = invoice.IssueDate ?? DateTime.Now;
+                    balance.TransactionTypeId = 1;
+                    balance.TransactionAmount = invoice.InvoiceTotal ?? 0;
+                }
+                else if (obj is DepositClass deposit)
+                {
+                    balance.BalanceId = BalanceClass.GetBalanceById(TypeOfID.Deposit, deposit.DepositId);
+                    balance.CustomerId = deposit.CustomerId;
+                    balance.InvoiceId = deposit.InvoiceId;
+                    balance.PaymentId = deposit.PaymentId;
+                    balance.DepositId = deposit.DepositId;
+                    balance.DebOrCreId = deposit.DebOrCreId;
+                    balance.SlipNumber = deposit.SlipNumber;
+                    balance.TransactionDate = deposit.DepositDate;
+                    balance.TransactionTypeId = 2;
+                    balance.TransactionAmount = deposit.DepositAmount;
+                }
+                else
+                {
+                    throw new ArgumentException("Invalid object type");
+                }
+                UpdateBalance(balance);
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show(e.Message);
+            }
+        }
+
+        public static void UpdateBalance(BalanceClass balance)
+        {
+            string connectionString = ConnectionInfo.Builder.ConnectionString;
+            using var connection = new MySqlConnection(connectionString);
+            connection.Open();
+            string query = @"UPDATE T_BALANCE SET CUSTOMER_ID = @CustomerId, INVOICE_ID = @InvoiceId, PAYMENT_ID = @PaymentId, DEPOSIT_ID = @DepositId, DEBIT_OR_CREDIT_ID = @DebOrCreId, SLIP_NUMBER = @SlipNumber, TRANSACTION_DATE = @TransactionDate, TRANSACTION_TYPE_ID = @TransactionTypeId, TRANSACTION_AMOUNT = @TransactionAmount WHERE BALANCE_ID = @BalanceId";
+            using var command = new MySqlCommand(query, connection);
+            command.Parameters.AddWithValue("@CustomerId", balance.CustomerId);
+            command.Parameters.AddWithValue("@InvoiceId", balance.InvoiceId);
+            command.Parameters.AddWithValue("@PaymentId", balance.PaymentId);
+            command.Parameters.AddWithValue("@DepositId", balance.DepositId);
+            command.Parameters.AddWithValue("@DebOrCreId", balance.DebOrCreId);
+            command.Parameters.AddWithValue("@SlipNumber", balance.SlipNumber);
+            command.Parameters.AddWithValue("@TransactionDate", balance.TransactionDate);
+            command.Parameters.AddWithValue("@TransactionTypeId", balance.TransactionTypeId);
+            command.Parameters.AddWithValue("@TransactionAmount", balance.TransactionAmount);
+            command.Parameters.AddWithValue("@BalanceId", balance.BalanceId);
             command.ExecuteNonQuery();
         }
 
@@ -141,14 +317,14 @@ namespace Invoice
             command.ExecuteNonQuery();
         }
 
-        public void DeleteBalanceByInvoiceId(int invoiceId)
+        public static void DeleteBalanceById(TypeOfID type, int id)
         {
             string connectionString = ConnectionInfo.Builder.ConnectionString;
             using var connection = new MySqlConnection(connectionString);
             connection.Open();
-            string query = "DELETE FROM T_BALANCE WHERE INVOICE_ID = @InvoiceId";
+            string query = QueryBuilder.StringBuilder(command:"DELETE", tableName:"T_BALANCE", type);
             using var command = new MySqlCommand(query, connection);
-            command.Parameters.AddWithValue("@InvoiceId", invoiceId);
+            command.Parameters.AddWithValue("@id", id);
             command.ExecuteNonQuery();
         }
 
@@ -163,6 +339,20 @@ namespace Invoice
             command.Parameters.AddWithValue("@BalanceId", BalanceId);
             command.ExecuteNonQuery();
         }
+    }
+
+    public class BalanceFilterParam
+    {
+        public int? BalanceId { get; set; } = null;
+        public int? CustomerId { get; set; } = null;
+        public int? InvoiceId { get; set; } = null;
+        public int? PaymentId { get; set; } = null;
+        public int? DepositId { get; set; } = null;
+        public string? SlipNumber { get; set; } = null;
+        public int? DebOrCreId { get; set; } = null;
+        public DateTime? TransactionDate { get; set; } = null;
+        public int? TransactionTypeId { get; set; } = null;
+        public int? TransactionAmount { get; set; } = null;
     }
 
     // T_CUSTOMER テーブルに対応するクラス
@@ -308,26 +498,746 @@ namespace Invoice
         }
     }
 
+    public class DefaultItemsClass : ItemClass, INotifyPropertyChanged
+    {
+        public int DefaultItemsId { get; set; }
+
+        // ItemOrder
+        private int _ItemOrder = 0;
+        public int ItemOrder
+        {
+            get => _ItemOrder;
+            set
+            {
+                _ItemOrder = value;
+                OnPropertyChanged(nameof(ItemOrder));
+            }
+        }
+
+        // ItemId
+        // ItemName
+        // UnitPrice
+        // Quantity
+        private int _Quantity = 1;
+        public int Quantity
+        {
+            get => _Quantity;
+            set
+            {
+                _Quantity = value;
+                OnPropertyChanged(nameof(Quantity));
+                ReTotal();
+            }
+        }
+
+        // Unit
+        // ItemSubTotal
+        private int _ItemSubTotal = 0;
+        public int ItemSubTotal
+        {
+            get => _ItemSubTotal;
+            set
+            {
+                _ItemSubTotal = UnitPrice * Quantity;
+                OnPropertyChanged(nameof(ItemSubTotal));
+            }
+        }
+
+        // TaxTypeId
+        // SelectedTax
+        private TaxTypeClass _selectedTax;
+        public TaxTypeClass SelectedTax
+        {
+            get => _selectedTax;
+            set
+            {
+                if (_selectedTax != value)
+                {
+                    _selectedTax = value;
+                    OnPropertyChanged(nameof(SelectedTax));
+                    if (_selectedTax != null && TaxTypeId != _selectedTax.TaxTypeId)
+                    {
+                        TaxTypeId = _selectedTax.TaxTypeId;
+                        OnPropertyChanged(nameof(TaxTypeId));
+                        TaxTypeName = _selectedTax.TaxTypeName;
+                    }
+                    ReTotal();
+                }
+            }
+        }
+
+        // TaxTypeId
+        // Tax
+        private int _Tax = 0;
+        public int Tax
+        {
+            get => _Tax;
+            set
+            {
+                if (_selectedTax == null) return;
+                _Tax = (int)Math.Round(_selectedTax.TaxRate * _ItemSubTotal, 0, MidpointRounding.ToEven);
+                OnPropertyChanged(nameof(Tax));
+            }
+        }
+
+        // ItemTotal
+        private int _ItemTotal = 0;
+        public int ItemTotal
+        {
+            get => _ItemTotal;
+            set
+            {
+                _ItemTotal = _ItemSubTotal + Tax;
+                OnPropertyChanged(nameof(ItemTotal));
+            }
+        }
+
+        public void ReTotal()
+        {
+            ItemSubTotal = Quantity * UnitPrice;
+            var taxRate = SelectedTax?.TaxRate ?? 0;
+            Tax = (int)(ItemSubTotal * taxRate);
+            ItemTotal = ItemSubTotal + Tax;
+        }
+        public void ReTotal(DefaultItemsClass item)
+        {
+            item.ItemSubTotal = item.Quantity * item.UnitPrice;
+            item.Tax = (int)(item.Quantity * TaxTypeClass.GetTaxes().FirstOrDefault(t => t.TaxTypeId == item.TaxTypeId)?.TaxRate ?? 0);
+            item.ItemTotal = item.ItemSubTotal + item.Tax;
+        }
+
+        public void SetItem(ItemClass item)
+        {
+            if (item == null) return;
+            ItemId = item.ItemId;
+            ItemName = item.ItemName;
+            UnitPrice = item.UnitPrice;
+            Quantity = 1;
+            Unit = item.Unit;
+            TaxTypeId = item.TaxTypeId;
+            TaxTypeName = new TaxTypeClass().getTaxTypeName(TaxTypeId);
+
+        }
+
+        public static List<DefaultItemsClass> GetDefaultItems()
+        {
+            var items = new List<DefaultItemsClass>();
+            string connectionString = ConnectionInfo.Builder.ConnectionString;
+            using var connection = new MySqlConnection(connectionString);
+            connection.Open();
+            using var command = new MySqlCommand("SELECT * FROM T_DEFAULT_ITEMS", connection);
+            using var reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                var item = new DefaultItemsClass
+                {
+                    DefaultItemsId = reader.GetInt32("DEFAULT_ITEMS_ID"),
+                    ItemOrder = reader.GetInt32("ITEM_ORDER"),
+                    ItemId = reader.GetInt32("ITEM_ID"),
+                    UnitPrice = reader.GetInt32("UNIT_PRICE"),
+                    Quantity = reader.GetInt32("QUANTITY"),
+                    Unit = reader.GetString("UNIT"),
+                    TaxTypeId = reader.GetInt32("TAX_TYPE_ID")
+                };
+                items.Add(item);
+            }
+            return items;
+        }
+
+        public InvoiceItemClass ToInvoiceItem()
+        {
+            var invoiceItem = new InvoiceItemClass();
+            invoiceItem.ItemOrder = ItemOrder;
+            invoiceItem.ItemId = ItemId;
+            invoiceItem.ItemName = ItemName;
+            invoiceItem.UnitPrice = UnitPrice;
+            invoiceItem.Quantity = Quantity;
+            invoiceItem.Unit = Unit;
+            invoiceItem.TaxTypeId = TaxTypeId;
+            invoiceItem.TaxTypeName = TaxTypeName;
+            invoiceItem.ItemSubTotal = ItemSubTotal;
+            invoiceItem.Tax = Tax;
+            invoiceItem.ItemTotal = ItemTotal;
+            return invoiceItem;
+        }
+
+        public DefaultItemsClass Copy()
+        {
+            return (DefaultItemsClass)this.MemberwiseClone();
+        }
+        public static void AddDefaultItems(List<DefaultItemsClass> items)
+        {
+            CrearDefaultitemsTable();
+            string connectionString = ConnectionInfo.Builder.ConnectionString;
+            using var connection = new MySqlConnection(connectionString);
+            connection.Open();
+            foreach (var item in items)
+            {
+                using var command = new MySqlCommand(
+                    "INSERT INTO T_DEFAULT_ITEMS (ITEM_ORDER, ITEM_ID, UNIT_PRICE, QUANTITY, UNIT, TAX_TYPE_ID) " +
+                    "VALUES (@itemOrder, @itemId, @unitPrice, @quantity, @unit, @taxTypeId)", connection);
+                command.Parameters.AddWithValue("@itemOrder", item.ItemOrder);
+                command.Parameters.AddWithValue("@itemId", item.ItemId);
+                command.Parameters.AddWithValue("@unitPrice", item.UnitPrice);
+                command.Parameters.AddWithValue("@quantity", item.Quantity);
+                command.Parameters.AddWithValue("@unit", item.Unit);
+                command.Parameters.AddWithValue("@taxTypeId", item.TaxTypeId);
+                command.ExecuteNonQuery();
+            }
+        }
+
+        public void AddDefaultItem()
+        {
+            string connectionString = ConnectionInfo.Builder.ConnectionString;
+            using var connection = new MySqlConnection(connectionString);
+            connection.Open();
+            using var command = new MySqlCommand(
+                "INSERT INTO T_DEFAULT_ITEMS (ITEM_ORDER, ITEM_ID, UNIT_PRICE, QUANTITY, UNIT, TAX_TYPE_ID) " +
+                "VALUES (@itemOrder, @itemId, @unitPrice, @quantity, @unit, @taxTypeId)", connection);
+            command.Parameters.AddWithValue("@itemOrder", ItemOrder);
+            command.Parameters.AddWithValue("@itemId", ItemId);
+            command.Parameters.AddWithValue("@unitPrice", UnitPrice);
+            command.Parameters.AddWithValue("@quantity", Quantity);
+            command.Parameters.AddWithValue("@unit", Unit);
+            command.Parameters.AddWithValue("@taxTypeId", TaxTypeId);
+            command.ExecuteNonQuery();
+            DefaultItemsId = (int)command.LastInsertedId;
+        }
+
+        public void UpdateDefaultItem()
+        {
+            string connectionString = ConnectionInfo.Builder.ConnectionString;
+            using var connection = new MySqlConnection(connectionString);
+            connection.Open();
+            using var command = new MySqlCommand(
+                "UPDATE T_DEFAULT_ITEMS SET ITEM_ORDER=@itemOrder, ITEM_ID=@itemId, UNIT_PRICE=@unitPrice, QUANTITY=@quantity, UNIT=@unit, TAX_TYPE_ID=@taxTypeId WHERE DEFAULT_ITEMS_ID=@defaultItemsId", connection);
+            command.Parameters.AddWithValue("@itemOrder", ItemOrder);
+            command.Parameters.AddWithValue("@itemId", ItemId);
+            command.Parameters.AddWithValue("@unitPrice", UnitPrice);
+            command.Parameters.AddWithValue("@quantity", Quantity);
+            command.Parameters.AddWithValue("@unit", Unit);
+            command.Parameters.AddWithValue("@taxTypeId", TaxTypeId);
+            command.Parameters.AddWithValue("@defaultItemsId", DefaultItemsId);
+            command.ExecuteNonQuery();
+        }
+
+        public static void CrearDefaultitemsTable()
+        {
+            string connectionString = ConnectionInfo.Builder.ConnectionString;
+            using var connection = new MySqlConnection(connectionString);
+            connection.Open();
+            using var command = new MySqlCommand("TRUNCATE TABLE T_DEFAULT_ITEMS", connection);
+            command.ExecuteNonQuery();
+        }
+
+        public void DeleteDefaultItem()
+        {
+            string connectionString = ConnectionInfo.Builder.ConnectionString;
+            using var connection = new MySqlConnection(connectionString);
+            connection.Open();
+            using var command = new MySqlCommand(
+                "DELETE FROM T_DEFAULT_ITEMS WHERE DEFAULT_ITEMS_ID=@defaultItemsId", connection);
+            command.Parameters.AddWithValue("@defaultItemsId", DefaultItemsId);
+            command.ExecuteNonQuery();
+        }
+    }
+
+    public static class QueryBuilder
+    {
+        public static string StringBuilder(string command = "SELECT *", string tableName ="", TypeOfID type = 0)
+        {
+            string query = $"{command} FROM {tableName}";
+            switch (type)
+            {
+                case TypeOfID.Customer:
+                    query += " WHERE CUSTOMER_ID = @id";
+                    break;
+                case TypeOfID.Invoice:
+                    query += " WHERE INVOICE_ID = @id";
+                    break;
+                case TypeOfID.Payment:
+                    query += " WHERE PAYMENT_ID = @id";
+                    break;
+                case TypeOfID.Deposit:
+                    query += " WHERE DEPOSIT_ID = @id";
+                    break;
+                default:
+                    break;
+            }
+            return query;
+        }
+        public static MySqlCommand CommandBuilder(string command = "SELECT *", string tableName = "", TypeOfID type = 0, int id = 0)
+        {
+            string query = StringBuilder(command, tableName, type);
+            string connectionString = ConnectionInfo.Builder.ConnectionString;
+            var connection = new MySqlConnection(connectionString);
+            connection.Open();
+            var cmd = new MySqlCommand(query, connection);
+            if (type != 0)
+            {
+                cmd.Parameters.AddWithValue("@id", id);
+            }
+            return cmd;
+        }
+    }
+
+    // T_DEPOSIT テーブルに対応するクラス
+    public class DepositClass
+    {
+        public int DepositId {get; set;}
+        public int? InvoiceId {get; set;}
+        public int? PaymentId {get; set;}
+        public int CustomerId {get; set;}
+        public DateTime DepositDate {get; set;}
+        public int DepositAmount {get; set;}
+        public string SlipNumber {get; set;}
+        public int DebOrCreId {get; set;}
+
+        public List<DepositClass> GetDepsits(TypeOfID type = 0, int id = 0)
+        {
+            var deposits = new List<DepositClass>();
+            string connectionString = ConnectionInfo.Builder.ConnectionString;
+            using var connection = new MySqlConnection(connectionString);
+            connection.Open();
+            string query = QueryBuilder.StringBuilder(command
+                :"SELECT *",tableName:"T_DEPOSIT", type);
+            using var command = new MySqlCommand(query, connection);
+            if (type != 0)
+            {
+                command.Parameters.AddWithValue("@id", id);
+            }
+            using var reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                var deposit = new DepositClass
+                {
+                    DepositId = reader.GetInt32("DEPOSIT_ID"),
+                    InvoiceId = reader.IsDBNull("INVOICE_ID") ? null : reader.GetInt32("INVOICE_ID"),
+                    PaymentId = reader.IsDBNull("PAYMENT_ID") ? null : reader.GetInt32("PAYMENT_ID"),
+                    CustomerId = reader.GetInt32("CUSTOMER_ID"),
+                    DepositDate = reader.GetDateTime("DEPOSIT_DATE"),
+                    DepositAmount = reader.GetInt32("DEPOSIT_AMOUNT"),
+                    SlipNumber = reader.GetString("SLIP_NUMBER"),
+                    DebOrCreId = reader.GetInt32("DEBIT_OR_CREDIT_ID")
+                };
+                deposits.Add(deposit);
+            }
+            return deposits;
+        }
+
+        public static DepositClass GetDeposit(TypeOfID type = 0, int? id = 0)
+        {
+            if (id == null) return null;
+            string connectionString = ConnectionInfo.Builder.ConnectionString;
+            using var connection = new MySqlConnection(connectionString);
+            connection.Open();
+            var query = QueryBuilder.StringBuilder("SELECT *", "T_DEPOSIT", type);
+            using var command = new MySqlCommand(query, connection);
+            command.Parameters.AddWithValue("@id", id);
+            using var reader = command.ExecuteReader();
+            if (reader.Read())
+            {
+                return new DepositClass
+                {
+                    DepositId = reader.GetInt32("DEPOSIT_ID"),
+                    InvoiceId = reader.IsDBNull("INVOICE_ID") ? null : reader.GetInt32("INVOICE_ID"),
+                    PaymentId = reader.IsDBNull("PAYMENT_ID") ? null : reader.GetInt32("PAYMENT_ID"),
+                    CustomerId = reader.GetInt32("CUSTOMER_ID"),
+                    DepositDate = reader.GetDateTime("DEPOSIT_DATE"),
+                    DepositAmount = reader.GetInt32("DEPOSIT_AMOUNT"),
+                    SlipNumber = reader.GetString("SLIP_NUMBER"),
+                    DebOrCreId = reader.GetInt32("DEBIT_OR_CREDIT_ID")
+                };
+            }
+            return null;
+        }
+
+        public static int? TryAddDeposit(object? obj = null)
+        {
+            try
+            {
+                DepositClass deposit = new();
+                if (obj is PaymentClass payment)
+                {
+                    deposit.InvoiceId = null;
+                    deposit.PaymentId = payment.PaymentId;
+                    deposit.CustomerId = payment.CustomerId;
+                    deposit.DepositDate = payment.PaymentDate;
+                    deposit.DepositAmount = payment.PaymentAmount;
+                    deposit.SlipNumber = payment.SlipNumber;
+                    deposit.DebOrCreId = 2;
+                }
+                else if (obj is InvoiceClass invoice)
+                {
+                    deposit.InvoiceId = invoice.InvoiceId;
+                    deposit.PaymentId = null;
+                    deposit.CustomerId = invoice.CustomerId;
+                    deposit.DepositDate = invoice.IssueDate ?? DateTime.Now;
+                    deposit.DepositAmount = invoice.PaydByDeposit;
+                    deposit.SlipNumber = invoice.SlipNumber;
+                    deposit.DebOrCreId = 1;
+                }
+                if(deposit.DepositAmount > 0) AddDeposit(deposit);
+
+                BalanceClass.TryAddBalance(deposit);
+                return deposit.DepositId;
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show(e.Message);
+                return null;
+            }
+        }
+        
+        public static int AddDeposit(DepositClass deposit = null)
+        {
+            if (deposit == null)
+            {
+                deposit = new DepositClass();
+            }
+            string connectionString = ConnectionInfo.Builder.ConnectionString;
+            using var connection = new MySqlConnection(connectionString);
+            connection.Open();
+            using var command = new MySqlCommand("INSERT INTO T_DEPOSIT (INVOICE_ID, PAYMENT_ID, CUSTOMER_ID, DEPOSIT_DATE, DEPOSIT_AMOUNT, SLIP_NUMBER, DEBIT_OR_CREDIT_ID) VALUES (@InvoiceId, @PaymentId, @CustomerId, @DepositDate, @DepositAmount, @SlipNumber, @DebitOrCreditId)", connection);
+            command.Parameters.AddWithValue("@InvoiceId", deposit.InvoiceId);
+            command.Parameters.AddWithValue("@PaymentId", deposit.PaymentId);
+            command.Parameters.AddWithValue("@CustomerId", deposit.CustomerId);
+            command.Parameters.AddWithValue("@DepositDate", deposit.DepositDate);
+            command.Parameters.AddWithValue("@DepositAmount", deposit.DepositAmount);
+            command.Parameters.AddWithValue("@SlipNumber", deposit.SlipNumber);
+            command.Parameters.AddWithValue("@DebitOrCreditId", deposit.DebOrCreId);
+            command.ExecuteNonQuery();
+            deposit.DepositId = (int)command.LastInsertedId;
+            return deposit.DepositId;
+        }
+
+        public static bool TryUpdateDeposit(object? obj)
+        {
+            try
+            {
+                var deposit = UpdateDeposit(obj);
+                BalanceClass.TryUpdateBalance(deposit);
+                return true;
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show(e.Message);
+                return false;
+            }
+        }
+
+        public static DepositClass UpdateDeposit(object? obj)
+        {
+            var deposit = new DepositClass();
+            if (obj is PaymentClass payment)
+            {
+                deposit = DepositClass.GetDeposit(TypeOfID.Payment, payment.PaymentId);
+                //deposit.InvoiceId = null;
+                //deposit.PaymentId = payment.PaymentId;
+                deposit.CustomerId = payment.CustomerId;
+                deposit.DepositDate = payment.PaymentDate;
+                deposit.DepositAmount = payment.PaymentAmount;
+                deposit.SlipNumber = payment.SlipNumber;
+                deposit.DebOrCreId = 2;
+                //deposit.DepositId = payment.DepositId ?? 0;
+            }
+            else if (obj is InvoiceClass invoice)
+            {
+                deposit = GetDeposit(TypeOfID.Invoice, invoice.InvoiceId);
+                //deposit.InvoiceId = invoice.InvoiceId;
+                //deposit.PaymentId = null;
+                deposit.CustomerId = invoice.CustomerId;
+                deposit.DepositDate = invoice.PaymentDate ?? DateTime.Now;
+                deposit.DepositAmount = invoice.PaydByDeposit;
+                deposit.SlipNumber = invoice.SlipNumber;
+                deposit.DebOrCreId = 1;
+            }
+
+            var whereClause = obj is PaymentClass ? "PAYMENT_ID" : "INVOICE_ID";
+            var id = obj is PaymentClass ? deposit.PaymentId : deposit.InvoiceId;
+            string connectionString = ConnectionInfo.Builder.ConnectionString;
+            using var connection = new MySqlConnection(connectionString);
+            connection.Open();
+            using var command = new MySqlCommand($"UPDATE T_DEPOSIT SET INVOICE_ID=@InvoiceId, PAYMENT_ID=@PaymentId, CUSTOMER_ID=@CustomerId, DEPOSIT_DATE=@DepositDate, DEPOSIT_AMOUNT=@DepositAmount, SLIP_NUMBER=@SlipNumber, DEBIT_OR_CREDIT_ID=@DebitOrCreditId WHERE {whereClause}=@Id", connection);
+            command.Parameters.AddWithValue("@InvoiceId", deposit.InvoiceId);
+            command.Parameters.AddWithValue("@PaymentId", deposit.PaymentId);
+            command.Parameters.AddWithValue("@CustomerId", deposit.CustomerId);
+            command.Parameters.AddWithValue("@DepositDate", deposit.DepositDate);
+            command.Parameters.AddWithValue("@DepositAmount", deposit.DepositAmount);
+            command.Parameters.AddWithValue("@SlipNumber", deposit.SlipNumber);
+            command.Parameters.AddWithValue("@DebitOrCreditId", deposit.DebOrCreId);
+            command.Parameters.AddWithValue("@Id", id);
+            command.ExecuteNonQuery();
+            return deposit;
+        }
+
+        public static void DeleteDepositById(TypeOfID type, int? id)
+        {
+            if (id == null) return;
+            using var command = QueryBuilder.CommandBuilder("DELETE", "T_DEPOSIT", type, (int)id);
+            command.ExecuteNonQuery();
+            BalanceClass.DeleteBalanceById(type, (int)id);
+
+        }
+
+    }
+
     // T_INVOICE テーブルに対応するクラス
     public class InvoiceClass : INotifyPropertyChanged
     {
+        private int _InvoiceId = 0;
+        public int InvoiceId 
+        {
+            get
+            {
+                return _InvoiceId;            
+            }
+            set
+            {
+                _InvoiceId = value;
+                OnPropertyChanged(nameof(InvoiceId));
+            }
+        }
+        
+        private int _CustomerId = 0;
+        public int CustomerId 
+        {
+            get
+            {
+                return _CustomerId;            
+            }
+            set
+            {
+                _CustomerId = value;
+                OnPropertyChanged(nameof(CustomerId));
+            }
+        }
+        
+        private DateTime? _IssueDate = DateTime.Now;
+        public DateTime? IssueDate 
+        {
+            get
+            {
+                return _IssueDate;            
+            }
+            set
+            {
+                _IssueDate = value;
+                OnPropertyChanged(nameof(IssueDate));
+            }
+        }
+        
+        private DateTime? _DueDate = DateTime.Now;
+        public DateTime? DueDate 
+        {
+            get
+            {
+                return _DueDate;            
+            }
+            set
+            {
+                _DueDate = value;
+                OnPropertyChanged(nameof(DueDate));
+            }
+        }
+        
+        private string? _Subject = "";
+        public string? Subject 
+        {
+            get
+            {
+                return _Subject;            
+            }
+            set
+            {
+                _Subject = value;
+                OnPropertyChanged(nameof(Subject));
+            }
+        }
+        
+        private string? _SlipNumber = "";
+        public string? SlipNumber 
+        {
+            get
+            {
+                return _SlipNumber;            
+            }
+            set
+            {
+                _SlipNumber = value;
+                OnPropertyChanged(nameof(SlipNumber));
+            }
+        }
+        
+        private int? _SubTotal = 0;
+        public int? SubTotal 
+        {
+            get
+            {
+                return _SubTotal;            
+            }
+            set
+            {
+                _SubTotal = value;
+                OnPropertyChanged(nameof(SubTotal));
+            }
+        }
+        
+        private int? _Tax = 0;
+        public int? Tax 
+        {
+            get
+            {
+                return _Tax;            
+            }
+            set
+            {
+                _Tax = value;
+                OnPropertyChanged(nameof(Tax));
+            }
+        }
+        
+        private int? _InvoiceTotal = 0;
+        public int? InvoiceTotal 
+        {
+            get
+            {
+                return _InvoiceTotal;            
+            }
+            set
+            {
+                _InvoiceTotal = value;
+                OnPropertyChanged(nameof(InvoiceTotal));
+            }
+        }
+        
 
-        public int InvoiceId { get; set; } = 0;
-        public int CustomerId { get; set; } = 0;
-        public DateTime IssueDate { get; set; } = DateTime.Now;
-        public DateTime DueDate { get; set; } = DateTime.Now;
-        public string Subject { get; set; } = "";
-        public string SlipNumber { get; set; } = "";
-        public int SubTotal { get; set; } = 0;
-        public int Tax { get; set; } = 0;
-        public int Total { get; set; } = 0;
-        public string Message { get; set; } = "";
-        public int TransactionTypeId { get; set; } = 1;
-        public DateTime PaymentDate { get; set; } = DateTime.Now;
-        public int InvoiceStatusId { get; set; } = 1;
-        public string CustomerName { get; set; } = "";
-        public string InvoiceStatus { get; set; } = "";
-        public string IssueDateString { get; set; } = "";
+        private int _ItemsTotal = 0;
+        public int ItemsTotal 
+        {
+            get
+            {
+                return _ItemsTotal;            
+            }
+            set
+            {
+                _ItemsTotal = value;
+                OnPropertyChanged(nameof(ItemsTotal));
+            }
+        }
+        
+        private int _PaydByDeposit = 0;
+        public int PaydByDeposit 
+        {
+            get
+            {
+                return _PaydByDeposit;            
+            }
+            set
+            {
+                _PaydByDeposit = value;
+                OnPropertyChanged(nameof(PaydByDeposit));
+            }
+        }
+        
+        private string? _Message = "";
+        public string? Message 
+        {
+            get
+            {
+                return _Message;            
+            }
+            set
+            {
+                _Message = value;
+                OnPropertyChanged(nameof(Message));
+            }
+        }
+        
+        private int? _TransactionTypeId = 1;
+        public int? TransactionTypeId 
+        {
+            get
+            {
+                return _TransactionTypeId;            
+            }
+            set
+            {
+                _TransactionTypeId = value;
+                OnPropertyChanged(nameof(TransactionTypeId));
+            }
+        }
+        
+        private DateTime? _PaymentDate = DateTime.Now;
+        public DateTime? PaymentDate 
+        {
+            get
+            {
+                return _PaymentDate;            
+            }
+            set
+            {
+                _PaymentDate = value;
+                OnPropertyChanged(nameof(PaymentDate));
+            }
+        }
+        
+        private int _InvoiceStatusId = 0;
+        public int InvoiceStatusId 
+        {
+            get
+            {
+                return _InvoiceStatusId;            
+            }
+            set
+            {
+                _InvoiceStatusId = value;
+                OnPropertyChanged(nameof(InvoiceStatusId));
+            }
+        }
+        
+        private string _CustomerName = "";
+        public string CustomerName 
+        {
+            get
+            {
+                return _CustomerName;            
+            }
+            set
+            {
+                _CustomerName = value;
+                OnPropertyChanged(nameof(CustomerName));
+            }
+        }
+        
+        private string _InvoiceStatus = "";
+        public string InvoiceStatus 
+        {
+            get
+            {
+                return _InvoiceStatus;            
+            }
+            set
+            {
+                _InvoiceStatus = value;
+                OnPropertyChanged(nameof(InvoiceStatus));
+            }
+        }
+        
+        private string? _IssueDateString = "";
+        public string? IssueDateString 
+        {
+            get
+            {
+                return _IssueDateString;
+            }
+            set
+            {
+                _IssueDateString = value;
+                OnPropertyChanged(nameof(IssueDateString));
+            }
+        }
+        
         public List<InvoiceItemClass> InvoiceItems { get; set; } = new List<InvoiceItemClass>();
 
         public static List<InvoiceClass> GetAllInvoice()
@@ -350,92 +1260,41 @@ namespace Invoice
                 var invoice = new InvoiceClass();
                 invoice.InvoiceId = reader.GetInt32("INVOICE_ID");
                 invoice.CustomerId = reader.GetInt32("CUSTOMER_ID");
-                invoice.IssueDate = reader.GetDateTime("ISSUE_DATE");
-                invoice.DueDate = reader.GetDateTime("DUE_DATE");
-                invoice.Subject = reader.GetString("SUBJECT");
-                invoice.SlipNumber = reader.GetString("SLIP_NUMBER");
-                invoice.SubTotal = reader.GetInt32("SUBTOTAL");
-                invoice.Tax = reader.GetInt32("TAX");
-                invoice.Total = reader.GetInt32("TOTAL");
-                invoice.Message = reader.GetString("MESSAGE");
-                invoice.TransactionTypeId = reader.GetInt32("TRANSACTION_TYPE_ID");
-                invoice.PaymentDate = reader.GetDateTime("PAYMENT_DATE");
+                invoice.IssueDate = reader.IsDBNull("ISSUE_DATE") ? null : reader.GetDateTime("ISSUE_DATE");
+                invoice.DueDate = reader.IsDBNull("DUE_DATE") ? null : reader.GetDateTime("DUE_DATE");
+                invoice.Subject = reader.IsDBNull("SUBJECT") ? null : reader.GetString("SUBJECT");
+                invoice.SlipNumber = reader.IsDBNull("SLIP_NUMBER") ? null : reader.GetString("SLIP_NUMBER");
+                invoice.ItemsTotal = reader.GetInt32("ITEMS_TOTAL");
+                invoice.SubTotal = reader.IsDBNull("SUBTOTAL") ? null : reader.GetInt32("SUBTOTAL");
+                invoice.Tax = reader.IsDBNull("TAX") ? null : reader.GetInt32("TAX");
+                invoice.PaydByDeposit = reader.GetInt32("PAYD_BY_DEPOSIT");
+                invoice.InvoiceTotal = reader.IsDBNull("TOTAL") ? null : reader.GetInt32("TOTAL");
+                invoice.Message = reader.IsDBNull("MESSAGE") ? null : reader.GetString("MESSAGE");
+                invoice.TransactionTypeId = reader.IsDBNull("TRANSACTION_TYPE_ID") ? null : reader.GetInt32("TRANSACTION_TYPE_ID");
+                invoice.PaymentDate = reader.IsDBNull("PAYMENT_DATE") ? null : reader.GetDateTime("PAYMENT_DATE");
                 invoice.InvoiceStatusId = reader.GetInt32("INVOICE_STATUS_ID");
-                invoice.IssueDateString = invoice.IssueDate.ToShortDateString();
+                invoice.IssueDateString = invoice.IssueDate?.ToShortDateString() ?? null;
 
                 invoices.Add(invoice);
             }
             return invoices;
         }
-        public static List<InvoiceClass> GetInvoiceByMonth(DateTime date)
-        {
-            var invoices = new List<InvoiceClass>();
-            string connenctionString = ConnectionInfo.Builder.ConnectionString;
-            using var connection = new MySqlConnection(connenctionString);
-            connection.Open();
-            using var command = new MySqlCommand("SELECT * FROM T_INVOICE WHERE ISSUE_DATE BETWEEN @start AND @end", connection);
-            command.Parameters.AddWithValue("@start", date);
-            command.Parameters.AddWithValue("@end", date.AddMonths(1).AddDays(-1));
-            using var reader = command.ExecuteReader();
-            while (reader.Read())
-            {
-                var invoice = new InvoiceClass();
-                invoice.InvoiceId = reader.GetInt32("INVOICE_ID");
-                invoice.CustomerId = reader.GetInt32("CUSTOMER_ID");
-                invoice.IssueDate = reader.GetDateTime("ISSUE_DATE");
-                invoice.DueDate = reader.GetDateTime("DUE_DATE");
-                invoice.Subject = reader.GetString("SUBJECT");
-                invoice.SlipNumber = reader.GetString("SLIP_NUMBER");
-                invoice.SubTotal = reader.GetInt32("SUBTOTAL");
-                invoice.Tax = reader.GetInt32("TAX");
-                invoice.Total = reader.GetInt32("TOTAL");
-                invoice.Message = reader.GetString("MESSAGE");
-                invoice.TransactionTypeId = reader.GetInt32("TRANSACTION_TYPE_ID");
-                invoice.PaymentDate = reader.GetDateTime("PAYMENT_DATE");
-                invoice.InvoiceStatusId = reader.GetInt32("INVOICE_STATUS_ID");
-                invoice.IssueDateString = invoice.IssueDate.ToShortDateString();
-                invoices.Add(invoice);
-            }
-            return invoices;
-        }
-
-        public static List<InvoiceClass> GetInvoiceByStatus(int statusId)
-        {
-            var invoices = new List<InvoiceClass>();
-            string connenctionString = ConnectionInfo.Builder.ConnectionString;
-            using var connection = new MySqlConnection(connenctionString);
-            connection.Open();
-            using var command = new MySqlCommand("SELECT * FROM T_INVOICE WHERE INVOICE_STATUS_ID = @statusId", connection);
-            command.Parameters.AddWithValue("@statusId", statusId);
-            using var reader = command.ExecuteReader();
-            while (reader.Read())
-            {
-                var invoice = new InvoiceClass();
-                invoice.InvoiceId = reader.GetInt32("INVOICE_ID");
-                invoice.CustomerId = reader.GetInt32("CUSTOMER_ID");
-                invoice.IssueDate = reader.GetDateTime("ISSUE_DATE");
-                invoice.DueDate = reader.GetDateTime("DUE_DATE");
-                invoice.Subject = reader.GetString("SUBJECT");
-                invoice.SlipNumber = reader.GetString("SLIP_NUMBER");
-                invoice.SubTotal = reader.GetInt32("SUBTOTAL");
-                invoice.Tax = reader.GetInt32("TAX");
-                invoice.Total = reader.GetInt32("TOTAL");
-                invoice.Message = reader.GetString("MESSAGE");
-                invoice.TransactionTypeId = reader.GetInt32("TRANSACTION_TYPE_ID");
-                invoice.PaymentDate = reader.GetDateTime("PAYMENT_DATE");
-                invoice.InvoiceStatusId = reader.GetInt32("INVOICE_STATUS_ID");
-                invoice.IssueDateString = invoice.IssueDate.ToShortDateString();
-                invoices.Add(invoice);
-            }
-            return invoices;
-        }
-
 
         public bool TryAddInvoice()
         {
             try
             {
                 AddInvoice();
+                InvoiceItemClass.AddInvoiceItems(InvoiceItems, InvoiceId);
+                if (TransactionTypeId == 1)
+                    BalanceClass.TryAddBalance(this);
+                else if (TransactionTypeId == 2)
+                {
+                    PaymentDate = IssueDate;
+                    DepositClass.TryAddDeposit(this);
+                }
+                else return false;
+                
                 return true;
             }
             catch (Exception e)
@@ -450,21 +1309,24 @@ namespace Invoice
             string connectionString = ConnectionInfo.Builder.ConnectionString;
             using var connection = new MySqlConnection(connectionString);
             connection.Open();
-            string query = @"INSERT INTO T_INVOICE (CUSTOMER_ID, ISSUE_DATE, DUE_DATE, SUBJECT, SLIP_NUMBER, SUBTOTAL, TAX, TOTAL, MESSAGE, TRANSACTION_TYPE_ID, PAYMENT_DATE, INVOICE_STATUS_ID)
-                             VALUES (@CustomerId, @IssueDate, @DueDate, @Subject, @SlipNumber, @Subtotal, @Tax, @Total, @Message, @TransactionTypeId, @PaymentDate, @InvoiceStatusId)";
+            string query = @"INSERT INTO T_INVOICE (CUSTOMER_ID, ISSUE_DATE, DUE_DATE, SUBJECT, SLIP_NUMBER, ITEMS_TOTAL, SUBTOTAL, TAX, PAYD_BY_DEPOSIT, TOTAL, MESSAGE, TRANSACTION_TYPE_ID, PAYMENT_DATE, INVOICE_STATUS_ID)
+                             VALUES (@CustomerId, @IssueDate, @DueDate, @Subject, @SlipNumber, @ItemsTotal, @Subtotal, @Tax, @PaydByDeposit, @InvoiceTotal, @Message, @TransactionTypeId, @PaymentDate, @InvoiceStatusId)";
             using var command = new MySqlCommand(query, connection);
             command.Parameters.AddWithValue("@CustomerId", CustomerId);
             command.Parameters.AddWithValue("@IssueDate", IssueDate);
             command.Parameters.AddWithValue("@DueDate", DueDate);
             command.Parameters.AddWithValue("@Subject", Subject);
             command.Parameters.AddWithValue("@SlipNumber", SlipNumber);
+            command.Parameters.AddWithValue("@ItemsTotal", ItemsTotal);
             command.Parameters.AddWithValue("@Subtotal", SubTotal);
             command.Parameters.AddWithValue("@Tax", Tax);
-            command.Parameters.AddWithValue("@Total", Total);
+            command.Parameters.AddWithValue("@PaydByDeposit", PaydByDeposit);
+            command.Parameters.AddWithValue("@InvoiceTotal", InvoiceTotal);
             command.Parameters.AddWithValue("@Message", Message);
             command.Parameters.AddWithValue("@TransactionTypeId", TransactionTypeId);
             command.Parameters.AddWithValue("@PaymentDate", PaymentDate);
             command.Parameters.AddWithValue("@InvoiceStatusId", InvoiceStatusId);
+            command.Parameters.AddWithValue("@InvoiceId", InvoiceId);
             command.ExecuteNonQuery();
             InvoiceId = (int)command.LastInsertedId;
 
@@ -475,6 +1337,10 @@ namespace Invoice
             try
             {
                 UpdateInvoice();
+                InvoiceItemClass.UpdateInvoiceItems(InvoiceItems, InvoiceId);
+                //BalanceClass.TryAddBalance(this);
+                if (TransactionTypeId == 1)
+                    BalanceClass.TryUpdateBalance(this);
                 return true;
             }
             catch (Exception e)
@@ -490,17 +1356,18 @@ namespace Invoice
             string connectionString = ConnectionInfo.Builder.ConnectionString;
             using var connection = new MySqlConnection(connectionString);
             connection.Open();
-            string query = 
-                @"UPDATE T_INVOICE SET CUSTOMER_ID = @CustomerId, ISSUE_DATE = @IssueDate, DUE_DATE = @DueDate, SUBJECT = @Subject, SLIP_NUMBER = @SlipNumber, SUBTOTAL = @Subtotal, TAX = @Tax, TOTAL = @Total, MESSAGE = @Message, TRANSACTION_TYPE_ID = @TransactionTypeId, PAYMENT_DATE = @PaymentDate, INVOICE_STATUS_ID = @InvoiceStatusId WHERE INVOICE_ID = @InvoiceId";
+            string query = @"UPDATE T_INVOICE SET CUSTOMER_ID = @CustomerId, ISSUE_DATE = @IssueDate, DUE_DATE = @DueDate, SUBJECT = @Subject, SLIP_NUMBER = @SlipNumber, ITEMS_TOTAL = @ItemsTotal, SUBTOTAL = @Subtotal, TAX = @Tax, PAYD_BY_DEPOSIT = @PaydByDeposit, TOTAL = @InvoiceTotal, MESSAGE = @Message, TRANSACTION_TYPE_ID = @TransactionTypeId, PAYMENT_DATE = @PaymentDate, INVOICE_STATUS_ID = @InvoiceStatusId WHERE INVOICE_ID = @InvoiceId";
             using var command = new MySqlCommand(query, connection);
             command.Parameters.AddWithValue("@CustomerId", CustomerId);
             command.Parameters.AddWithValue("@IssueDate", IssueDate);
             command.Parameters.AddWithValue("@DueDate", DueDate);
             command.Parameters.AddWithValue("@Subject", Subject);
             command.Parameters.AddWithValue("@SlipNumber", SlipNumber);
+            command.Parameters.AddWithValue("@ItemsTotal", ItemsTotal);
             command.Parameters.AddWithValue("@Subtotal", SubTotal);
             command.Parameters.AddWithValue("@Tax", Tax);
-            command.Parameters.AddWithValue("@Total", Total);
+            command.Parameters.AddWithValue("@PaydByDeposit", PaydByDeposit);
+            command.Parameters.AddWithValue("@InvoiceTotal", InvoiceTotal);
             command.Parameters.AddWithValue("@Message", Message);
             command.Parameters.AddWithValue("@TransactionTypeId", TransactionTypeId);
             command.Parameters.AddWithValue("@PaymentDate", PaymentDate);
@@ -521,20 +1388,6 @@ namespace Invoice
             command.ExecuteNonQuery();
         }
 
-        public bool TryDeleteInvoice()
-        {
-            try
-            {
-                DeleteInvoice();
-                return true;
-            }
-            catch (Exception e)
-            {
-                MessageBox.Show(e.Message);
-                return false;
-            }
-        }
-
         public void DeleteInvoice()
         {
             string connectionString = ConnectionInfo.Builder.ConnectionString;
@@ -546,33 +1399,23 @@ namespace Invoice
             command.ExecuteNonQuery();
         }
 
-        public bool TryDeleteInvoiceById(int id)
-        {
-            try
-            {
-                DeleteInvoiceById(id);
-                return true;
-            }
-            catch (Exception e)
-            {
-                MessageBox.Show(e.Message);
-                return false;
-            }
-        }
 
-        public void DeleteInvoiceById(int id)
+        public static void DeleteInvoiceByInvoiceId(int id)
         {
+            InvoiceItemClass.DeleteInvoiceItemsByInvoiceId(id);
             using var connection = new MySqlConnection(ConnectionInfo.Builder.ConnectionString);
             connection.Open();
             string query = "DELETE FROM T_INVOICE WHERE INVOICE_ID = @InvoiceId";
             using var command = new MySqlCommand(query, connection);
             command.Parameters.AddWithValue("@InvoiceId", id);
             command.ExecuteNonQuery();
+            DepositClass.DeleteDepositById(TypeOfID.Invoice, id);
+            BalanceClass.DeleteBalanceById(TypeOfID.Invoice, id);
         }
 
         public InvoiceClass DeepClone()
         {
-            return new InvoiceClass
+            var newInvoice = new InvoiceClass
             {
                 InvoiceId = this.InvoiceId,
                 CustomerId = this.CustomerId,
@@ -580,30 +1423,54 @@ namespace Invoice
                 DueDate = this.DueDate,
                 Subject = this.Subject,
                 SlipNumber = this.SlipNumber,
+                ItemsTotal = this.ItemsTotal,
                 SubTotal = this.SubTotal,
                 Tax = this.Tax,
-                Total = this.Total,
+                PaydByDeposit = this.PaydByDeposit,
+                InvoiceTotal = this.InvoiceTotal,
                 Message = this.Message,
                 TransactionTypeId = this.TransactionTypeId,
                 PaymentDate = this.PaymentDate,
                 InvoiceStatusId = this.InvoiceStatusId,
                 CustomerName = this.CustomerName,
                 InvoiceStatus = this.InvoiceStatus,
-                IssueDateString = this.IssueDateString
+                IssueDateString = this.IssueDateString,
                 // 必要に応じて他のプロパティもコピー
             };
+            newInvoice.InvoiceItems.AddRange(this.InvoiceItems);
+            return newInvoice;
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
+
         protected void OnPropertyChanged(string propertyName)
         {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            switch (propertyName)
+            {
+                case "CustomerId":
+                case "IssueDate":
+                case "DueDate":
+                case "Subject":
+                case "SlipNumber":
+                case "InvoiceTotal":
+                case "ItemsTotal":
+                case "PaydByDeposit":
+                case "Message":
+                case "TransactionTypeId":
+                case "PaymentDate":
+                case "InvoiceStatusId":
+                case "InvoiceStatus":
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+                    break;
+            }
+
         }
     }
 
     // T_INVOICE_ITEMS テーブルに対応するクラス
     public class InvoiceItemClass : INotifyPropertyChanged
     {
+
         //public EventHandler ItemChanged;
         //public EventHandler ItemAdded;
         //public EventHandler ItemDeleted;
@@ -910,7 +1777,7 @@ namespace Invoice
             command.ExecuteNonQuery();
         }
 
-        public static void AddInvoiceItem(List<InvoiceItemClass> ItemList, int invoiceId)
+        public static void AddInvoiceItems(List<InvoiceItemClass> ItemList, int invoiceId)
         {
             string commandString = "INSERT INTO T_INVOICE_ITEMS (INVOICE_ID, ITEM_ORDER, ITEM_ID, ITEM_NAME, UNIT_PRICE, QUANTITY, UNIT, ITEM_SUBTOTAL, TAX_TYPE_ID, TAX, ITEM_TOTAL) VALUES ";
             int order = 1;
@@ -950,28 +1817,15 @@ namespace Invoice
             command.ExecuteNonQuery();
         }
 
+        public static void UpdateInvoiceItems(List<InvoiceItemClass> ItemList, int invoiceId)
+        {
+            DeleteInvoiceItemsByInvoiceId(invoiceId);
+            AddInvoiceItems(ItemList, invoiceId);
+
+        }
+
         public void UpdateInvoiceItem()
         {
-            string connectionString = ConnectionInfo.Builder.ConnectionString;
-            using var connection = new MySqlConnection(connectionString);
-            connection.Open();
-            string query = @"UPDATE T_INVOICE_ITEMS SET INVOICE_ID = @InvoiceId, ITEM_ORDER = @ItemOrder, ITEM_ID = @ItemId, ITEM_NAME = @ItemName,
-                             UNIT_PRICE = @UnitPrice, QUANTITY = @Quantity, UNIT = @Unit ,ITEM_SUBTOTAL = @ItemSubtotal, TAX_TYPE_ID = @TaxTypeId,
-                             TAX = @Tax, ITEM_TOTAL = @ItemTotal WHERE INVOICE_ITEMS_ID = @InvoiceItemsId";
-            using var command = new MySqlCommand(query, connection);
-            command.Parameters.AddWithValue("@InvoiceId", InvoiceId);
-            command.Parameters.AddWithValue("@ItemOrder", ItemOrder);
-            command.Parameters.AddWithValue("@ItemId", ItemId);
-            command.Parameters.AddWithValue("@ItemName", ItemName);
-            command.Parameters.AddWithValue("@UnitPrice", UnitPrice);
-            command.Parameters.AddWithValue("@Quantity", Quantity);
-            command.Parameters.AddWithValue("@Unit", Unit);
-            command.Parameters.AddWithValue("@ItemSubtotal", ItemSubTotal);
-            command.Parameters.AddWithValue("@TaxTypeId", TaxTypeId);
-            command.Parameters.AddWithValue("@Tax", Tax);
-            command.Parameters.AddWithValue("@ItemTotal", ItemTotal);
-            command.Parameters.AddWithValue("@InvoiceItemsId", InvoiceItemId);
-            command.ExecuteNonQuery();
         }
 
         public void DeleteInvoiceItem()
@@ -1003,7 +1857,21 @@ namespace Invoice
                 ItemTotal = this.ItemTotal
             };
         }
-
+        public void CheckRegisteredHandlers()
+        {
+            var eventField = typeof(InvoiceItemClass).GetField("PropertyChanged", BindingFlags.Instance | BindingFlags.NonPublic);
+            if (eventField != null)
+            {
+                var eventDelegate = eventField.GetValue(this) as MulticastDelegate;
+                if (eventDelegate != null)
+                {
+                    foreach (var handler in eventDelegate.GetInvocationList())
+                    {
+                        Debug.WriteLine($"登録されているメソッド: {handler.Method.Name}");
+                    }
+                }
+            }
+        }
         public event PropertyChangedEventHandler? PropertyChanged;
         protected void OnPropertyChanged(string propertyName)
         {
@@ -1111,7 +1979,35 @@ namespace Invoice
             }
         }
 
-        private int _PaymentMethodId;
+        private int _TransactionTypeId;
+        public int TransactionTypeId
+        {
+            get { return _TransactionTypeId; }
+            set
+            {
+                if (_TransactionTypeId != value)
+                {
+                    _TransactionTypeId = value;
+                    OnPropertyChanged(nameof(TransactionTypeId));
+                }
+            }
+        }
+
+        private int? _DepositId;
+        public int? DepositId
+        {
+            get { return _DepositId; }
+            set 
+            {
+                if (_DepositId != value)
+                {
+                    _DepositId = value;
+                    OnPropertyChanged(nameof(DepositId));
+                }
+            }
+        }
+
+        private int _PaymentMethodId = 1;
         public int PaymentMethodId
         {
             get { return _PaymentMethodId; }
@@ -1239,6 +2135,8 @@ namespace Invoice
                 {
                     PaymentId = reader.GetInt32("PAYMENT_ID"),
                     InvoiceId = reader.IsDBNull("INVOICE_ID") ? null : reader.GetInt32("INVOICE_ID"),
+                    DepositId = reader.IsDBNull("DEPOSIT_ID") ? null : reader.GetInt32("DEPOSIT_ID"),
+                    TransactionTypeId = reader.GetInt32("TRANSACTION_TYPE_ID"),
                     PaymentMethodId = reader.GetInt32("PAYMENT_METHOD_ID"),
                     SlipNumber = reader.GetString("SLIP_NUMBER"),
                     CustomerId = reader.GetInt32("CUSTOMER_ID"),
@@ -1268,6 +2166,8 @@ namespace Invoice
                 var payment = new PaymentClass();
                 payment.PaymentId = reader.GetInt32("PAYMENT_ID");
                 payment.InvoiceId = reader.IsDBNull("INVOICE_ID") ? null : reader.GetInt32("INVOICE_ID");
+                payment.DepositId = reader.IsDBNull("DEPOSIT_ID") ? null : reader.GetInt32("DEPOSIT_ID");
+                payment.TransactionTypeId = reader.GetInt32("TRANSACTION_TYPE_ID");
                 payment.PaymentMethodId = reader.GetInt32("PAYMENT_METHOD_ID");
                 payment.SlipNumber = reader.GetString("SLIP_NUMBER");
                 payment.CustomerId = reader.GetInt32("CUSTOMER_ID");
@@ -1286,6 +2186,11 @@ namespace Invoice
             try
             {
                 AddPayment();
+                if(TransactionTypeId == 1)
+                    BalanceClass.TryAddBalance(this);
+                else if (TransactionTypeId == 2)
+                    DepositClass.TryAddDeposit(this);
+                else return false;
                 return true;
             }
             catch (Exception e)
@@ -1300,10 +2205,12 @@ namespace Invoice
             string connectionString = ConnectionInfo.Builder.ConnectionString;
             using var connection = new MySqlConnection(connectionString);
             connection.Open();
-            string query = @"INSERT INTO T_PAYMENT (INVOICE_ID, PAYMENT_METHOD_ID, CUSTOMER_ID, SLIP_NUMBER, PAYMENT_DATE, PAYMENT_AMOUNT, SUBJECT)
-                             VALUES (@InvoiceId, @PaymentMethodId, @CustomerId, @SlipNumber, @PaymentDate, @PaymentAmount, @Subject)";
+            string query = @"INSERT INTO T_PAYMENT (INVOICE_ID, DEPOSIT_ID, TRANSACTION_TYPE_ID, PAYMENT_METHOD_ID, CUSTOMER_ID, SLIP_NUMBER, PAYMENT_DATE, PAYMENT_AMOUNT, SUBJECT)
+                             VALUES (@InvoiceId, @DepositId, @TransactionTypeId, @PaymentMethodId, @CustomerId, @SlipNumber, @PaymentDate, @PaymentAmount, @Subject)";
             using var command = new MySqlCommand(query, connection);
             command.Parameters.AddWithValue("@InvoiceId", InvoiceId);
+            command.Parameters.AddWithValue("@DepositId", DepositId);
+            command.Parameters.AddWithValue("@TransactionTypeId", TransactionTypeId);
             command.Parameters.AddWithValue("@PaymentMethodId", PaymentMethodId);
             command.Parameters.AddWithValue("@CustomerId", CustomerId);
             command.Parameters.AddWithValue("@SlipNumber", SlipNumber);
@@ -1312,6 +2219,7 @@ namespace Invoice
             command.Parameters.AddWithValue("@Subject", Subject);
             command.ExecuteNonQuery();
             PaymentId = (int)command.LastInsertedId;
+
         }
 
         public bool TryUpdatePayment()
@@ -1333,13 +2241,14 @@ namespace Invoice
             string connectionString = ConnectionInfo.Builder.ConnectionString;
             using var connection = new MySqlConnection(connectionString);
             connection.Open();
-            string query = @"UPDATE T_PAYMENT SET INVOICE_ID = @InvoiceId, PAYMENT_METHOD_ID = @PaymentMethodId,
-                             CUSTOMER_ID = @CustomerId, PAYMENT_DATE = @PaymentDate, PAYMENT_AMOUNT = @PaymentAmount,
-                             SUBJECT = @Subject WHERE PAYMENT_ID = @PaymentId";
+            string query = @"UPDATE T_PAYMENT SET INVOICE_ID = @InvoiceId, DEPOSIT_ID = @DepositId, TRANSACTION_TYPE_ID = @TransactionTypeId, PAYMENT_METHOD_ID = @PaymentMethodId, CUSTOMER_ID = @CustomerId, SLIP_NUMBER = @SlipNumber, PAYMENT_DATE = @PaymentDate, PAYMENT_AMOUNT = @PaymentAmount, SUBJECT = @Subject WHERE PAYMENT_ID = @PaymentId";
             using var command = new MySqlCommand(query, connection);
             command.Parameters.AddWithValue("@InvoiceId", InvoiceId);
+            command.Parameters.AddWithValue("@DepositId", DepositId);
+            command.Parameters.AddWithValue("@TransactionTypeId", TransactionTypeId);
             command.Parameters.AddWithValue("@PaymentMethodId", PaymentMethodId);
             command.Parameters.AddWithValue("@CustomerId", CustomerId);
+            command.Parameters.AddWithValue("@SlipNumber", SlipNumber);
             command.Parameters.AddWithValue("@PaymentDate", PaymentDate);
             command.Parameters.AddWithValue("@PaymentAmount", PaymentAmount);
             command.Parameters.AddWithValue("@Subject", Subject);
@@ -1372,11 +2281,11 @@ namespace Invoice
             command.ExecuteNonQuery();
         }
 
-        public static bool TryDeletePaymentById(int paymentId)
+        public static bool TryDeletePaymentById(TypeOfID type, int paymentId)
         {
             try
             {
-                DeletePyamentById(paymentId);
+                DeletePaymentById(type, paymentId);
                 return true;
             }
             catch (Exception e)
@@ -1386,48 +2295,24 @@ namespace Invoice
             }
         }
 
-        public static void DeletePyamentById(int paymentId)
+        public static void DeletePaymentById(TypeOfID type, int id)
         {
             string connectionString = ConnectionInfo.Builder.ConnectionString;
             using var connection = new MySqlConnection(connectionString);
             connection.Open();
             string query = "DELETE FROM T_PAYMENT WHERE PAYMENT_ID = @PaymentId";
             using var command = new MySqlCommand(query, connection);
-            command.Parameters.AddWithValue("@PaymentId", paymentId);
+            command.Parameters.AddWithValue("@PaymentId", id);
             command.ExecuteNonQuery();
         }
 
-        public static bool TryDeletePaymentByInvoiceId(int invoiceId)
-        {
-            try
-            {
-                DeletePaymentByInvoiceId(invoiceId);
-                return true;
-            }
-            catch (Exception e)
-            {
-                MessageBox.Show(e.Message);
-                return false;
-            }
-        }
-
-        public static void DeletePaymentByInvoiceId(int invoiceId)
-        {
-            string connectionString = ConnectionInfo.Builder.ConnectionString;
-            using var connection = new MySqlConnection(connectionString);
-            connection.Open();
-            string query = "DELETE FROM T_PAYMENT WHERE INVOICE_ID = @InvoiceId";
-            using var command = new MySqlCommand(query, connection);
-            command.Parameters.AddWithValue("@InvoiceId", invoiceId);
-            command.ExecuteNonQuery();
-        }
 
         public static void ClearInvoiceIdFromPayment(int invoiceId)
         {
             string connectionString = ConnectionInfo.Builder.ConnectionString;
             using var connection = new MySqlConnection(connectionString);
             connection.Open();
-            string query = "UPDATE T_PAYMENT SET INVOICE_ID = NULL WHERE INVOICE_ID = @InvoiceId";
+            string query = "UPDATE T_PAYMENT SET InvoiceId = NULL WHERE INVOICE_ID = @InvoiceId";
             using var command = new MySqlCommand(query, connection);
             command.Parameters.AddWithValue("@InvoiceId", invoiceId);
             command.ExecuteNonQuery();
@@ -1436,6 +2321,7 @@ namespace Invoice
         public event PropertyChangedEventHandler? PropertyChanged;
         protected void OnPropertyChanged(string propertyName)
         {
+
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
@@ -1592,65 +2478,65 @@ namespace Invoice
     }
 
     // T_PAYMENT_METHOD テーブルに対応するクラス
-    public class PaymentMethodClass
-    {
-        public int PaymentMethodId { get; set; }
-        public string MethodName { get; set; }
-        public int DebitOrCreditId { get; set; }
+    //public class _PaymentMethodClass
+    //{
+    //    public int PaymentMethodId { get; set; }
+    //    public string MethodName { get; set; }
+    //    public int DebitOrCreditId { get; set; }
 
-        public static List<PaymentMethodClass> GetPaymentMethods()
-        {
-            var paymentMethods = new List<PaymentMethodClass>();
-            string connenctionString = ConnectionInfo.Builder.ConnectionString;
-            using var connection = new MySqlConnection(connenctionString);
-            connection.Open();
-            using var command = new MySqlCommand("SELECT * FROM T_PAYMENT_METHOD", connection);
-            using var reader = command.ExecuteReader();
-            while (reader.Read())
-            {
-                var method = new PaymentMethodClass
-                {
-                    PaymentMethodId = reader.GetInt32("PAYMENT_METHOD_ID"),
-                    MethodName = reader.GetString("METHOD_NAME"),
-                    DebitOrCreditId = reader.GetInt32("DEBIT_OR_CREDIT_ID")
-                };
-                paymentMethods.Add(method);
-            }
-            return paymentMethods;
-        }
-        public static int AddPaymentMethod(PaymentMethodClass methodClass)
-        {
-            string connectionString = ConnectionInfo.Builder.ConnectionString;
-            using var connection = new MySqlConnection(connectionString);
-            connection.Open();
-            using var command = new MySqlCommand("INSERT INTO T_PAYMENT_METHOD (METHOD_NAME, DEBIT_OR_CREDIT_ID) VALUES (@methodName, @debitOrCreditId)", connection);
-            command.Parameters.AddWithValue("@methodName", methodClass.MethodName);
-            command.Parameters.AddWithValue("@debitOrCreditId", 2);
-            command.ExecuteNonQuery();
-            return (int)command.LastInsertedId;
-        }
-        public void UpdatePaymentMethod()
-        {
-            string connectionString = ConnectionInfo.Builder.ConnectionString;
-            using var connection = new MySqlConnection(connectionString);
-            connection.Open();
-            using var command = new MySqlCommand("UPDATE T_PAYMENT_METHOD SET METHOD_NAME=@methodName WHERE PAYMENT_METHOD_ID=@methodId", connection);
-            command.Parameters.AddWithValue("@methodName", MethodName);
-            command.Parameters.AddWithValue("@methodId", PaymentMethodId);
-            command.Parameters.AddWithValue("@debitOrCreditId", 2);
-            command.ExecuteNonQuery();
-        }
+    //    public static List<PaymentMethodClass> GetPaymentMethods()
+    //    {
+    //        var paymentMethods = new List<PaymentMethodClass>();
+    //        string connenctionString = ConnectionInfo.Builder.ConnectionString;
+    //        using var connection = new MySqlConnection(connenctionString);
+    //        connection.Open();
+    //        using var command = new MySqlCommand("SELECT * FROM T_PAYMENT_METHOD", connection);
+    //        using var reader = command.ExecuteReader();
+    //        while (reader.Read())
+    //        {
+    //            var method = new PaymentMethodClass
+    //            {
+    //                PaymentMethodId = reader.GetInt32("PAYMENT_METHOD_ID"),
+    //                MethodName = reader.GetString("METHOD_NAME"),
+    //                DebitOrCreditId = reader.GetInt32("DEBIT_OR_CREDIT_ID")
+    //            };
+    //            paymentMethods.Add(method);
+    //        }
+    //        return paymentMethods;
+    //    }
+    //    public static int AddPaymentMethod(PaymentMethodClass methodClass)
+    //    {
+    //        string connectionString = ConnectionInfo.Builder.ConnectionString;
+    //        using var connection = new MySqlConnection(connectionString);
+    //        connection.Open();
+    //        using var command = new MySqlCommand("INSERT INTO T_PAYMENT_METHOD (METHOD_NAME, DEBIT_OR_CREDIT_ID) VALUES (@methodName, @debitOrCreditId)", connection);
+    //        command.Parameters.AddWithValue("@methodName", methodClass.MethodName);
+    //        command.Parameters.AddWithValue("@debitOrCreditId", 2);
+    //        command.ExecuteNonQuery();
+    //        return (int)command.LastInsertedId;
+    //    }
+    //    public void UpdatePaymentMethod()
+    //    {
+    //        string connectionString = ConnectionInfo.Builder.ConnectionString;
+    //        using var connection = new MySqlConnection(connectionString);
+    //        connection.Open();
+    //        using var command = new MySqlCommand("UPDATE T_PAYMENT_METHOD SET METHOD_NAME=@methodName WHERE PAYMENT_METHOD_ID=@methodId", connection);
+    //        command.Parameters.AddWithValue("@methodName", MethodName);
+    //        command.Parameters.AddWithValue("@methodId", PaymentMethodId);
+    //        command.Parameters.AddWithValue("@debitOrCreditId", 2);
+    //        command.ExecuteNonQuery();
+    //    }
 
-        public void DeletePaymentMethod()
-        {
-            string connectionString = ConnectionInfo.Builder.ConnectionString;
-            using var connection = new MySqlConnection(connectionString);
-            connection.Open();
-            using var command = new MySqlCommand("DELETE FROM T_PAYMENT_METHOD WHERE PAYMENT_METHOD_ID=@methodId", connection);
-            command.Parameters.AddWithValue("@methodId", PaymentMethodId);
-            command.ExecuteNonQuery();
-        }
-    }
+    //    public void DeletePaymentMethod()
+    //    {
+    //        string connectionString = ConnectionInfo.Builder.ConnectionString;
+    //        using var connection = new MySqlConnection(connectionString);
+    //        connection.Open();
+    //        using var command = new MySqlCommand("DELETE FROM T_PAYMENT_METHOD WHERE PAYMENT_METHOD_ID=@methodId", connection);
+    //        command.Parameters.AddWithValue("@methodId", PaymentMethodId);
+    //        command.ExecuteNonQuery();
+    //    }
+    //}
 
     public class CompanyInfo
     {
@@ -2024,6 +2910,7 @@ namespace Invoice
         public int? CustomerId { get; set; } = null;
         public int? InvoiceId { get; set; } = null;
         public int? PaymentMethodId { get; set; } = null;
+        public int? TransactionTypeId { get; set; } = null;
         public DateTime? PaymentDate { get; set; } = null;
         public int? PaymentAmount { get; set; } = null;
         public string? Subject { get; set; } = null;
@@ -2108,7 +2995,7 @@ namespace Invoice
 
         public static string GenerateInvoiceFilename(string directory, InvoiceClass invoice)
         {
-            string baseName = $"請求書_{invoice.DueDate.ToString("yyyyMM")}_{invoice.Subject}_{invoice.CustomerName}.pdf";
+            string baseName = $"請求書_{invoice.DueDate?.ToString("yyyyMM")}_{invoice.Subject}_{invoice.CustomerName}.pdf";
             string uniqueName = GenerateUniqueFileName(directory, baseName);
             return uniqueName;
         }

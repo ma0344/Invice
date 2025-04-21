@@ -7,17 +7,22 @@
       xmlns:vm="clr-namespace:Invoice.ViewModels"
       xmlns:conv="clr-namespace:Invoice.Converters"
       xmlns:ui="http://schemas.modernwpf.com/2019"
+      xmlns:customControl="clr-namespace:Invoice.CustomControl"
       mc:Ignorable="d"
       d:Background="White"
       d:DesignHeight="650"
       d:DesignWidth="800"
       FontFamily="Biz UDGothic"
+      InputMethod.PreferredImeState="Off"
       Title="Payment">
     <Page.Resources>
         <conv:InvoiceIdToSlipNumberConverter x:Key="InvoiceIdToSlipNumberConverter" />
         <CollectionViewSource Source="{Binding SettingsVM.PaymentMethodClassList}"
                               x:Key="PaymentMethodWhithoutNewPlaceholder" />
-  
+        <CollectionViewSource Source="{Binding SettingsVM.TransactionTypeClassList}"
+                              x:Key="TransactionTypeWhithoutNewPlaceholder" />
+
+
     </Page.Resources>
     <Grid x:Name="PageRootGrid">
         <Grid.RowDefinitions>
@@ -98,12 +103,6 @@
                         <ColumnDefinition />
                         <ColumnDefinition />
                     </Grid.ColumnDefinitions>
-
-                    <!--<TextBlock Grid.Column="0"
-                               FontSize="16"
-                               FontWeight="Bold"
-                               Text="全期間表示"
-                               VerticalAlignment="Center" />-->
                     <ui:ToggleSwitch Grid.Column="1"
                                      x:Name="ShowAllPayment"
                                      Margin="0,0,0,0"
@@ -112,71 +111,32 @@
                                      OffContent="全期間"
                                      Header="表示期間"
                                      FontWeight="Bold"
-                                     Toggled="ShowAllPayment_Toggled"
-                                     />
-
-                    <ui:NumberBox Grid.Column="2"
-                                  x:Name="DateBox"
-                                  Grid.Row="0"
-                                  Padding="0,0,0,0"
-                                  TextAlignment="Center"
-                                  SpinButtonPlacementMode="Inline"
-                                  VerticalAlignment="Center"
-                                  FontSize="18"
-                                  Value="300"
-                                  Tag="0"
-                                  IsEnabled="{Binding ElementName=ShowAllPayment,Path=IsOn}"
-                                  Maximum="6000"
-                                  Minimum="-6000"
-                                  Width="210"
-                                  HorizontalContentAlignment="Center"
-                                  VerticalContentAlignment="Center"
-                                  ValueChanged="DateBox_ValueChanged">
-                        <ui:NumberBox.Resources>
-                            <Style TargetType="TextBox"
-                                   BasedOn="{StaticResource DefaultTextBoxStyle}">
-                                <Style.Triggers>
-                                    <Trigger Property="Name"
-                                             Value="InputBox">
-                                        <Setter Property="Foreground"
-                                                Value="Transparent" />
-
-                                    </Trigger>
-                                </Style.Triggers>
-                            </Style>
-                        </ui:NumberBox.Resources>
-                    </ui:NumberBox>
-                    <TextBlock x:Name="DateTextBlock"
-                               Margin="2"
-                               Width="140"
-                               HorizontalAlignment="Left"
-                               Grid.Column="2"
-                               Height="{Binding ElementName=DateBox,Path=ActualHeight}"
-                               Background="Transparent"
-                               VerticalAlignment="Bottom"
-                               TextAlignment="Center"
-                               FontSize="18"
-                               FontWeight="Bold"
-
-                               FontFamily="{StaticResource ContentControlThemeFontFamily}"
-                               Text="{Binding PaymentVM.ViewDate}">
-                        <TextBlock.Style>
-                            <Style TargetType="TextBlock">
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding ElementName=ShowAllPayment,Path=IsOn}"
-                                             Value="False">
-                                        <Setter Property="Foreground"
-                                                Value="Gray" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBlock.Style>
-                    </TextBlock>
-                    <!--Toggled="ShowAllCustomer_Toggled"-->
+                                     Toggled="ShowAllPayment_Toggled"/>
+                    <customControl:DateNumberBox x:Name="DateBox"
+                                                 Grid.Column="2"
+                                                 Grid.Row="0"
+                                                 Padding="0,0,0,0"
+                                                 TextAlignment="Center"
+                                                 SpinButtonPlacementMode="Inline"
+                                                 VerticalAlignment="Center"
+                                                 FontSize="18"
+                                                 FontWeight="Bold"
+                                                 Tag="0"
+                                                 FontFamily="{StaticResource ContentControlThemeFontFamily}"
+                                                 IsEnabled="{Binding ElementName=ShowAllPayment,Path=IsOn}"
+                                                 SelectedDate="{Binding PaymentVM.FilterDate,Mode=TwoWay}"
+                                                 DateSelected="DateBox_DateSelected"
+                                                 Width="210"
+                                                 Foreground="Black"
+                                                 InputMethod.PreferredImeState="Off"
+                                                 HorizontalContentAlignment="Center"
+                                                 VerticalContentAlignment="Center"
+                                                 LargeChange="-12"
+                                                 SmallChange="-1" />
                 </Grid>
-
             </Grid>
             <DataGrid x:Name="PaymentListDataGrid"
+                      InputMethod.PreferredImeState="Off"
                       Grid.Row="2"
                       MouseDoubleClick="PaymentListDataGrid_MouseDoubleClick"
                       CanUserAddRows="False"
@@ -440,7 +400,7 @@
                                     HorizontalContentAlignment="Center"
                                     InputMethod.IsInputMethodEnabled="False"
                                     SelectedDateChanged="PaymentDate_SelectedDateChanged"
-                                    SelectedDate="{Binding PaymentVM.PaymentDetailData.PaymentDate,Mode=TwoWay}"
+                                    SelectedDate="{Binding PaymentVM.CurrentPayment.PaymentDate,Mode=TwoWay}"
                                     Width="180"
                                     Margin="0,0,30,0">
 
@@ -456,17 +416,18 @@
                         <TextBlock Grid.Row="0"
                                    Margin="0,2"
                                    Background="Transparent"
-                                   Text="入金方法" />
-                        <ComboBox x:Name="PaymentMethodComboBox"
-                                  ItemsSource="{Binding Source={StaticResource PaymentMethodWhithoutNewPlaceholder}}"
-                                  DisplayMemberPath="MethodName"
-                                  SelectedValuePath="PaymentMethodId"
-                                  SelectedValue="{Binding PaymentMethodId,Mode=TwoWay}"
+                                   Text="入金目的" />
+                        <ComboBox x:Name="TransactionTypeBox"
+                                  ItemsSource="{Binding Source={StaticResource TransactionTypeWhithoutNewPlaceholder}}"
+                                  DisplayMemberPath="TransactionName"
+                                  SelectedValuePath="TransactionTypeId"
+                                  SelectedValue="{Binding TransactionTypeId,Mode=TwoWay}"
                                   FontSize="20"
                                   Grid.Row="1"
                                   BorderThickness="0"
                                   Background="#0C000000"
                                   Width="160"
+                                  SelectionChanged="TransactionTypeBox_SelectionChanged"
                                   d:SelectedIndex="0" />
                     </Grid>
                     <Grid Grid.Column="4"
@@ -478,6 +439,7 @@
                             <ColumnDefinition />
                         </Grid.ColumnDefinitions>
                         <ui:ToggleSwitch Grid.Column="1"
+                                         InputMethod.PreferredImeState="Off"
                                          x:Name="PaymentForInvoiceSwitch"
                                          Margin="10,0,0,0"
                                          IsOn="True"
@@ -511,18 +473,17 @@
                                    Margin="0,0,0,2" />
                         <ComboBox x:Name="CustomerNameComboBox"
                                   Grid.Row="1"
+                                  InputMethod.PreferredImeState="Off"
                                   ItemsSource="{Binding CustomerVM.CustomerClassList}"
                                   DisplayMemberPath="CustomerName"
                                   SelectedValuePath="CustomerId"
-                                  SelectedValue="{Binding PaymentDetailData.CustomerId,Mode=TwoWay}"
+                                  SelectedValue="{Binding CurrentPayment.CustomerId,Mode=TwoWay}"
                                   SelectionChanged="CustomerNameComboBox_SelectionChanged"
                                   Margin="0,0,30,0"
                                   Width="168"
                                   FontSize="20"
                                   BorderThickness="0"
                                   Background="#0C000000"
-                                  InputMethod.PreferredImeState="On"
-                                  InputMethod.PreferredImeConversionMode="FullShape,Native"
                                   HorizontalAlignment="Right"
                                   VerticalAlignment="Top" />
                     </Grid>
@@ -539,16 +500,19 @@
                         <TextBox Margin="0,0,0,0"
                                  Grid.Row="1"
                                  FontSize="20"
-                                 x:Name="InvoiceSubject"
+                                 x:Name="ReceiptSubject"
                                  BorderThickness="0"
                                  Background="#FFF3F3F3"
                                  InputMethod.IsInputMethodEnabled="True"
+                                 InputMethod.PreferredImeState="On"
                                  InputMethod.PreferredImeConversionMode="FullShape,Native"
                                  HorizontalContentAlignment="Left"
                                  d:Text="利用料2025年1月分"
-                                 Text="{Binding PaymentVM.PaymentDetailData.Subject,Mode=TwoWay}"
+                                 Text="{Binding PaymentVM.CurrentPayment.Subject,Mode=TwoWay}"
                                  Width="390"
                                  VerticalAlignment="Top" />
+                                 <!--GotFocus="ReceiptSubject_GotFocus"
+                                 LostFocus="ReceiptSubject_LostFocus"-->
                     </Grid>
                     <Grid Grid.Column="3"
                           Margin="0,0,0,0">
@@ -565,8 +529,9 @@
                                    RadiusY="2"
                                    Fill="#0C000000"
                                    Margin="0,0,0,0" />
-                        <TextBox x:Name="InvoiceAmmountTextBlock"
+                        <TextBox x:Name="PaymentAmountTextBox"
                                  Grid.Row="1"
+                                 InputMethod.PreferredImeState="Off"
                                  Background="Transparent"
                                  BorderThickness="0"
                                  TextAlignment="Right"
@@ -575,8 +540,9 @@
                                  Padding="0,0,5,0"
                                  VerticalAlignment="Center"
                                  FontWeight="Bold"
-                                 Text="{Binding PaymentVM.PaymentDetailData.PaymentAmount,StringFormat={}\\{0:N0}-,Mode=TwoWay}"
+                                 Text="{Binding PaymentVM.CurrentPayment.PaymentAmount,StringFormat={}\\{0:N0}-,Mode=TwoWay}"
                                  Width="160"
+                                 
                                  InputMethod.IsInputMethodEnabled="False" />
                     </Grid>
 
@@ -616,15 +582,14 @@
                                           ItemsSource="{Binding CustomerVM.CustomerClassList}"
                                           DisplayMemberPath="CustomerName"
                                           SelectedValuePath="CustomerId"
-                                          SelectedValue="{Binding PaymentDetailData.CustomerId,Mode=TwoWay}"
+                                          SelectedValue="{Binding CurrentPayment.CustomerId,Mode=TwoWay}"
                                           SelectionChanged="CustomerNameFilterComboBox_SelectionChanged"
                                           Margin="0,0,30,0"
                                           Width="168"
                                           FontSize="20"
                                           BorderThickness="0"
                                           Background="#0C000000"
-                                          InputMethod.PreferredImeState="On"
-                                          InputMethod.PreferredImeConversionMode="FullShape,Native"
+                                          InputMethod.PreferredImeState="Off"
                                           HorizontalAlignment="Right"
                                           VerticalAlignment="Top" />
                             </Grid>
@@ -636,71 +601,30 @@
                                              OffContent="しない"
                                              Margin="0,-2"
                                              Width="100"
+                                             InputMethod.PreferredImeState="Off"
                                              Toggled="DateFilterSwitch_Toggled" />
-                            <ui:NumberBox Grid.Column="2"
-                                          x:Name="FilterDateBox"
-                                          Grid.Row="0"
-                                          Padding="0,0,0,0"
-                                          TextAlignment="Center"
-                                          SpinButtonPlacementMode="Inline"
-                                          VerticalAlignment="Bottom"
-                                          FontSize="18"
-                                          Value="300"
-                                          Tag="0"
-                                          IsEnabled="{Binding ElementName=DateFilterSwitch,Path=IsOn}"
-                                          Maximum="6000"
-                                          Minimum="-6000"
-                                          Width="210"
-                                          HorizontalContentAlignment="Center"
-                                          VerticalContentAlignment="Center"
-                                          ValueChanged="FilterDateBox_ValueChanged">
-                                <ui:NumberBox.Resources>
-                                    <Style TargetType="TextBox"
-                                           BasedOn="{StaticResource DefaultTextBoxStyle}">
-                                        <Style.Triggers>
-                                            <Trigger Property="Name"
-                                                     Value="InputBox">
-                                                <Setter Property="Foreground"
-                                                        Value="Transparent" />
+                            <customControl:DateNumberBox x:Name="FilterDateBox"
+                                                         Grid.Column="2"
+                                                         Grid.Row="0"
+                                                         Padding="0,0,0,0"
+                                                         TextAlignment="Center"
+                                                         SpinButtonPlacementMode="Inline"
+                                                         VerticalAlignment="Center"
+                                                         FontSize="18"
+                                                         FontWeight="Bold"
+                                                         Tag="0"
+                                                         FontFamily="{StaticResource ContentControlThemeFontFamily}"
+                                                         IsEnabled="{Binding ElementName=DateFilterSwitch,Path=IsOn}"
+                                                         SelectedDate="{Binding PaymentVM.FilterDate, Mode=TwoWay}"
+                                                         DateSelected="FilterDateBox_DateSelected"
+                                                         Width="210"
+                                                         Foreground="Black"
+                                                         InputMethod.PreferredImeState="Off"
+                                                         HorizontalContentAlignment="Center"
+                                                         VerticalContentAlignment="Center"
+                                                         LargeChange="-12"
+                                                         SmallChange="-1" />
 
-                                            </Trigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </ui:NumberBox.Resources>
-                                <ui:NumberBox.Header>
-                                    <TextBlock Text="請求月"
-                                               FontSize="13"
-                                               Margin="0,-5" />
-
-                                </ui:NumberBox.Header>
-                            </ui:NumberBox>
-                            <TextBlock Grid.Column="2"
-                                       x:Name="FilterDateTextBlock"
-                                       Height="31"
-                                       Width="140"
-                                       HorizontalAlignment="Left"
-                                       Background="Transparent"
-                                       VerticalAlignment="Bottom"
-                                       TextAlignment="Center"
-                                       IsEnabled="{Binding ElementName=DateFilterSwitch,Path=IsOn}"
-                                       FontSize="18"
-                                       FontWeight="Bold"
-                                       FontFamily="{StaticResource ContentControlThemeFontFamily}"
-                                       Text="{Binding PaymentVM.InvoiceViewDate}">
-                                <TextBlock.Resources>
-                                    <Style BasedOn="{StaticResource {x:Type TextBlock}}"
-                                           TargetType="TextBlock">
-                                        <Style.Triggers>
-                                            <Trigger Property="IsEnabled"
-                                                     Value="False">
-                                                <Setter Property="Foreground"
-                                                        Value="Gray" />
-                                            </Trigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBlock.Resources>
-                            </TextBlock>
-                            <!--Toggled="ShowAllCustomer_Toggled"-->
                             <Grid Margin="10,0,0,0"
                                   Grid.Column="3"
                                   VerticalAlignment="Bottom">
@@ -715,6 +639,7 @@
                                            VerticalAlignment="Bottom" />
                                 <ComboBox x:Name="StatusComboBox"
                                           Grid.Row="1"
+                                          InputMethod.PreferredImeState="Off"
                                           BorderThickness="0"
                                           Background="#0C000000"
                                           Width="150"
@@ -722,7 +647,7 @@
                                           ItemsSource="{Binding InvoiceVM.InvoiceStatusClassList}"
                                           DisplayMemberPath="InvoiceStatus"
                                           SelectedValuePath="InvoiceStatusId"
-                                          SelectedValue="{Binding PaymentDetailData.InvoiceStatusFilterValue}"
+                                          SelectedValue="{Binding CurrentPayment.InvoiceStatusFilterValue}"
                                           SelectionChanged="StatusComboBox_SelectionChanged"
                                           Padding="12,0,0,0"
                                           FontSize="20">
@@ -887,7 +812,7 @@
                                             <TextBlock HorizontalAlignment="Right"
                                                        VerticalAlignment="Center"
                                                        Padding="0,0,5,0"
-                                                       Text="{Binding Total,StringFormat={}{0:N0}}" />
+                                                       Text="{Binding InvoiceTotal,StringFormat={}{0:N0}}" />
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>

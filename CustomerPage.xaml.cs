@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -21,7 +22,11 @@ namespace Invoice
         CustomerViewModel vm;
         private bool isEditing = false;
         private bool isPageInitialized = false;
-        private CustomerFilterParam filterParam = new();
+        private CustomerFilterParam customerfilterParam = new();
+        private BalanceFilterParam balanceFilterParam = new();
+        public CultureInfo cultureInfo = new("ja-JP");
+        InvoiceClass CurrentInvoice;
+
         public CustomerPage(MainWindowViewModel mainWindowViewModel)
         {
             InitializeComponent();
@@ -30,14 +35,21 @@ namespace Invoice
             DataContext = mainWindowViewModel;
             vm.CustomerCollectionViewSource = new CollectionViewSource();
             vm.CustomerCollectionViewSource.Source = vm.CustomerClassList;
+            vm.BalanceCollectionViewSource = new CollectionViewSource();
+            vm.BalanceCollectionViewSource.Source = vm.BalanceClassList;
+
             vm.PropertyChanged += CustomerVM_PropertyChanged;
+            cultureInfo.DateTimeFormat.Calendar = new JapaneseCalendar();
+            cultureInfo.DateTimeFormat.ShortDatePattern = "ggy年M月d日";
+            Thread.CurrentThread.CurrentCulture = cultureInfo;
+            Thread.CurrentThread.CurrentUICulture = cultureInfo;
 
 
         }
 
         private void CustomerFilter()
         {
-            var param = filterParam;
+            var param = customerfilterParam;
             var source = vm.CustomerCollectionViewSource;
             source.Filter += (sender,e) =>
             {
@@ -56,6 +68,38 @@ namespace Invoice
             };
         }
 
+        public void BalanceFilter()
+        {
+            var param = balanceFilterParam;
+            var source = vm.BalanceCollectionViewSource;
+            source.Filter += (sender, e) =>
+            {
+                if (e.Item is BalanceClass balance)
+                {
+                    if ((balance.CustomerId != 0) &&
+                        (param.CustomerId == null || balance.CustomerId == param.CustomerId))
+                        e.Accepted = true;
+                    else
+                        e.Accepted = false;
+                }
+
+            };
+            source.SortDescriptions.Clear();
+            source.SortDescriptions.Add(new SortDescription(nameof(BalanceClass.TransactionDate), ListSortDirection.Descending));
+            vm.CustomerBalance = 0;
+            var list = vm.BalanceCollectionViewSource.View;
+            foreach (var item in list)
+            {
+                if (item is BalanceClass balance)
+                {
+                    vm.CustomerBalance += ((int?)balance.DebitAmount) ?? 0;
+                    vm.CustomerBalance -= ((int?)balance.CreditAmount) ?? 0;
+                }
+            }
+
+
+
+        }
 
         private void CustomerVM_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
@@ -127,8 +171,9 @@ namespace Invoice
 
         private void CustomerListView_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            isEditing = true;
-            EnterDetailPane();
+            balanceFilterParam.CustomerId = (CustomerListDataGrid.SelectedItem as CustomerClass).CustomerId;
+            BalanceFilter();
+            ShowBalancePane();
         }
 
         private void EditCustomerButton_Click(object sender, RoutedEventArgs e)
@@ -162,7 +207,6 @@ namespace Invoice
         
         private void ShowDatailPane()
         {
-
             var pane = CustomerDetailPane;
 
             if (CustomerPageContentGrid.ActualHeight < pane.Height)
@@ -182,13 +226,48 @@ namespace Invoice
             renderTransform.BeginAnimation(System.Windows.Media.TranslateTransform.YProperty, slideUpAnimation);
         }
 
+        private void ShowBalancePane()
+        {
+            var pane = CustomerBalancePane;
+
+            if (CustomerPageContentGrid.ActualHeight < pane.Height)
+            {
+                var mainWindow = Application.Current.MainWindow as MainWindow;
+                mainWindow.Height += pane.Height - CustomerPageContentGrid.ActualHeight;
+            }
+            CustomerPageContentGrid.IsEnabled = false;
+            var renderTransform = CustomerBalancePaneTransform;
+            var slideUpAnimation = new DoubleAnimation
+            {
+                From = pane.Height,
+                To = 0,
+                Duration = TimeSpan.FromMilliseconds(300),
+                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+            };
+            renderTransform.BeginAnimation(System.Windows.Media.TranslateTransform.YProperty, slideUpAnimation);
+        }
         private void HideDetailPane()
         {
+            var pane = CustomerDetailPane;
             var renderTransform = CustomerDetailPane.RenderTransform as System.Windows.Media.TranslateTransform;
             var slideDownAnimation = new DoubleAnimation
             {
                 From = 0,
-                To = 300,
+                To = pane.Height,
+                Duration = TimeSpan.FromMilliseconds(300),
+                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+            };
+            renderTransform.BeginAnimation(System.Windows.Media.TranslateTransform.YProperty, slideDownAnimation);
+            CustomerPageContentGrid.IsEnabled = true;
+        }
+        private void HideBalancePane()
+        {
+            var pane = CustomerBalancePane;
+            var renderTransform = CustomerBalancePaneTransform;
+            var slideDownAnimation = new DoubleAnimation
+            {
+                From = 0,
+                To = pane.Height,
                 Duration = TimeSpan.FromMilliseconds(300),
                 EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
             };
@@ -308,5 +387,9 @@ namespace Invoice
 
         }
 
+        private void BackToCustomerListButton_Click(object sender, RoutedEventArgs e)
+        {
+            HideBalancePane();
+        }
     }
 }

@@ -12,7 +12,9 @@ namespace Invoice.ViewModels
         public class MainWindowViewModel : INotifyPropertyChanged
         {
             public SettingsViewModel SettingsVM { get; set; }
-            public CustomerViewModel CustomerVM { get; set; }
+
+            private Lazy<CustomerViewModel> _CustomerVM;
+            public CustomerViewModel CustomerVM => _CustomerVM.Value;
             private Lazy<InvoiceViewModel> _invoiceVM;
             public InvoiceViewModel InvoiceVM => _invoiceVM.Value;
 
@@ -21,8 +23,8 @@ namespace Invoice.ViewModels
 
             public MainWindowViewModel()
             {
-                CustomerVM = new CustomerViewModel();
                 SettingsVM = new SettingsViewModel();
+                _CustomerVM = new Lazy<CustomerViewModel>(() => new CustomerViewModel());
                 _invoiceVM = new Lazy<InvoiceViewModel>(() => new InvoiceViewModel());
                 _paymentVM = new Lazy<PaymentViewModel>(() => new PaymentViewModel());
             }

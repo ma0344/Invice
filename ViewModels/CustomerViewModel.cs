@@ -20,13 +20,47 @@ namespace Invoice.ViewModels
     {
         public CustomerViewModel()
         {
+
             var customers = CustomerClass.GetCustomers();
             CustomerClassList = new ObservableCollection<CustomerClass>(customers);
+            var balances = BalanceClass.GetAllBalances();
+            BalanceClassList = new ObservableCollection<BalanceClass>(balances);
+            var mainWindow = Application.Current.MainWindow as MainWindow;
+            var dataContext = mainWindow.DataContext as MainWindowViewModel;
+            var transactionTypes = dataContext.SettingsVM.TransactionTypeClassList;
+            foreach (BalanceClass balance in BalanceClassList)
+            {
+                balance.CustomerName = CustomerClassList.FirstOrDefault(c => c.CustomerId == balance.CustomerId)?.CustomerName ?? "不明";
+                balance.TransactionTypeName = transactionTypes.FirstOrDefault(t => t.TransactionTypeId == balance.TransactionTypeId)?.TransactionName ?? "不明";
+            }
         }
+    
         enum SaveMode
         {
             Add = 0,
             Edit = 1,
+        }
+
+        private int _CustomerBalance = 0;
+        public int CustomerBalance
+        {
+            get => _CustomerBalance;
+            set
+            {
+                _CustomerBalance = value;
+                OnPropertyChanged(nameof(CustomerBalance));
+            }
+        }
+
+        private CollectionViewSource _BalanceCollectionViewSource;
+        public CollectionViewSource BalanceCollectionViewSource
+        {
+            get { return _BalanceCollectionViewSource; }
+            set
+            {
+                _BalanceCollectionViewSource = value;
+                OnPropertyChanged(nameof(BalanceCollectionViewSource));
+            }
         }
 
         private CollectionViewSource _customerCollectionViewSource;
@@ -53,6 +87,18 @@ namespace Invoice.ViewModels
             }
         }
 
+
+        private ObservableCollection<BalanceClass> _BalanceClassList = [];
+        public ObservableCollection<BalanceClass> BalanceClassList
+        {
+            get => _BalanceClassList;
+            set
+            {
+                _BalanceClassList = value;
+                OnPropertyChanged(nameof(BalanceClassList));
+            }
+        }
+
         private ObservableCollection<CustomerClass> _CustomerClassList = [];
         public ObservableCollection<CustomerClass> CustomerClassList
         {
@@ -61,17 +107,6 @@ namespace Invoice.ViewModels
             {
                 _CustomerClassList = value;
                 OnPropertyChanged(nameof(CustomerClassList));
-            }
-        }
-
-        private ObservableCollection<BalanceClass> _BalanceList = [];
-        public ObservableCollection<BalanceClass> BalanceList
-        {
-            get { return _BalanceList; }
-            set
-            {
-                _BalanceList = value;
-                OnPropertyChanged(nameof(BalanceList));
             }
         }
 
@@ -157,6 +192,12 @@ namespace Invoice.ViewModels
             }
             OnPropertyChanged(nameof(CustomerClassList));
             //RefreshCustomerList();
+        }
+
+        public void ReloadBalances()
+        {
+            var balances = BalanceClass.GetAllBalances();
+            BalanceClassList = new ObservableCollection<BalanceClass>(balances);
         }
 
         private string _saveButtonText = "保存";

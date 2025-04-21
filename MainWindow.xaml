@@ -12,7 +12,7 @@
     Background="White"
     ui:ThemeManager.IsThemeAware="True"
     Height="520"
-    Width="800">
+    Width="950">
     <Grid
         x:Name="RootGrid"
         VerticalAlignment="Stretch">

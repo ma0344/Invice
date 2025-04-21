@@ -9,11 +9,15 @@ using System.Windows.Data;
 using System.Collections.Specialized;
 using System.Windows;
 using Invoice.ViewModels.Invoice.ViewModels;
+using System.Diagnostics;
 
 namespace Invoice.ViewModels
 {
     public partial class InvoiceViewModel : INotifyPropertyChanged
     {
+        event EventHandler UpdateTotalAmountEvent;
+        public delegate void PropertyChangedHandler(object sender, PropertyChangedEventArgs e);
+        public PropertyChangedHandler PropertyChangedEvent;
         public InvoiceViewModel()
         {
 
@@ -43,7 +47,14 @@ namespace Invoice.ViewModels
             }
             InvoiceClassList.CollectionChanged += InvoiceList_CollectionChanged;
             CurrentInvoice = new InvoiceClass();
+            CurrentInvoice.PropertyChanged += CurrentInvoice_PropertyChanged; ;
         }
+
+        private void CurrentInvoice_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+
+        }
+
         private bool _DepositFromInvoicePage = false;
         public bool DepositFromInvoicePage
         {
@@ -58,7 +69,6 @@ namespace Invoice.ViewModels
         }
 
         private ObservableCollection<InvoiceClass> _InvoiceClassList = [];
-
         public ObservableCollection<InvoiceClass> InvoiceClassList
         {
             get { return _InvoiceClassList; }
@@ -72,7 +82,25 @@ namespace Invoice.ViewModels
         
         public CollectionViewSource InvoiceCollectionViewSource { get; set; }
 
+        public ObservableCollection<CustomerClass> CustomerCollectionViewSource
+        {
+            get
+            {
+                var mainWindow = Application.Current.MainWindow as MainWindow;
+                var dataContext = mainWindow.DataContext as MainWindowViewModel;
+                var customerVM = dataContext.CustomerVM;
+                var customerList = customerVM.CustomerClassList.ToList();
+                ObservableCollection<CustomerClass> filterdCustomerList = [];
+                foreach (CustomerClass customer in customerList)
+                {
+                    if (customer.CustomerVisible) filterdCustomerList.Add(customer);
+                }
+                
+                return filterdCustomerList;   
+            }
+        }
         
+
         private ObservableCollection<ItemClass> _ItemClassList = [];
         public ObservableCollection<ItemClass> ItemClassList
         {
@@ -86,8 +114,8 @@ namespace Invoice.ViewModels
                 OnPropertyChanged(nameof(ItemClassList));
             }
         }
-       
         
+
         private static ObservableCollection<TaxTypeClass> _TaxTypeClassList = [];
         public static ObservableCollection<TaxTypeClass> TaxTypeClassList
         {
@@ -98,7 +126,7 @@ namespace Invoice.ViewModels
             }
         }
 
-        
+
         private ObservableCollection<TransactionTypeClass> _TransactionTypeClassList = [];
         public ObservableCollection<TransactionTypeClass> TransactionTypeClassList
         {
@@ -111,14 +139,63 @@ namespace Invoice.ViewModels
         }
 
 
-        private static ObservableCollection<BalanceClass> _BalanceClassList = [];
-
-        public static ObservableCollection<BalanceClass> BalanceClassList
+        private ObservableCollection<BalanceClass> _BalanceClassList = [];
+        public ObservableCollection<BalanceClass> BalanceClassList
         {
             get { return _BalanceClassList; }
             set
             {
                 _BalanceClassList = value;
+            }
+        }
+
+
+        private int _DepositAmount = 0;
+        public int DepositAmount
+        {
+            get { return _DepositAmount; }
+            set
+            {
+                _DepositAmount = value;
+                AfterSettleUpAmount = ItemsTotalAmount - _DepositAmount > 0 ? ItemsTotalAmount - _DepositAmount : 0;
+                AfterSettleUpDeposit = _DepositAmount - ItemsTotalAmount > 0 ? _DepositAmount - ItemsTotalAmount : 0;
+                OnPropertyChanged(nameof(DepositAmount));
+            }
+        }
+
+
+        private int _ItemsTotalAmount = 0;
+        public int ItemsTotalAmount
+        {
+            get { return _ItemsTotalAmount; }
+            set
+            {
+                _ItemsTotalAmount = value;
+                AfterSettleUpAmount = ItemsTotalAmount - _DepositAmount > 0 ? ItemsTotalAmount - _DepositAmount : 0;
+                AfterSettleUpDeposit = _DepositAmount - ItemsTotalAmount > 0 ? _DepositAmount - ItemsTotalAmount : 0;
+                OnPropertyChanged(nameof(ItemsTotalAmount));
+            }
+        }
+
+        private int _AfterSettleUpDeposit = 0;
+        public int AfterSettleUpDeposit
+        {
+            get { return _AfterSettleUpDeposit; }
+            set
+            {
+                _AfterSettleUpDeposit = value;
+                OnPropertyChanged(nameof(AfterSettleUpDeposit));
+            }
+        }
+
+        private int _AfterSettleUpAmount = 0;
+        public int AfterSettleUpAmount
+        {
+            get { return _AfterSettleUpAmount; }
+            set
+            {
+                _AfterSettleUpAmount = value;
+                OnPropertyChanged(nameof(AfterSettleUpAmount));
             }
         }
 
@@ -158,11 +235,13 @@ namespace Invoice.ViewModels
                         _InvoiceItemClassList.CollectionChanged += InvoiceItems_CollectionChanged;
                         foreach (var item in _InvoiceItemClassList)
                         {
+                            item.PropertyChanged -= InvoiceItem_PropertyChanged;
                             item.PropertyChanged += InvoiceItem_PropertyChanged;
                         }
                     }
                     UpdateTotalAmount();
                 }
+                OnPropertyChanged(nameof(InvoiceItemClassList));
             }
         }
 
@@ -211,17 +290,12 @@ namespace Invoice.ViewModels
             }
         }
 
-        private int _InvoiceTotalAmount = 0;
-        public int InvoiceTotalAmount
+        private InvoiceStatusClass _SelectedStatus;
+        public InvoiceStatusClass SelectedStatus
         {
-            get { return _InvoiceTotalAmount; }
-            set
-            {
-                _InvoiceTotalAmount = value;
-                OnPropertyChanged(nameof(InvoiceTotalAmount));
-            }
+            get => _SelectedStatus;
+            set { _SelectedStatus = value; }
         }
-
         public void InvoiceListReset(List<InvoiceClass> invoices)
         {
             InvoiceClassList.Clear();
@@ -251,12 +325,19 @@ namespace Invoice.ViewModels
             }
         }
 
+        public void ReloadBalanceList()
+        {
+            var balances = BalanceClass.GetAllBalances();
+            BalanceClassList = new ObservableCollection<BalanceClass>(balances);
+        }
+
         private void InvoiceItems_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
             if (e.NewItems != null)
             {
                 foreach (InvoiceItemClass item in e.NewItems)
                 {
+                    item.PropertyChanged -= InvoiceItem_PropertyChanged;
                     item.PropertyChanged += InvoiceItem_PropertyChanged;
                 }
             }
@@ -267,24 +348,44 @@ namespace Invoice.ViewModels
                     item.PropertyChanged -= InvoiceItem_PropertyChanged;
                 }
             }
-            UpdateTotalAmount();
+            if(e.NewItems != null || e.OldItems != null) 
+                UpdateTotalAmount();
         }
 
         private void InvoiceItem_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             if (e.PropertyName == nameof(InvoiceItemClass.ItemTotal))
             {
+                ItemsTotalAmount = InvoiceItemClassList.Sum(item => item.ItemTotal);
+
+                var item = sender as InvoiceItemClass;
+                CurrentInvoice.ItemsTotal = ItemsTotalAmount;
+                if(CurrentInvoice.TransactionTypeId == 2)
+                {
+                    CurrentInvoice.PaydByDeposit = DepositAmount - ItemsTotalAmount >= 0 ? ItemsTotalAmount : DepositAmount;
+                    CurrentInvoice.InvoiceTotal = ItemsTotalAmount - CurrentInvoice.PaydByDeposit;
+                    CurrentInvoice.ItemsTotal = ItemsTotalAmount;
+                }
+                else
+                {
+                    CurrentInvoice.PaydByDeposit = 0;
+                    CurrentInvoice.InvoiceTotal = ItemsTotalAmount;
+                    CurrentInvoice.ItemsTotal = ItemsTotalAmount;
+                }
+                    Debug.WriteLine($"InvoiceTotal:{CurrentInvoice.InvoiceTotal}, ItemsTotal:{CurrentInvoice.ItemsTotal},PaydByDeposit:{CurrentInvoice.PaydByDeposit}, DepositAmount{DepositAmount}, TransactionTypeId:{CurrentInvoice.TransactionTypeId}, {ItemsTotalAmount}");
                 UpdateTotalAmount();
             }
-            UpdateTotalAmount();
+            //UpdateTotalAmount();
         }
 
         private void UpdateTotalAmount()
         {
-            InvoiceTotalAmount = InvoiceItemClassList.Sum(item => item.ItemTotal);
+            ItemsTotalAmount = InvoiceItemClassList.Sum(item => item.ItemTotal);
+            if (CurrentInvoice == null) return;
+            Debug.WriteLine(ItemsTotalAmount);
+            UpdateTotalAmountEvent?.Invoke(CurrentInvoice, EventArgs.Empty);
+
         }
-
-
 
         private void Invoice_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {

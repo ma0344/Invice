@@ -97,8 +97,8 @@ public class FontType
 
         // ドキュメントの作成
         Document document = new Document();
-        document.Info.Title = "Hello, MigraDoc";
-        document.Info.Subject = "This is MigraDoc Sample.";
+        document.Info.Title = $"{Path.GetFileNameWithoutExtension(filePath)}";
+        document.Info.Subject = $"{invoiceData.Subject}";
         document.Info.Author = "Author";
 
 
@@ -216,7 +216,7 @@ public class FontType
             total.Format.Alignment = ParagraphAlignment.Right;
             total.Format.RightIndent = Unit.FromMillimeter(5);
             total.Format.Font.Size = 16;
-            total.AddFormattedText(invoiceData.Total.ToString("c") + "-", TextFormat.Bold);
+            total.AddFormattedText(invoiceData.InvoiceTotal?.ToString("c") + "-", TextFormat.Bold);
             Paragraph totalUnderLine = totalArea.AddParagraph();
             totalUnderLine.Format.Font.Size = 1;
             totalUnderLine.Format.Borders.Top.Width = 0.5d;
@@ -273,7 +273,7 @@ public class FontType
             slipNumC1 = slipNumRow.Cells[0].AddParagraph("発行日：");
             slipNumC1.Format.Font.Size = 8;
             slipNumC1.Format.Alignment = ParagraphAlignment.Right;
-            slipNumC2 = slipNumRow.Cells[1].AddParagraph($"{invoiceData.DueDate.ToShortDateString()}");
+            slipNumC2 = slipNumRow.Cells[1].AddParagraph($"{invoiceData.IssueDate?.ToShortDateString()}");
             slipNumC2.Format.Font.Size = 8;
             slipNumC2.Format.Alignment = ParagraphAlignment.Right;
             // 法人名
@@ -477,7 +477,7 @@ public class FontType
             var totalC0 = subTotalRow.Cells[0].AddParagraph("小計");
             totalC0.Format.Shading.Color = Colors.LightGray;
             totalC0.Format.LeftIndent = Unit.FromMillimeter(3);
-            var totalC1 = subTotalRow.Cells[1].AddParagraph($"{invoiceData.SubTotal.ToString("#,0")}");
+            var totalC1 = subTotalRow.Cells[1].AddParagraph($"{invoiceData.SubTotal?.ToString("#,0")}");
             totalC1.Format.RightIndent = Unit.FromMillimeter(1);
             totalC1.Format.Alignment = ParagraphAlignment.Right;
 
@@ -487,7 +487,7 @@ public class FontType
             gTotalRow.Cells[0].Shading.Color = Colors.LightGray;
             totalC0 = gTotalRow.Cells[0].AddParagraph("合計");
             totalC0.Format.LeftIndent = Unit.FromMillimeter(3);
-            totalC1 = gTotalRow.Cells[1].AddParagraph($"{invoiceData.Total.ToString("#,0")}");
+            totalC1 = gTotalRow.Cells[1].AddParagraph($"{invoiceData.InvoiceTotal?.ToString("#,0")}");
             totalC1.Format.Alignment = ParagraphAlignment.Right;
             totalC1.Format.RightIndent = Unit.FromMillimeter(1);
 
