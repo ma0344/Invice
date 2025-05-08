@@ -8,14 +8,74 @@
     mc:Ignorable="d"
     xmlns:ui="http://schemas.modernwpf.com/2019"
     ui:WindowHelper.UseModernWindowStyle="True"
-    Title="MainWindow"
+    Title="請求・領収管理システム"
     Background="White"
+    FontFamily="Biz UDGothic"
     ui:ThemeManager.IsThemeAware="True"
-    Height="520"
-    Width="950">
+    Height="700"
+    Width="1100"
+    Icon="/Image/Icon.ico">
     <Grid
         x:Name="RootGrid"
         VerticalAlignment="Stretch">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="155"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid Grid.Row="0"
+              x:Name="NavigationGrid"
+              Background="#4CAF50"
+              Panel.ZIndex="0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition />
+            </Grid.RowDefinitions>
+            <Label x:Name="PageTitleLabel"
+                   FontSize="20px"
+                   FontWeight="Bold"
+                   Foreground="White"
+                   HorizontalAlignment="Center"
+                   Margin="0,40,0,25"
+                   Content="請求・領収管理システム"/>
+            <StackPanel Grid.Row="1"
+                        VerticalAlignment="Top"
+                        HorizontalAlignment="Center"
+                        Orientation="Horizontal"
+                        Background="Transparent">
+                <StackPanel.Resources>
+                    <Style TargetType="Label">
+                        <Setter Property="Foreground"
+                                Value="White" />
+                        <Setter Property="Margin"
+                                Value="7,0" />
+                        <Setter Property="VerticalAlignment"
+                                Value="Center" />
+                        <Setter Property="Cursor"
+                                Value="Hand" />
+                        <Setter Property="HorizontalContentAlignment"
+                                Value="Center" />
+                        <Setter Property="FontSize"
+                                Value="16px" />
+                    </Style>
+                </StackPanel.Resources>
+                <Label x:Name="InvoiceLabel"
+                       Foreground="#CC000000"
+                       MouseLeftButtonUp="Label_MouseLeftButtonUp">請求書管理</Label>
+                <Label x:Name="PaymentLabel"
+                       Foreground="#CC000000"
+                       MouseLeftButtonUp="Label_MouseLeftButtonUp">入金管理</Label>
+                <Label x:Name="DashBoardLabel"
+                       Foreground="#CC000000"
+                       MouseLeftButtonUp="Label_MouseLeftButtonUp">仕訳出力</Label>
+                <Label x:Name="CustomerLabel"
+                       Foreground="#CC000000"
+                       MouseLeftButtonUp="Label_MouseLeftButtonUp">利用者管理</Label>
+                <Label x:Name="SettingsLabel"
+                       Foreground="#CC000000"
+                       MouseLeftButtonUp="Label_MouseLeftButtonUp">設定</Label>
+            </StackPanel>
+        </Grid>
+
         <Frame
             Grid.Row="1"
             x:Name="MainFrame"

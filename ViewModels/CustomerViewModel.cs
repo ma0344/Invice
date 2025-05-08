@@ -198,6 +198,17 @@ namespace Invoice.ViewModels
         {
             var balances = BalanceClass.GetAllBalances();
             BalanceClassList = new ObservableCollection<BalanceClass>(balances);
+            var mainWindow = Application.Current.MainWindow as MainWindow;
+            var dataContext = mainWindow.DataContext as MainWindowViewModel;
+            var transactionTypes = dataContext.SettingsVM.TransactionTypeClassList;
+
+            foreach (BalanceClass balance in BalanceClassList)
+            {
+                balance.CustomerName = CustomerClassList.FirstOrDefault(c => c.CustomerId == balance.CustomerId)?.CustomerName ?? "不明";
+                balance.TransactionTypeName = transactionTypes.FirstOrDefault(t => t.TransactionTypeId == balance.TransactionTypeId)?.TransactionName ?? "不明";
+            }
+
+            BalanceCollectionViewSource.Source = BalanceClassList;
         }
 
         private string _saveButtonText = "保存";
@@ -255,18 +266,6 @@ namespace Invoice.ViewModels
 
         public void CustomerListReset(List<CustomerClass> customers)
         {
-            CustomerClassList.Clear();
-            foreach (var customer in customers)
-            {
-                var mainWindow = Application.Current.MainWindow as MainWindow;
-                var dataContext = mainWindow.DataContext as MainWindowViewModel;
-                var customerVM = dataContext.CustomerVM;
-                CustomerClassList.Add(customer);
-            }
-        }
-        public void ReloadCustomerList()
-        {
-            var customers = CustomerClass.GetCustomers();
             CustomerClassList.Clear();
             foreach (var customer in customers)
             {

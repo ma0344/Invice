@@ -438,20 +438,17 @@ namespace Invoice
                 if(char.IsAscii(c) && c >= 48 && c <= 57)
                 {
                     text.Font.Size = NumberSize;
-                    Debug.WriteLine("Number");
                     if(i < length - 1)
                     {
                         var nextChar = charArray[i + 1];
                         if (!char.IsAscii(nextChar) && (nextChar !>= 48 || nextChar !<= 57))
                         {
-                            text.AddSpace(2);
                         }
                     }
                 }
                 else
                 {
                     text.Font.Size = StringSize;
-                    Debug.WriteLine("String");
                     if (i < length - 1)
                     {
                         var nextChar = charArray[i + 1];

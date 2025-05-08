@@ -90,7 +90,7 @@ namespace Invoice
         {
             this.TaxListDataGrid.Loaded += DataGrid_Loaded;
             this.TransactionMethodListDataGrid.Loaded += DataGrid_Loaded;
-            vm.SlipnumberInfoReload();
+            vm.slipNumbers = new();
         }
 
         private void Label_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
@@ -160,7 +160,6 @@ namespace Invoice
         {
             EditItemButton_Click(EditItemButton, new RoutedEventArgs());
         }
-
 
         private void ShowDatailPane()
         {
@@ -279,42 +278,6 @@ namespace Invoice
         private void ApplySlipNumberButton_Click(object sender, RoutedEventArgs e)
         {
             vm.SlipNumberInfo.UpdateSlipNumberInfo();
-        }
-
-        private void ApplyPaymentTitleButton_Click(object sender, RoutedEventArgs e)
-        {
-            //var orgPaymentList = PaymentMethodClass.GetPaymentMethods();
-            //var newPaymentList = vm.PaymentMethodClassList;
-            //foreach (var payment in newPaymentList)
-            //{
-            //    if (payment.PaymentMethodId != 0)
-            //    {
-            //        if (orgPaymentList.FirstOrDefault(x => x.PaymentMethodId == payment.PaymentMethodId) is PaymentMethodClass orgPayment)
-            //        {
-            //            if (orgPayment.MethodName != payment.MethodName)
-            //                payment.UpdatePaymentMethod();
-            //        }
-            //    }
-            //    else
-            //        payment.PaymentMethodId = PaymentMethodClass.AddPaymentMethod(payment);
-            //}
-        }
-
-        private void DeletePaymentTitleButton_Click(object sender, RoutedEventArgs e)
-        {
-            //var selectedItemIds = PaymentMethodListDataGrid.SelectedItems
-            //    .OfType<PaymentMethodClass>()
-            //    .Select(payment => payment.PaymentMethodId)
-            //    .ToList();
-            //foreach (var id in selectedItemIds)
-            //{
-            //    var paymentMethodItem = vm.PaymentMethodClassList.FirstOrDefault(x => x.PaymentMethodId == id);
-            //    if (paymentMethodItem != null)
-            //    {
-            //        paymentMethodItem.DeletePaymentMethod();
-            //        vm.PaymentMethodClassList.Remove(paymentMethodItem);
-            //    }
-            //}
         }
 
         private void ApplyTransactionTitleButton_Click(object sender, RoutedEventArgs e)
@@ -487,7 +450,7 @@ namespace Invoice
                         comboBoxSelectedItem = selectedItem as ItemClass;
 
                     invoiceItem.SetItem(comboBoxSelectedItem);
-                    invoiceItem.ReTotal(invoiceItem);
+                    //invoiceItem.ReTotal(invoiceItem);
                     var contentPresenter = comboBox.TemplatedParent as ContentPresenter;
                     var dataGridCell = contentPresenter.Parent as DataGridCell;
                     var dataGridCellsPanel = VisualTreeHelper.GetParent(dataGridCell) as DataGridCellsPanel;
@@ -510,22 +473,5 @@ namespace Invoice
 
         }
 
-    }
-    public static class VisualTreeHelperWrapper
-    {
-        public static T FindDescendant<T>(this DependencyObject depObj)
-            where T : DependencyObject
-        {
-            if (depObj == null) { return null; }
-
-            for (var i = 0; i < VisualTreeHelper.GetChildrenCount(depObj); i++)
-            {
-                var child = VisualTreeHelper.GetChild(depObj, i);
-
-                var result = (child as T) ?? FindDescendant<T>(child);
-                if (result != null) { return result; }
-            }
-            return null;
-        }
     }
 }

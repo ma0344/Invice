@@ -13,6 +13,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Windows.Threading;
 
 namespace Invoice
 {
@@ -32,6 +33,7 @@ namespace Invoice
         public ObservableCollection<CultureInfo> CustomersList;
         public ObservableCollection<ItemClass> ItemsList;
         public List<TaxTypeClass> TaxList;
+        public Label prevLabel;
 
         public MainWindow()
         {
@@ -44,17 +46,49 @@ namespace Invoice
             CustomerPage = new CustomerPage(MainWindowViewModel);
             Payment = new PaymentPage(MainWindowViewModel);
             SettingsPage = new SettingsPage(MainWindowViewModel);
-            MainFrame.Navigate(DashBoardPage);
+            MainFrame.Navigate(InvoicePage);
+            prevLabel = InvoiceLabel;
+            prevLabel.Foreground = new SolidColorBrush(Colors.White);
+            prevLabel.FontSize = 30;
+            prevLabel.FontWeight = FontWeights.Bold;
+            MainFrame.Navigated += MainFrame_Navigated;
             ThemeManager.Current.ApplicationTheme = ApplicationTheme.Light;
             TaxList = TaxTypeClass.GetTaxes();
+
+        }
+
+        private void MainFrame_Navigated(object sender, NavigationEventArgs e)
+        {
+            PageTitleLabel.Content = "請求・領収管理システム";//((Page)MainFrame.Content).Tag.ToString();
+
+        }
+
+        private void Label_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is Label label)
+            {
+                prevLabel.Foreground = new SolidColorBrush(Color.FromArgb(0xCC, 0x00, 0x00, 0x00));
+                prevLabel.FontSize = 16;
+                prevLabel.FontWeight = FontWeights.Normal;
+                NavigateToPage(label.Name);
+                label.Foreground = new SolidColorBrush(Colors.White);
+                label.FontSize = 30;
+                label.FontWeight = FontWeights.Bold;
+
+                prevLabel = label;
+            }
         }
 
         public void NavigateToPage(string pageName)
         {
+            
+
+
             switch (pageName)
             {
                 case "DashBoardLabel":
                     MainFrame.Navigate(DashBoardPage);
+
                     break;
                 case "CustomerLabel":
                     MainFrame.Navigate(CustomerPage);
@@ -72,7 +106,20 @@ namespace Invoice
                     break;
             }
         }
+        void AllowUIToUpdate()
+        {
+            DispatcherFrame frame = new DispatcherFrame();
+            Dispatcher.CurrentDispatcher.BeginInvoke(DispatcherPriority.Render, new DispatcherOperationCallback(delegate (object parameter)
+            {
+                frame.Continue = false;
+                return null;
+            }), null);
 
+            Dispatcher.PushFrame(frame);
+            //EDIT:
+            Application.Current.Dispatcher.Invoke(DispatcherPriority.Background,
+                                          new Action(delegate { }));
+        }
         public void SavedInfomation()
         {
             

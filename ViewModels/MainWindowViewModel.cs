@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Text;
+using System.Text.Encodings.Web;
 using System.Threading.Tasks;
+using System.Windows.Data;
 
 namespace Invoice.ViewModels
 {
@@ -21,8 +23,10 @@ namespace Invoice.ViewModels
             private Lazy<PaymentViewModel> _paymentVM;
             public PaymentViewModel PaymentVM => _paymentVM.Value;
 
+            public bool DebugOutIsOn = false;
             public MainWindowViewModel()
             {
+
                 SettingsVM = new SettingsViewModel();
                 _CustomerVM = new Lazy<CustomerViewModel>(() => new CustomerViewModel());
                 _invoiceVM = new Lazy<InvoiceViewModel>(() => new InvoiceViewModel());

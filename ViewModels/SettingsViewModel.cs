@@ -14,13 +14,14 @@ namespace Invoice.ViewModels
     {
         public SettingsViewModel()
         {
-            SlipNumberInfo = SlipNumberClass.GetSlipNumberInfo();
+            slipNumbers = new();
+            SlipNumberInfo = slipNumbers.GetSlipNumber();
             var taxList = TaxTypeClass.GetTaxes();
             TaxTypeClassList = new ObservableCollection<TaxTypeClass>(taxList);
             var transactionType = TransactionTypeClass.GetTransactionTypes();
             TransactionTypeClassList = new ObservableCollection<TransactionTypeClass>(transactionType);
-            //var paymentMethods = PaymentMethodClass.GetPaymentMethods();
-            //PaymentMethodClassList = new ObservableCollection<PaymentMethodClass>(paymentMethods);
+            var items = ItemClass.GetItems();
+            ItemClassList = new ObservableCollection<ItemClass>(items);
             var statusInfos = InvoiceStatusClass.GetInvoiceStatuses();
             foreach (var inf in statusInfos)
             {
@@ -55,20 +56,21 @@ namespace Invoice.ViewModels
             }
         }
 
+        private SlipNumbers _slipNumbers = new();
+        public SlipNumbers slipNumbers
+        {
+            get { return _slipNumbers; }
+            set
+            {
+                _slipNumbers = value;
+                OnPropertyChanged(nameof(slipNumbers));
+            }
+        }
+
         public void SlipnumberInfoReload()
         {
-            SlipNumberInfo = SlipNumberClass.GetSlipNumberInfo();
+            slipNumbers = new();
         }
-        //private ObservableCollection<PaymentMethodClass> _PaymentMethodClassList = [];
-        //public ObservableCollection<PaymentMethodClass> PaymentMethodClassList
-        //{
-        //    get { return _PaymentMethodClassList; }
-        //    set
-        //    {
-        //        _PaymentMethodClassList = value;
-        //        OnPropertyChanged(nameof(PaymentMethodClassList));
-        //    }
-        //}
 
 
         private ObservableCollection<TaxTypeClass> _TaxTypeClassList;

@@ -12,118 +12,9 @@
     d:DesignHeight="500"
     d:DesignWidth="800"
     FontFamily="Biz UDGothic"
-    Title="Customer">
-    <Page.Resources>
-        <Style x:Key="CustomDataGridCellStyle"
-               TargetType="DataGridCell"
-               BasedOn="{StaticResource DefaultDataGridCellStyle}">
-            <Setter Property="OverridesDefaultStyle"
-                    Value="True" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="DataGridCell">
-                        <ui:DataGridCellPresenter Background="{TemplateBinding Background}"
-                                                  CurrencyVisualBrush="{DynamicResource DataGridCurrencyVisualPrimaryBrush}"
-                                                  CurrencyVisualThickness="0"
-                                                  FocusVisualPrimaryBrush="{DynamicResource DataGridCellFocusVisualPrimaryBrush}"
-                                                  FocusVisualPrimaryThickness="0"
-                                                  FocusVisualSecondaryBrush="{DynamicResource DataGridCellFocusVisualSecondaryBrush}"
-                                                  FocusVisualSecondaryThickness="0"
-                                                  IsCurrencyVisualVisible="{TemplateBinding IsSelected}"
-                                                  IsFocusVisualVisible="{TemplateBinding IsKeyboardFocusWithin}"
-                                                  MinHeight="{TemplateBinding MinHeight}"
-                                                  SnapsToDevicePixels="True" />
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>        <Style TargetType="DataGridCell"
-               x:Key="Cellstyle_HorizontalAlignRight"
-               BasedOn="{StaticResource CustomDataGridCellStyle}">
-            <Setter Property="HorizontalAlignment"
-                    Value="Right" />
-            <Setter Property="Padding"
-                    Value="0,0,5,0" />
-        </Style>
-        <Style TargetType="DataGridCell"
-               x:Key="Cellstyle_HorizontalAlignCenter"
-               BasedOn="{StaticResource CustomDataGridCellStyle}">
-            <Setter Property="HorizontalAlignment"
-                    Value="Center" />
-            <Setter Property="Padding"
-                    Value="0,0,0,0" />
-        </Style>
-
-    </Page.Resources>
+    Title="Customer"
+      Tag="利用者管理">
     <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition
-                Height="155" />
-            <RowDefinition
-                Height="*" />
-        </Grid.RowDefinitions>
-        <Grid
-            Grid.Row="0"
-            x:Name="NavigationGrid"
-            Background="#4CAF50">
-            <Grid.RowDefinitions>
-                <RowDefinition
-                    Height="Auto" />
-                <RowDefinition />
-            </Grid.RowDefinitions>
-            <Label
-                FontSize="32px"
-                FontWeight="Bold"
-                Foreground="White"
-                HorizontalAlignment="Center"
-                Margin="0,40,0,25"
-                FontFamily="BIZ UDGothic">利用者管理</Label>
-            <StackPanel
-                Grid.Row="1"
-                Height="30"
-                VerticalAlignment="Top"
-                HorizontalAlignment="Center"
-                Orientation="Horizontal"
-                Background="Transparent">
-                <StackPanel.Resources>
-                    <Style
-                        TargetType="Label">
-                        <Setter
-                            Property="Foreground"
-                            Value="White" />
-                        <Setter
-                            Property="Margin"
-                            Value="7,0" />
-                        <Setter
-                            Property="VerticalAlignment"
-                            Value="Center" />
-                        <Setter
-                            Property="Cursor"
-                            Value="Hand" />
-                        <Setter
-                            Property="HorizontalContentAlignment"
-                            Value="Center" />
-                        <Setter
-                            Property="FontSize"
-                            Value="16px" />
-                    </Style>
-                </StackPanel.Resources>
-                <Label
-                    x:Name="DashBoardLabel"
-                    MouseLeftButtonUp="Label_MouseLeftButtonUp">ダッシュボード</Label>
-                <Label
-                    x:Name="CustomerLabel"
-                    MouseLeftButtonUp="Label_MouseLeftButtonUp">利用者管理</Label>
-                <Label
-                    x:Name="InvoiceLabel"
-                    MouseLeftButtonUp="Label_MouseLeftButtonUp">請求書管理</Label>
-                <Label
-                    x:Name="PaymentLabel"
-                    MouseLeftButtonUp="Label_MouseLeftButtonUp">入金管理</Label>
-                <Label
-                    x:Name="SettingsLabel"
-                    MouseLeftButtonUp="Label_MouseLeftButtonUp">設定</Label>
-            </StackPanel>
-        </Grid>
         <Grid
             Grid.Row="1"
             x:Name="CustomerPageContentGrid">
@@ -185,67 +76,13 @@
                 BorderThickness="1"
                 VerticalAlignment="Stretch"
                 VerticalScrollBarVisibility="Auto"
+                CellStyle="{StaticResource CustomDataGridCellStyle}"
+                ColumnHeaderStyle="{StaticResource CustomDataGridColumnHeaderStyle}"
                 FontSize="20"
                 Width="500"
                 MaxWidth="500"
                 MinWidth="500"
                 >
-                <DataGrid.CellStyle>
-                    <Style
-                        TargetType="DataGridCell"
-                        BasedOn="{StaticResource DefaultDataGridCellStyle}">
-                        <Setter
-                            Property="FontSize"
-                            Value="20" />
-                        <Setter
-                            Property="Padding"
-                            Value="5,0" />
-                        <Setter
-                            Property="VerticalContentAlignment"
-                            Value="Center" />
-                        <Setter
-                            Property="OverridesDefaultStyle"
-                            Value="True" />
-                        <Setter
-                            Property="Template">
-                            <Setter.Value>
-                                <ControlTemplate
-                                    TargetType="DataGridCell">
-                                    <ui:DataGridCellPresenter
-                                        Background="{TemplateBinding Background}"
-                                        CurrencyVisualBrush="{DynamicResource DataGridCurrencyVisualPrimaryBrush}"
-                                        CurrencyVisualThickness="0"
-                                        FocusVisualPrimaryBrush="{DynamicResource DataGridCellFocusVisualPrimaryBrush}"
-                                        FocusVisualPrimaryThickness="0"
-                                        FocusVisualSecondaryBrush="{DynamicResource DataGridCellFocusVisualSecondaryBrush}"
-                                        FocusVisualSecondaryThickness="0"
-                                        IsCurrencyVisualVisible="{TemplateBinding IsSelected}"
-                                        IsFocusVisualVisible="{TemplateBinding IsKeyboardFocusWithin}"
-                                        MinHeight="{TemplateBinding MinHeight}"
-                                        SnapsToDevicePixels="True" />
-                                </ControlTemplate>
-                            </Setter.Value>
-                        </Setter>
-                    </Style>
-                </DataGrid.CellStyle>
-                
-                    <DataGrid.ColumnHeaderStyle>
-                    <Style
-                        TargetType="{x:Type DataGridColumnHeader}">
-                        <Setter
-                            Property="FontSize"
-                            Value="15" />
-                        <Setter
-                            Property="HorizontalContentAlignment"
-                            Value="Center" />
-                        <Setter
-                            Property="Padding"
-                            Value="0" />
-                        <Setter
-                            Property="Margin"
-                            Value="0" />
-                    </Style>
-                </DataGrid.ColumnHeaderStyle>
                 <DataGrid.Columns>
                     <DataGridTemplateColumn
                         Width="30">
@@ -260,27 +97,10 @@
                                 <CheckBox
                                     x:Name="CustomerCheckBox"
                                     IsChecked="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow},Path=IsSelected,Mode=TwoWay}"
+                                    Style="{StaticResource RowCheckBoxStyle}"
                                     PreviewMouseLeftButtonDown="CustomerCheckBox_PreviewMouseLeftButtonDown"
                                     Width="20">
                                     <CheckBox.Resources>
-                                        <Style
-                                            TargetType="CheckBox"
-                                            BasedOn="{StaticResource DefaultCheckBoxStyle}">
-                                            <Setter
-                                                Property="HorizontalAlignment"
-                                                Value="Center" />
-                                            <Setter
-                                                Property="Width"
-                                                Value="20" />
-                                            <Setter
-                                                Property="Content">
-                                                <Setter.Value>
-                                                    <TextBlock
-                                                        Width="0"
-                                                        Visibility="Collapsed" />
-                                                </Setter.Value>
-                                            </Setter>
-                                        </Style>
                                         <Style
                                             TargetType="Grid">
                                             <Setter
@@ -298,46 +118,25 @@
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-                    <DataGridTemplateColumn
+                    
+                    <DataGridTextColumn
                         Header="ID"
-                        Width="100">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <TextBlock
-                                    Text="{Binding CustomerId}"
-                                    VerticalAlignment="Center"
-                                    TextAlignment="Right" 
-                                    Padding="10,0"
-                                    />
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                    <DataGridTemplateColumn
-                        Header="名前"
-                        Width="180">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <TextBlock
-                                    Text="{Binding CustomerName}"
-                                    TextAlignment="Left"
-                                    VerticalAlignment="Center"
-                                    Padding="10,0" />
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                    <DataGridTemplateColumn
+                        Width="100"
+                        CellStyle="{StaticResource DataGridNameCellStyle}"
+                        FontSize="20"
+                        Binding="{Binding CustomerId}"/>
+                    <DataGridTextColumn Header="名前"
+                                            CellStyle="{StaticResource Cellstyle_HorizontalAlignCenter}"
+                                            Width="180"
+                                        IsReadOnly="True"
+                                        FontSize="20"
+                                            Binding="{Binding CustomerName}"/>
+                    <DataGridTextColumn
                         Header="請求残高"
-                        Width="170">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <TextBlock
-                                    Text="{Binding CustomerBalance,StringFormat={}￥{0:N0}‐}"
-                                    TextAlignment="Right"
-                                    VerticalAlignment="Center"
-                                    Padding="10,0" />
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
+                        Width="170"
+                        CellStyle="{StaticResource DataGridAmountCellStyle}"
+                        FontSize="20"
+                        Binding="{Binding CustomerBalance,StringFormat={}￥{0:N0}‐}"/>
                 </DataGrid.Columns>
             </DataGrid>
 
@@ -355,8 +154,7 @@
                     Margin="0,10,0,10"
                     HorizontalAlignment="Left"
                     VerticalAlignment="Top"
-                    Click="AddCustomerButton_Click"
-                    Command="{Binding AddCustomerCommand}" />
+                    Click="AddCustomerButton_Click"/>
                 <Button
                     x:Name="EditCustomerButton"
                     Content="利用者情報編集"
@@ -534,23 +332,11 @@
                           BorderBrush="Gray"
                           BorderThickness="1"
                           ItemsSource="{Binding CustomerVM.BalanceCollectionViewSource.View}"
+                          ColumnHeaderStyle="{StaticResource CustomDataGridColumnHeaderStyle}"
                           AlternatingRowBackground="#0C000000"
                           ColumnHeaderHeight="30"
                           CanUserDeleteRows="False"
                           RowHeaderWidth="0">
-                    <DataGrid.ColumnHeaderStyle>
-                        <Style TargetType="{x:Type DataGridColumnHeader}">
-                            <Setter Property="FontSize"
-                                    Value="15" />
-                            <Setter Property="HorizontalContentAlignment"
-                                    Value="Center" />
-                        </Style>
-                    </DataGrid.ColumnHeaderStyle>
-                    <DataGrid.CellStyle>
-                        <Style TargetType="DataGridCell">
-                            
-                        </Style>
-                    </DataGrid.CellStyle>
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="日付"
                                             Binding="{Binding DateString}"

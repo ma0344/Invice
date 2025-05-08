@@ -5,88 +5,308 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:Invoice"
-    mc:Ignorable="d"
     xmlns:ui="http://schemas.modernwpf.com/2019"
+    xmlns:customControl="clr-namespace:Invoice.CustomControl"
+    mc:Ignorable="d"
+    d:Background="White"
     d:DesignHeight="450"
     d:DesignWidth="800"
-    Background="White"
-    Title="DashBoard">
-
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition
-                Height="155" />
-            <RowDefinition />
-        </Grid.RowDefinitions>
-
+    FontFamily="Biz UDGothic"
+      Title="DashBoard"
+      Tag="仕訳出力"
+      x:Name="DashBordPage">
+    <Page.Resources>
+        <CollectionViewSource Source="{Binding InvoiceViewSource}"
+                              x:Key="InvoiceList" />
+        <DataTemplate x:Key="CheckBoxDataTemplate">
+            <CheckBox x:Name="GridRowCheckBox"
+                      IsChecked="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected, Mode=TwoWay}"
+                      PreviewMouseLeftButtonDown="InvoiceCheckBox_PreviewMouseLeftButtonDown"
+                      Width="20">
+                <!--Checked="InvoiceCheckBox_Checked"
+                                    Unchecked="InvoiceCheckBox_Unchecked"-->
+                <CheckBox.Resources>
+                    <Style TargetType="CheckBox"
+                           BasedOn="{StaticResource DefaultCheckBoxStyle}">
+                        <Setter Property="HorizontalAlignment"
+                                Value="Center" />
+                        <Setter Property="Width"
+                                Value="20" />
+                        <Setter Property="Content">
+                            <Setter.Value>
+                                <TextBlock Width="0"
+                                           Visibility="Collapsed" />
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                    <Style TargetType="Grid">
+                        <Setter Property="Width"
+                                Value="20" />
+                    </Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Width"
+                                Value="20" />
+                    </Style>
+                </CheckBox.Resources>
+            </CheckBox>
+        </DataTemplate>
+    </Page.Resources>
+    <Grid x:Name="ContentGrid">
         <Grid
-            Grid.Row="0"
-            x:Name="NavigationGrid"
-            Background="#4CAF50">
+            Margin="10"
+            x:Name="DashBoardContentsGrid">
             <Grid.RowDefinitions>
-                <RowDefinition
-                    Height="Auto" />
-                <RowDefinition />
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
-            <Label
-                FontSize="32px"
-                FontWeight="Bold"
-                Foreground="White"
-                HorizontalAlignment="Center"
-                Margin="0,40,0,25"
-                FontFamily="BIZ UDGothic">請求管理システム</Label>
-            <StackPanel
-                Grid.Row="1"
-                Height="30"
-                VerticalAlignment="Top"
-                HorizontalAlignment="Center"
-                Orientation="Horizontal"
-                Background="Transparent">
+            <Grid Grid.Row="0"
+                  Margin="60,0,60,0"
+                  HorizontalAlignment="Stretch"
+                  VerticalAlignment="Top">
+                <Label Content="仕訳出力 請求書一覧"
+                       FontSize="24"
+                       FontWeight="Bold"
+                       Margin="0,20" />
+                <Grid HorizontalAlignment="Right"
+                      VerticalAlignment="Center">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+                    <ui:ToggleSwitch Grid.Column="1"
+                                     x:Name="ShowAllInvoice"
+                                     Toggled="ShowAllInvoice_Toggled"
+                                     Margin="0,0,0,0"
+                                     Width="120"
+                                     OnContent="指定期間"
+                                     OffContent="全期間"
+                                     Header="表示期間"
+                                     FontWeight="Bold" />
+                    <customControl:DateNumberBox x:Name="DateBox"
+                                                 Grid.Column="2"
+                                                 Grid.Row="0"
+                                                 Padding="0,0,0,0"
+                                                 TextAlignment="Center"
+                                                 SpinButtonPlacementMode="Inline"
+                                                 VerticalAlignment="Center"
+                                                 FontSize="18"
+                                                 FontWeight="Bold"
+                                                 Tag="0"
+                                                 FontFamily="{StaticResource ContentControlThemeFontFamily}"
+                                                 IsEnabled="{Binding ElementName=ShowAllInvoice,Path=IsOn}"
+                                                 DateSelected="DateBox_DateSelected"
+                                                 Width="210"
+                                                 Foreground="Black"
+                                                 InputMethod.PreferredImeState="Off"
+                                                 HorizontalContentAlignment="Center"
+                                                 VerticalContentAlignment="Center"
+                                                 LargeChange="-12"
+                                                 SmallChange="-1" />
+
+                </Grid>
+
+            </Grid>
+
+            <DataGrid Grid.Row="1"
+                      x:Name="InvoiceListDataGrid"
+                      CanUserAddRows="False"
+                      CanUserResizeColumns="False"
+                      AutoGenerateColumns="False"
+                      VerticalAlignment="Stretch"
+                      VerticalScrollBarVisibility="Auto"
+                      SelectionUnit="FullRow"
+                      ItemsSource="{Binding InvoiceViewSource.View}"
+                      AlternatingRowBackground="#0C000000"
+                      CanUserSortColumns="True"
+                      ColumnHeaderHeight="28"
+                      CanUserDeleteRows="False"
+                      ColumnHeaderStyle="{StaticResource CustomDataGridColumnHeaderStyle}"
+                      PreviewMouseLeftButtonDown="InvoiceListDataGrid_PreviewMouseLeftButtonDown"
+                      RowHeaderWidth="0">
+
+                <DataGrid.Columns>
+                    <DataGridTemplateColumn Width="30"
+                                            CellTemplate="{StaticResource CheckBoxDataTemplate}">
+                        <DataGridTemplateColumn.Header>
+                            <CheckBox x:Name="SelectAllCheckBox"
+                                      Width="20"
+                                      Checked="SelectAllCheckBox_Checked"
+                                      Unchecked="SelectAllCheckBox_Unchecked"
+                                      HorizontalAlignment="Center"
+                                      HorizontalContentAlignment="Center">
+                                <CheckBox.Resources>
+                                    <Style TargetType="Border">
+                                        <Setter Property="Width"
+                                                Value="20" />
+                                    </Style>
+                                </CheckBox.Resources>
+                            </CheckBox>
+                        </DataGridTemplateColumn.Header>
+                    </DataGridTemplateColumn>
+                    <DataGridTextColumn Header="No."
+                                        Width="90*"
+                                        CanUserSort="True"
+                                        FontSize="16"
+                                        CellStyle="{StaticResource Cellstyle_HorizontalAlignCenter}"
+                                        IsReadOnly="True"
+                                        Binding="{Binding SlipNumber}" />
+
+                    <DataGridTextColumn Header="宛先"
+                                        Width="100*"
+                                        FontSize="16"
+                                        CellStyle="{StaticResource Cellstyle_HorizontalAlignCenter}"
+                                        IsReadOnly="True"
+                                        Binding="{Binding CustomerName}" />
+
+                    <DataGridTextColumn Header="件名"
+                                        Width="200*"
+                                        FontSize="16"
+                                        IsReadOnly="True"
+                                        Binding="{Binding Subject}" />
+
+                    <DataGridTextColumn Header="請求金額"
+                                        Width="100*"
+                                        FontSize="20"
+                                        CellStyle="{StaticResource Cellstyle_HorizontalAlignRight}"
+                                        IsReadOnly="True"
+                                        Binding="{Binding InvoiceTotal,StringFormat={}{0:N0}, Mode=OneWay}" />
+
+                    <DataGridTextColumn Header="発行日"
+                                        Width="130*"
+                                        FontSize="16"
+                                        CellStyle="{StaticResource Cellstyle_HorizontalAlignCenter}"
+                                        IsReadOnly="True"
+                                        Binding="{Binding IssueDateString}" />
+                    <DataGridTextColumn Header="ステータス"
+                                        Width="100*"
+                                        FontSize="16"
+                                        CellStyle="{StaticResource Cellstyle_HorizontalAlignCenter}"
+                                        IsReadOnly="True"
+                                        Binding="{Binding InvoiceStatus}" />
+                </DataGrid.Columns>
+
+            </DataGrid>
+            <StackPanel Grid.Row="3"
+                        Margin="0,0,0,0"
+                        HorizontalAlignment="Center"
+                        Orientation="Horizontal"
+                        Height="70">
                 <StackPanel.Resources>
-                    <Style
-                        TargetType="Label">
-                        <Setter
-                            Property="Foreground"
-                            Value="White" />
-                        <Setter
-                            Property="Margin"
-                            Value="7,0" />
-                        <Setter
-                            Property="VerticalAlignment"
-                            Value="Center" />
-                        <Setter
-                            Property="Cursor"
-                            Value="Hand" />
-                        <Setter
-                            Property="HorizontalContentAlignment"
-                            Value="Center" />
-                        <Setter
-                            Property="FontSize"
-                            Value="16px" />
+                    <Style TargetType="Button"
+                           BasedOn="{StaticResource DefaultButtonStyle}">
+                        <Setter Property="Width"
+                                Value="110" />
+                        <Setter Property="Height"
+                                Value="30" />
+                        <Setter Property="Margin"
+                                Value="5,10,0,10" />
+                        <Setter Property="FontSize"
+                                Value="10pt" />
                     </Style>
                 </StackPanel.Resources>
-                <Label
-                    x:Name="DashBoardLabel" MouseLeftButtonUp="Label_MouseLeftButtonUp" >ダッシュボード</Label>
-                <Label
-                    x:Name="CustomerLabel" MouseLeftButtonUp="Label_MouseLeftButtonUp">利用者管理</Label>
-                <Label
-                    x:Name="InvoiceLabel" MouseLeftButtonUp="Label_MouseLeftButtonUp">請求書管理</Label>
-                <Label
-                    x:Name="PaymentLabel" MouseLeftButtonUp="Label_MouseLeftButtonUp">入金管理</Label>
-                <Label
-                    x:Name="SettingsLabel" MouseLeftButtonUp="Label_MouseLeftButtonUp">設定</Label>
+                <Grid Grid.Row="1"
+                      VerticalAlignment="Center"
+                      x:Name="OutputFileGrid">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Row="0"
+                               FontWeight="Bold"
+                               Text="出力フォルダ"
+                               Margin="0,0,0,0"/>
+                    <TextBox x:Name="OutputDirTextBox"
+                             Grid.Row="1"
+                             Grid.Column="0"
+                             TextWrapping="NoWrap"
+                             HorizontalAlignment="Stretch"
+                             Margin="0,0,0,0"
+                             Width="375"
+                             FontSize="12pt"
+                             Height="35"
+                             VerticalContentAlignment="Center"
+                             Text="C:\Users\ma\Desktop" />
+                    <Button x:Name="OutputDirSelectButton"
+                            Grid.Row="1"
+                            Grid.Column="1"
+                            Content="参照"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center"
+                            Width="70"
+                            Margin="5,0,15,0"
+                            Click="OutputDirSelectButton_Click" />
+                    <Button x:Name="CreateCsvButton"
+                            Grid.Row="1"
+                            Grid.Column="2"
+                            Content="仕訳出力"
+                            VerticalAlignment="Center"
+                            Margin="5,0,0,0"
+                            Click="CreateCsvButton_Click" />
+                    <Button x:Name="PreviewCsvButton"
+                            Grid.Row="1"
+                            Grid.Column="3"
+                            Content="プレビュー"
+                            VerticalAlignment="Center"
+                            Margin="5,0,0,0"
+                            Click="PreviewCsvButton_Click" />
+                </Grid>
+
+
             </StackPanel>
+
         </Grid>
-        <Grid
-            Grid.Row="1"
-            x:Name="DashBoardContentsGrid">
-            <Label
-                Content="ダッシュボード"
-                Foreground="Black"
-                FontSize="24px"
-                FontWeight="Bold"
-                HorizontalAlignment="Center"
-                VerticalAlignment="Center" />
-        </Grid>
+        <Border x:Name="AccountingCsvPreviewPane"
+                Grid.Row="1"
+                Background="White"
+                Height="500"
+                Padding="0"
+                VerticalAlignment="Bottom"
+                RenderTransformOrigin="0.5,1">
+            <Border.RenderTransform>
+                <TranslateTransform x:Name="PaneTransform"
+                                    Y="{Binding RelativeSource={RelativeSource AncestorType=Border},Path=Height}" />
+            </Border.RenderTransform>
+            <Grid Margin="10,5,10,10">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Grid Grid.Row="0">
+                    <TextBox x:Name="CsvPreviewTextBox"
+                             VerticalAlignment="Stretch"
+                             AcceptsReturn="True"
+                             AcceptsTab="True"
+                             AutoWordSelection="True"
+                             IsReadOnly="True"
+                             TextWrapping="Wrap"
+                             VerticalScrollBarVisibility="Auto"/>
+                </Grid>
+                <Grid Grid.Row="1"
+                      Margin="0,0,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Button x:Name="ClosePreviewPaneButton"
+                            Grid.Column="1"
+                            Content="閉じる"
+                            Width="130"
+                            Height="35"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center"
+                            Margin="5,5,15,0"
+                            Click="ClosePreviewPaneButton_Click" />
+
+                </Grid>
+            </Grid>
+        </Border>
     </Grid>
 </Page>

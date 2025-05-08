@@ -6,6 +6,7 @@ using ModernWpf.Controls;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
@@ -37,11 +38,13 @@ namespace Invoice
         private PaymentViewModel paymentVM;
         private SettingsViewModel settingsVM;
         public CultureInfo cultureInfo = new("ja-JP");
-        SlipNumberClass SlipNumberInfo = new();
+        SlipNumbers slipNumbers = new();
         private bool isEditing = false;
+        private bool isFirstLoading = true;
         private PaymentFilterParam paymentFilterParam = new();
         private InvoiceFiterParam filterParameter = new();
         private MainWindow mainWindow;
+        private bool DebugSwitch = false;
         private PaymentClass CurrentPayment;
         private int prevTransactionTypeId = 0;
 
@@ -49,20 +52,21 @@ namespace Invoice
         public PaymentPage(MainWindowViewModel mainWindowViewModel)
         {
             InitializeComponent();
+            mainWindow = (MainWindow)Application.Current.MainWindow;
+            DebugSwitch = mainWindowViewModel.DebugOutIsOn;
             this.DataContext = mainWindowViewModel;
             this.Loaded += PaymentPage_Loaded;
-            SlipNumberInfo = SlipNumberClass.GetSlipNumberInfo();
             cultureInfo.DateTimeFormat.Calendar = new JapaneseCalendar();
             cultureInfo.DateTimeFormat.ShortDatePattern = "ggy年M月d日";
             Thread.CurrentThread.CurrentCulture = cultureInfo;
             Thread.CurrentThread.CurrentUICulture = cultureInfo;
-            mainWindow = (MainWindow)Application.Current.MainWindow;
             InputLanguageManager.SetInputLanguage(this, new System.Globalization.CultureInfo("ja-JP"));
 
             customerVM = mainWindowViewModel.CustomerVM;
             invoiceVM = mainWindowViewModel.InvoiceVM;
             paymentVM = mainWindowViewModel.PaymentVM;
             settingsVM = mainWindowViewModel.SettingsVM;
+            slipNumbers = settingsVM.slipNumbers;
             paymentVM.PaymentListViewSource = new();
             paymentVM.PaymentListViewSource.Source = paymentVM.PaymentClassList;
             paymentVM.InvoiceListForPayment = new();
@@ -71,14 +75,15 @@ namespace Invoice
             converter.InvoiceClassList = mainWindowViewModel.InvoiceVM.InvoiceClassList;
             EventManager.RegisterClassHandler(typeof(MainWindow), PreviewMouseDownEvent, new MouseButtonEventHandler(MainWindow_MouseDown));
             PaymentAmountTextBox.GotKeyboardFocus += PaymentAmountTextBox_GotKeyboardFocus;
+
             CurrentPayment = paymentVM.CurrentPayment;
             ReceiptSubject.GotFocus += ReceiptSubject_GotFocus;
             ReceiptSubject.LostFocus += ReceiptSubject_LostFocus;
             ReceiptSubject.GotKeyboardFocus += ReceiptSubject_GotKeyboardFocus;
             ReceiptSubject.PreviewLostKeyboardFocus += ReceiptSubject_PreviewLostKeyboardFocus;
+            
         }
 
-        // プロパティ
 
         // イベントハンドラ
         private void Label_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
@@ -91,18 +96,51 @@ namespace Invoice
         
         private void PaymentPage_Loaded(object sender, RoutedEventArgs e)
         {
+            paymentVM.ReloadPaymentList();
+            invoiceVM.ReloadInvoiceList();
+            customerVM.ReloadCustomers(true);
+            customerVM.ReloadBalances();
+            // 請求書からの入金処理かで分岐
             if (!invoiceVM.DepositFromInvoicePage)
-            {
+            {// 請求書からの入金処理ではない
                 paymentVM.ReloadPaymentList();
                 PaymentListFilter();
+                isFirstLoading = false;
             }
             else
-            {
-                AddPaymentButton_Click(AddPaymentButton, new RoutedEventArgs());
+            {// 請求書からの入金処理
+                // 請求番号で請求書リストをフィルタリング
+                PaymentForInvoiceSwitch.IsOn = true;
+                DateFilterSwitch.IsOn = false;
                 filterParameter = new InvoiceFiterParam();
                 filterParameter.InvoiceId = invoiceVM.CurrentInvoice.InvoiceId;
                 InvoiceListForPaymentFilter();
-                InvoiceListDataGrid.SelectedItem = invoiceVM.CurrentInvoice;
+                // フィルタリングされた請求書の数で分岐
+                if (InvoiceListDataGrid.Items.Count != 1)
+                {// 請求書が無いもしくは複数存在する => 例外処理（メッセージの表示後に元の状態へ）
+                    HideDetailPane();
+                    filterParameter = new InvoiceFiterParam();
+                    InvoiceListForPaymentFilter();
+                    invoiceVM.DepositFromInvoicePage = false;
+                    mainWindow.MainFrame.Navigate(mainWindow.InvoicePage);
+                    throw new Exception("支払対象の請求書が不正です");
+                }
+                // フィルタリングされた請求書を選択状態に
+                // 請求書のInvoiceIdが登録されている入金情報を取得
+                CurrentPayment = paymentVM.PaymentClassList.FirstOrDefault(p => p.InvoiceId == invoiceVM.CurrentInvoice.InvoiceId);
+                // 請求書に紐づいた入金情報の有無で分岐
+                if (CurrentPayment == null)
+                {// 請求書に紐づいた入金情報が無い。=> 新規の入金情報を請求情報に紐づけて作成
+                    AddPaymentButton_Click(AddPaymentButton, new RoutedEventArgs());
+                    InvoiceListDataGrid.SelectedIndex = 0;
+                    TransactionTypeBox.SelectedIndex = 0;
+                }
+                else
+                {// 請求書に紐づいた入金情報を編集状態に
+                    PaymentListDataGrid.SelectedItem = CurrentPayment;
+                    EditPaymentButton_Click(EditPaymentButton, new RoutedEventArgs());
+                }
+
             }
 
         }
@@ -173,6 +211,7 @@ namespace Invoice
             var selectedItemList = PaymentListDataGrid.SelectedItems;
             var paymentList = selectedItemList.Cast<PaymentClass>();
             List<int> idList = paymentList.Select(p => p.PaymentId).ToList();
+
             foreach(int paymentId in idList)
             {
                 var payment = paymentVM.PaymentClassList.FirstOrDefault(p => p.PaymentId == paymentId);
@@ -183,24 +222,39 @@ namespace Invoice
                     if (invoice != null) invoice.InvoiceStatusId = 2;
                 }
                 var depositId = payment.DepositId;
-                if (paymentId != null && payment.TransactionTypeId == 2) DepositClass.DeleteDepositById(TypeOfID.Deposit, depositId);
-                if (payment != null) payment.DeletePayment();
+                var unitOfWork = new UnitOfWork();
+                var result = UnitOfWork.ExecuteWithTransaction(uow =>
+                {
+                    if (payment.TransactionTypeId == 2) DepositClass.DeleteDepositById(new IDs(paymentId:payment.PaymentId), uow);
+                    if (payment != null) payment.TryDeletePayment(uow);
+                    return true;
+                }, null);
+
 
             }
             paymentVM.ReloadPaymentList();
             invoiceVM.ReloadInvoiceList();
-            invoiceVM.ReloadBalanceList();
+            customerVM.ReloadBalances();
         }
 
         private void PaymentCancelButton_Click(object sender, RoutedEventArgs e)
         {
+            CurrentPayment = new PaymentClass();
             HideDetailPane();
+            if (invoiceVM.DepositFromInvoicePage)
+            {
+                filterParameter = new InvoiceFiterParam();
+                InvoiceListForPaymentFilter();
+
+                invoiceVM.DepositFromInvoicePage = false;
+                mainWindow.MainFrame.Navigate(mainWindow.InvoicePage);
+            }
 
         }
 
         private void SavePaymentButton_Click(object sender, RoutedEventArgs e)
         {
-            var vmPayment = paymentVM.CurrentPayment;
+            var payment = paymentVM.CurrentPayment;
             if (PaymentForInvoiceSwitch.IsOn && InvoiceListDataGrid.SelectedItem == null)
             {
                 MessageBox.Show("支払対象の請求書を選択してください。");
@@ -216,24 +270,21 @@ namespace Invoice
                 MessageBox.Show("宛先を選択してください");
                 return;
             }
-            if (!PaymentForInvoiceSwitch.IsOn)
+            var customer = CustomerNameComboBox.SelectedItem as CustomerClass;
+            payment.CustomerId = customer.CustomerId;
+            payment.CustomerName = customer.CustomerName;
+            payment.PaymentDate = payment.PaymentDate;
+            payment.TransactionTypeId = ((TransactionTypeClass)TransactionTypeBox.SelectedItem).TransactionTypeId;
+            payment.InvoiceId = null;
+            if (PaymentForInvoiceSwitch.IsOn)
             {
-                var customer = CustomerNameComboBox.SelectedItem as CustomerClass;
-                var detail = paymentVM.CurrentPayment;
-                detail.CustomerId = customer.CustomerId;
-                detail.CustomerName = customer.CustomerName;
-                detail.TransactionTypeId = ((TransactionTypeClass)TransactionTypeBox.SelectedItem).TransactionTypeId;
-
+                var invoice = InvoiceListDataGrid.SelectedItem as InvoiceClass;
+                payment.InvoiceId = invoice?.InvoiceId ?? null;
             }
 
-            var payment = paymentVM.CurrentPayment;
-            payment.PaymentDate = vmPayment.PaymentDate;
-            payment.TransactionTypeId = ((TransactionTypeClass)TransactionTypeBox.SelectedItem).TransactionTypeId;
-            var invoice = InvoiceListDataGrid.SelectedItem as InvoiceClass;
-            payment.InvoiceId = invoice?.InvoiceId ?? null;
+
             try
             {
-                
                 if (!isEditing)
                 {
                     AddNewPayment(payment);
@@ -247,10 +298,13 @@ namespace Invoice
                 HideDetailPane();
                 paymentVM.ReloadPaymentList();
                 invoiceVM.ReloadInvoiceList();
-                invoiceVM.ReloadBalanceList();
-                customerVM.ReloadCustomerList();
+                customerVM.ReloadBalances();
+                customerVM.ReloadCustomers(true);
                 if (invoiceVM.DepositFromInvoicePage)
                 {
+                    filterParameter = new InvoiceFiterParam();
+                    InvoiceListForPaymentFilter();
+
                     invoiceVM.DepositFromInvoicePage = false;
                     mainWindow.MainFrame.Navigate(mainWindow.InvoicePage);
                 }
@@ -258,7 +312,7 @@ namespace Invoice
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message);
+                MessageBox.Show($"{GetType().Name}.{MethodBase.GetCurrentMethod().Name} : {ex.Message}");
             }
 
         }
@@ -277,7 +331,7 @@ namespace Invoice
         private void CustomerNameComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             var combo = sender as ComboBox;
-            var detail = paymentVM.CurrentPayment;
+            var detail = paymentVM.CurrentPayment ?? new();
             var item = combo.SelectedItem as CustomerClass;
             if (item == null) return;
             detail.CustomerName = item.CustomerName;
@@ -341,12 +395,17 @@ namespace Invoice
 
         private void PaymentAmountTextBox_GotKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
         {
-            var textBox = sender as TextBox;
-            textBox.Text = textBox.Text.Replace("\\", "").Replace(",","").Replace("-","");
-            if (string.IsNullOrEmpty(textBox.Text)) textBox.Text = "0";
-            textBox.Text = (double.Parse(textBox.Text) / 100).ToString();
+            if (sender is TextBox textBox)
+            {
+                textBox.Text = textBox.Text.Replace("\\", "").Replace(",", "").Replace("-", "");
+                if (string.IsNullOrEmpty(textBox.Text)) textBox.Text = "0";
+            }
         }
-        
+        private void PaymentAmountTextBox_PreviewGotKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
+        {
+        }
+
+
         private void GridRowCheckBox_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             var checkBox = sender as CheckBox;
@@ -442,13 +501,19 @@ namespace Invoice
         {
             var comboBox = sender as ComboBox;
             var transactionType = comboBox.SelectedItem as TransactionTypeClass;
-            if (transactionType == null) return;
-            if (InvoiceForPaymentBorder == null) return;
+            if (transactionType == null || InvoiceForPaymentBorder == null) return;
+
             if (transactionType.TransactionName == "売掛金")
+            {
+                PaymentForInvoiceSwitch.IsOn = true;
                 InvoiceForPaymentBorder.Visibility = Visibility.Visible;
+            }
             else
+            {
+                PaymentForInvoiceSwitch.IsOn = false;
                 InvoiceForPaymentBorder.Visibility = Visibility.Collapsed;
-            InvoiceForPaymentBorder.IsEnabled = true;
+                InvoiceForPaymentBorder.IsEnabled = true;
+            }
 
         }
 
@@ -495,14 +560,8 @@ namespace Invoice
             if (DateBox.PopupIsOpen)
             {
                 DateBox.PopupIsOpen = false;
+                e.Handled = true;
             }
-        }
-
-
-
-        private void FilterDateTextBlock_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-        {
-
         }
 
         // カスタムロジック
@@ -521,7 +580,6 @@ namespace Invoice
                         (param.CustomerId == null || payment.CustomerId == param.CustomerId) &&
                         (param.InvoiceId == null || payment.InvoiceId == param.InvoiceId) &&
                         (param.TransactionTypeId == null || payment.TransactionTypeId == param.TransactionTypeId) &&
-                        //(param.PaymentMethodId == null || payment.PaymentMethodId == param.PaymentMethodId) &&
                         (!sw || (MainWindow.StartOfMonth(param.PaymentDate) <= payment.PaymentDate && payment.PaymentDate <= MainWindow.EndOfMonth(param.PaymentDate))) &&
                         (param.PaymentAmount == null || payment.PaymentAmount == param.PaymentAmount) &&
                         (param.Subject == null || payment.Subject == param.Subject))
@@ -529,7 +587,13 @@ namespace Invoice
                     else
                         e.Accepted = false;
                 }
+
             };
+            if (isFirstLoading)
+            {
+                source.SortDescriptions.Clear();
+                source.SortDescriptions.Add(new SortDescription(nameof(PaymentClass.PaymentDate), ListSortDirection.Descending));
+            }
         }
 
         private void InvoiceListForPaymentFilter()
@@ -570,6 +634,11 @@ namespace Invoice
 
                 mainWindow.Height += (pane.Height - PaymentPageContentsGrid.ActualHeight);
             }
+            else
+            {
+                pane.Height = PaymentPageContentsGrid.ActualHeight;
+            }
+
             PaymentPageContentsGrid.IsEnabled = false;
             var renderTransform = PaneTransform;
             var slideUpAnimation = new DoubleAnimation
@@ -608,103 +677,119 @@ namespace Invoice
 
         public void AddNewPayment(PaymentClass payment)
         {//新規登録
-
             var invoice = PaymentForInvoiceSwitch.IsOn ? InvoiceListDataGrid.SelectedItem as InvoiceClass : null;
             payment.InvoiceId = invoice == null ? null : invoice.InvoiceId;
-            var prefix = string.IsNullOrWhiteSpace(SlipNumberInfo.ReceiptPrefix) ? "" : SlipNumberInfo.ReceiptPrefix;
-            var suffix = string.IsNullOrWhiteSpace(SlipNumberInfo.ReceiptSuffix) ? "" : SlipNumberInfo.ReceiptSuffix;
-            prefix += payment.PaymentDate.ToString("yyMM_");
-            var numberString = (SlipNumberInfo.ReceiptLatest + 1).ToString("0000");
-            var slipNumber = $"{prefix}{numberString}{suffix}";
-            payment.SlipNumber = slipNumber;
+            SlipNumberClass slipNumber = slipNumbers.GetSlipNumber(payment.PaymentDate);
+            payment.SlipNumber = slipNumber.ReceiptNumber;
+            var unitOfWork = new UnitOfWork();
 
-            // 入金記録の登録
-            if (payment.TryAddPayment())
-            { // 入金記録の登録に成功した場合
-                // 伝票番号の最終値を更新
-                SlipNumberInfo.InclimentReceiptLatest();
-                // 入金目的が売掛金の場合
-                if (payment.TransactionTypeId == 1 && invoice != null)
-                {
-                    // 請求書の状態を「入金済」に更新
-                    invoice.InvoiceStatus = "入金済";
-                    invoice.InvoiceStatusId = settingsVM.InvoiceStatusClassList.FirstOrDefault(list => list.InvoiceStatus == "入金済").InvoiceStatusId;
-                    ((InvoiceClass)InvoiceListDataGrid.SelectedItem).UpdateInvoiceStatus(3);
-                }
-                mainWindow.SavedInfomation();
-            }
-            else
+            var result = UnitOfWork.ExecuteWithTransaction(uow =>
             {
-                throw new Exception("入金記録の登録に失敗しました");
-            }
+                // 入金記録の登録
+                if (payment.TryAddPayment(uow))
+                { // 入金記録の登録に成功した場合
+                    // 伝票番号の最終値を更新
+                    slipNumber.InclimentReceiptLatest();
+                    // 入金目的が売掛金の場合
+                    if (payment.TransactionTypeId == 1 && invoice != null)
+                    {
+                        // 請求書の状態を「入金済」に更新
+                        invoice.InvoiceStatus = "入金済";
+                        invoice.InvoiceStatusId = settingsVM.InvoiceStatusClassList.FirstOrDefault(list => list.InvoiceStatus == "入金済").InvoiceStatusId;
+                        ((InvoiceClass)InvoiceListDataGrid.SelectedItem).UpdateInvoiceStatus(3, uow);
+                    }
+                    return true;
+                }
+                return false;
+            }, null);
+
+            if(result==true) 
+                if(payment.TryUpdatePayment()!=true)
+                    throw new Exception("入金記録の登録に失敗しました");
         }
 
         public void UpdatePayment(PaymentClass payment)
         {
-            var invoice = invoiceVM.InvoiceClassList.FirstOrDefault(i => i.InvoiceId == payment.InvoiceId);
-            if(invoice != null && payment.TransactionTypeId == 1)
+            if (payment == null) return;
+            var result = UnitOfWork.ExecuteWithTransaction(uow =>
             {
-                invoice.InvoiceStatus = "入金済";
-                invoice.InvoiceStatusId = 3;
-                invoice.PaymentDate = payment.PaymentDate;
-                ((InvoiceClass)InvoiceListDataGrid.SelectedItem).UpdateInvoiceStatus(3);
-            }
-            else if (invoice != null && payment.TransactionTypeId == 2)
-            {
-                invoice.InvoiceStatus = "請求済";
-                invoice.InvoiceStatusId = 2;
-                invoice.PaymentDate = DateTime.Now;
-                ((InvoiceClass)InvoiceListDataGrid.SelectedItem).UpdateInvoiceStatus(2);
-            }
-            var previd = prevTransactionTypeId;
-            var oldPayment = CurrentPayment;
-            if (prevTransactionTypeId == 2)
-            {//更新前が前受金の入金情報
-                if (payment.TransactionTypeId == 2)
-                {//更新後が前受金の入金情報
-                    // 前受金→前受金
-                    DepositClass.TryUpdateDeposit(payment);
+                var invoice = invoiceVM.InvoiceClassList.FirstOrDefault(i => i.InvoiceId == payment.InvoiceId);
+                if(invoice != null && payment.TransactionTypeId == 1)
+                {
+                    invoice.InvoiceStatus = "入金済";
+                    invoice.InvoiceStatusId = 3;
+                    invoice.PaymentDate = payment.PaymentDate;
+                    ((InvoiceClass)InvoiceListDataGrid.SelectedItem).UpdateInvoiceStatus(3, uow);
+                }
+                else if (invoice != null && payment.TransactionTypeId == 2)
+                {
+                    invoice.InvoiceStatus = "請求済";
+                    invoice.InvoiceStatusId = 2;
+                    invoice.PaymentDate = DateTime.Now;
+                    ((InvoiceClass)InvoiceListDataGrid.SelectedItem).UpdateInvoiceStatus(2, uow);
+                }
+
+                var previd = prevTransactionTypeId;
+                var oldPayment = CurrentPayment;
+                if (prevTransactionTypeId == 2)
+                {//更新前が前受金の入金情報
+                    if (payment.TransactionTypeId == 2)
+                    {//更新後が前受金の入金情報
+                        // 前受金→前受金
+                        DepositClass.TryUpdateDeposit(payment, uow);
+                    }
+                    else
+                    {//更新後が売掛金の入金情報
+                        // 前受金→売掛金
+                        if (payment.InvoiceId == null)
+                        {
+                            MessageBox.Show("請求書を選択してください");
+                            return false;
+                        }
+                        // 前受金の削除（T_BALANCEテーブルのレコードも削除される）
+                        DepositClass.DeleteDepositById(TypeOfID.Deposit, payment.DepositId, uow);
+                        payment.DepositId = null;
+
+                        if (invoice != null)
+                        {
+                            payment.InvoiceId = invoice.InvoiceId;
+                            BalanceClass.TryAddBalance(payment, uow);
+                        }
+                    }
                 }
                 else
-                {//更新後が売掛金の入金情報
-                    // 前受金→売掛金
-                    if (payment.InvoiceId == null)
+                {//更新前が売掛金の入金情報
+                    if (payment.TransactionTypeId == 2)
                     {
-                        MessageBox.Show("請求書を選択してください");
-                        return;
+                        // 売掛金→前受金
+                        BalanceClass.DeleteBalanceById(new IDs(paymentId : payment.PaymentId), uow);
+                        DepositClass.TryAddDeposit(payment, uow);
+                        payment.InvoiceId = null;
                     }
-                    // 前受金の削除（T_BALANCEテーブルのレコードも削除される）
-                    DepositClass.DeleteDepositById(TypeOfID.Deposit, payment.DepositId);
-                    payment.DepositId = null;
-
-                    if (invoice != null)
+                    else
                     {
-                        payment.InvoiceId = invoice.InvoiceId;
-                        BalanceClass.TryAddBalance(payment);
+                        // 売掛金→売掛金
+                        // 何もしない
                     }
                 }
-            }
-            else
-            {//更新前が売掛金の入金情報
-                if (payment.TransactionTypeId == 2)
-                {
-                    // 売掛金→前受金
-                    BalanceClass.DeleteBalanceById(TypeOfID.Payment, payment.PaymentId);
-                    payment.DepositId = DepositClass.TryAddDeposit(payment);
-                    payment.InvoiceId = null;
-                }
-                else
-                {
-                    // 売掛金→売掛金
-                    // 何もしない
-                }
-            }
-            CurrentPayment = new PaymentClass();
-            if (!payment.TryUpdatePayment()) throw new Exception("入金記録の更新に失敗しました");
-
+                CurrentPayment = new PaymentClass();
+                return true;
+            },null);
+            payment.TryUpdatePayment();
 
         }
-
+        private void LogMethodEntry([System.Runtime.CompilerServices.CallerMemberName] string methodName = "")
+        {
+            if (!DebugSwitch) return;
+            if (methodName == "OnPropertyChanged") return;
+            Debug.WriteLine($"Entered =>: Payment / {methodName}");
+        }
+        private void LogMethodExit([System.Runtime.CompilerServices.CallerMemberName] string methodName = "")
+        {
+            if (!DebugSwitch) return;
+            if (methodName == "OnPropertyChanged") return;
+            Debug.WriteLine($"Exited  <=: Payment / {methodName}");
+        }
 
     }
 

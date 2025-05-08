@@ -9,6 +9,9 @@
 	<StartupObject>Invoice.Program</StartupObject>
 	<SatelliteResourceLanguages>ja</SatelliteResourceLanguages>
     <Platforms>AnyCPU;x64</Platforms>
+    <ApplicationIcon>Image\Icon.ico</ApplicationIcon>
+    <SatelliteResourceLanguages>ja</SatelliteResourceLanguages>
+    <PackageIcon>Image\Icon.png</PackageIcon>
   </PropertyGroup>
 
   <ItemGroup>
@@ -53,6 +56,7 @@
     <None Remove="Image\admin_company_20230411174137_.png" />
     <None Remove="Image\CSM_LOGO.jpg" />
     <None Remove="Image\CSM_LOGO.png" />
+    <None Remove="Image\Icon.png" />
     <None Remove="Image\masayoshi_company_20230411174137_.png" />
     <None Remove="Image\stamp3.png" />
     <None Remove="Image\Thumbs.db" />
@@ -60,6 +64,12 @@
 
   <ItemGroup>
     <Page Remove="SettingsPageItemSettingTab.xaml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Image\Icon.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
@@ -148,15 +158,31 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="CsvHelper" Version="33.0.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Ini" Version="9.0.3" />
     <PackageReference Include="ModernWpfUI" Version="0.9.6" />
     <PackageReference Include="MySqlConnector" Version="2.4.0" />
     <PackageReference Include="PDFsharp-MigraDoc" Version="6.1.1" />
     <PackageReference Include="SqExpress" Version="1.1.1" />
+    <PackageReference Include="System.Text.Encoding.CodePages" Version="9.0.4" />
   </ItemGroup>
 
   <ItemGroup>
+    <Resource Include="Image\Icon.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Resource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="AccountingTitleDictionary.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="Connection.ini">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="DepartmentDictionary.csv">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>

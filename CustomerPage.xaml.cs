@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
@@ -26,11 +27,13 @@ namespace Invoice
         private BalanceFilterParam balanceFilterParam = new();
         public CultureInfo cultureInfo = new("ja-JP");
         InvoiceClass CurrentInvoice;
+        private bool DebugSwitch = false;
 
         public CustomerPage(MainWindowViewModel mainWindowViewModel)
         {
             InitializeComponent();
             vm = mainWindowViewModel.CustomerVM;
+            DebugSwitch = mainWindowViewModel.DebugOutIsOn;
             this.Loaded += PageLoaded;
             DataContext = mainWindowViewModel;
             vm.CustomerCollectionViewSource = new CollectionViewSource();
@@ -74,13 +77,18 @@ namespace Invoice
             var source = vm.BalanceCollectionViewSource;
             source.Filter += (sender, e) =>
             {
+                var item = e.Item as BalanceClass;
                 if (e.Item is BalanceClass balance)
                 {
                     if ((balance.CustomerId != 0) &&
                         (param.CustomerId == null || balance.CustomerId == param.CustomerId))
+                    {
                         e.Accepted = true;
+                    }
                     else
+                    {
                         e.Accepted = false;
+                    }
                 }
 
             };
@@ -104,6 +112,7 @@ namespace Invoice
         private void CustomerVM_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
         }
+        
         private void ShowAllCustomer_Toggled(object sender, RoutedEventArgs e)
         {
             var toggleSwitch = sender as ModernWpf.Controls.ToggleSwitch;
@@ -127,6 +136,8 @@ namespace Invoice
         {
             var customers = CustomerClass.GetCustomers();
             vm.CustomerListReset(customers);
+            vm.ReloadCustomers(true);
+            vm.ReloadBalances();
             CustomerFilter();
         }
 
@@ -171,6 +182,7 @@ namespace Invoice
 
         private void CustomerListView_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
+            if (CustomerListDataGrid.SelectedItem == null) return;
             balanceFilterParam.CustomerId = (CustomerListDataGrid.SelectedItem as CustomerClass).CustomerId;
             BalanceFilter();
             ShowBalancePane();
@@ -246,6 +258,7 @@ namespace Invoice
             };
             renderTransform.BeginAnimation(System.Windows.Media.TranslateTransform.YProperty, slideUpAnimation);
         }
+        
         private void HideDetailPane()
         {
             var pane = CustomerDetailPane;
@@ -260,6 +273,7 @@ namespace Invoice
             renderTransform.BeginAnimation(System.Windows.Media.TranslateTransform.YProperty, slideDownAnimation);
             CustomerPageContentGrid.IsEnabled = true;
         }
+        
         private void HideBalancePane()
         {
             var pane = CustomerBalancePane;
@@ -319,6 +333,7 @@ namespace Invoice
             vm.ReloadCustomers(ShowAllCustomer.IsOn);
             HideDetailPane();
         }
+        
         private bool CanAddToServer()
         {
 
@@ -332,6 +347,7 @@ namespace Invoice
                 return false;
             return true;
         }
+        
         private void CancelButton_Click(object sender, RoutedEventArgs e)
         {
             HideDetailPane();
@@ -391,5 +407,6 @@ namespace Invoice
         {
             HideBalancePane();
         }
+
     }
 }

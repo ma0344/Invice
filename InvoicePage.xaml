@@ -5,135 +5,31 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:Invoice"
-    xmlns:vm="clr-namespace:Invoice.ViewModels"
     xmlns:ui="http://schemas.modernwpf.com/2019"
     xmlns:customControl="clr-namespace:Invoice.CustomControl"
     mc:Ignorable="d"
     d:Background="White"
     d:DesignHeight="700"
-    d:DesignWidth="800"
+    d:DesignWidth="1000"
     FontFamily="Biz UDGothic"
-      Title="Invoice">
+      Title="Invoice"
+      Tag="請求書管理">
     <Page.Resources>
-        <Style
-            TargetType="Button"
-            BasedOn="{StaticResource {x:Type Button}}">
-            <Setter
-                Property="FontFamily"
-                Value="Biz UDGothic" />
-        </Style>
         <CollectionViewSource Source="{Binding InvoiceVM.CustomerCollectionViewSource}" 
                               x:Key="CustomerList"/>
+        <CollectionViewSource Source="{Binding InvoiceVM.CustomerCollectionViewSource}"
+                              x:Key="FilterCustomerList" />
         <CollectionViewSource Source="{Binding SettingsVM.TransactionTypeClassList}"
                               x:Key="TransactionTypeWithoutPlaceHolder" />
         <CollectionViewSource Source="{Binding SettingsVM.ItemClassList}" 
                               x:Key="ItemClassList"/>
         <CollectionViewSource Source="{Binding SettingsVM.TaxTypeClassList}"
                               x:Key="TaxTypeListWithoutPlaceHolder" />
-        <Style x:Key="CustomDataGridCellStyle"
-               TargetType="DataGridCell"
-               BasedOn="{StaticResource DefaultDataGridCellStyle}">
-            <Setter Property="OverridesDefaultStyle"
-                    Value="True" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="DataGridCell">
-                        <ui:DataGridCellPresenter Background="{TemplateBinding Background}"
-                                                  CurrencyVisualBrush="{DynamicResource DataGridCurrencyVisualPrimaryBrush}"
-                                                  CurrencyVisualThickness="0"
-                                                  FocusVisualPrimaryBrush="{DynamicResource DataGridCellFocusVisualPrimaryBrush}"
-                                                  FocusVisualPrimaryThickness="0"
-                                                  FocusVisualSecondaryBrush="{DynamicResource DataGridCellFocusVisualSecondaryBrush}"
-                                                  FocusVisualSecondaryThickness="0"
-                                                  IsCurrencyVisualVisible="{TemplateBinding IsSelected}"
-                                                  IsFocusVisualVisible="{TemplateBinding IsKeyboardFocusWithin}"
-                                                  MinHeight="{TemplateBinding MinHeight}"
-                                                  SnapsToDevicePixels="True" />
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-        <Style TargetType="DataGridCell" x:Key="CustomDataGridCellstyleR"
-                BasedOn="{StaticResource CustomDataGridCellStyle}">
-            <Setter Property="HorizontalAlignment"
-                    Value="Right" />
-            <Setter Property="Padding"
-                    Value="0,0,5,0" />
-        </Style>
+
 
     </Page.Resources>
     <Grid >
-        <Grid.RowDefinitions>
-            <RowDefinition
-                Height="155" />
-            <RowDefinition
-                Height="*" />
-        </Grid.RowDefinitions>
         <Grid
-            Grid.Row="0"
-            x:Name="NavigationGrid"
-            Background="#4CAF50"
-            Panel.ZIndex="0">
-            <Grid.RowDefinitions>
-                <RowDefinition
-                    Height="Auto" />
-                <RowDefinition />
-            </Grid.RowDefinitions>
-            <Label
-                FontSize="32px"
-                FontWeight="Bold"
-                Foreground="White"
-                HorizontalAlignment="Center"
-                Margin="0,40,0,25">請求書管理</Label>
-            <StackPanel
-                Grid.Row="1"
-                Height="30"
-                VerticalAlignment="Top"
-                HorizontalAlignment="Center"
-                Orientation="Horizontal"
-                Background="Transparent">
-                <StackPanel.Resources>
-                    <Style
-                        TargetType="Label">
-                        <Setter
-                            Property="Foreground"
-                            Value="White" />
-                        <Setter
-                            Property="Margin"
-                            Value="7,0" />
-                        <Setter
-                            Property="VerticalAlignment"
-                            Value="Center" />
-                        <Setter
-                            Property="Cursor"
-                            Value="Hand" />
-                        <Setter
-                            Property="HorizontalContentAlignment"
-                            Value="Center" />
-                        <Setter
-                            Property="FontSize"
-                            Value="16px" />
-                    </Style>
-                </StackPanel.Resources>
-                <Label
-                    x:Name="DashBoardLabel"
-                    MouseLeftButtonUp="Label_MouseLeftButtonUp">ダッシュボード</Label>
-                <Label
-                    x:Name="CustomerLabel"
-                    MouseLeftButtonUp="Label_MouseLeftButtonUp">利用者管理</Label>
-                <Label
-                    x:Name="InvoiceLabel"
-                    MouseLeftButtonUp="Label_MouseLeftButtonUp">請求書管理</Label>
-                <Label
-                    x:Name="PaymentLabel"
-                    MouseLeftButtonUp="Label_MouseLeftButtonUp">入金管理</Label>
-                <Label
-                    x:Name="SettingsLabel"
-                    MouseLeftButtonUp="Label_MouseLeftButtonUp">設定</Label>
-            </StackPanel>
-        </Grid>
-        <Grid
-            Grid.Row="1"
             x:Name="InvoicePageContentsGrid"
             Margin="10">
             <Grid.RowDefinitions>
@@ -159,7 +55,7 @@
                         <ComboBox x:Name="FilterNameComboBox" 
                                   Margin="10,0"
                                   Width="150"
-                                  ItemsSource="{Binding Source={StaticResource CustomerList}}"
+                                  ItemsSource="{Binding Source={StaticResource FilterCustomerList}}"
                                   DisplayMemberPath="CustomerName"
                                   SelectedValuePath="CustomerId"
                                   InputMethod.PreferredImeState="Off"
@@ -187,11 +83,9 @@
 
             <Grid
                 Grid.Row="0"
-                Width="700"
-                MaxWidth="700"
-                MinWidth="700"
                 HorizontalAlignment="Stretch"
-                VerticalAlignment="Top">
+                VerticalAlignment="Top"
+                Margin="60,0,120,0">
                 <Label
                     Content="請求書一覧"
                     FontSize="24"
@@ -201,9 +95,9 @@
                     HorizontalAlignment="Right"
                     VerticalAlignment="Center">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition />
-                        <ColumnDefinition />
-                        <ColumnDefinition />
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <ui:ToggleSwitch
                         Grid.Column="1"
@@ -241,25 +135,26 @@
 
             </Grid>
 
-            <DataGrid
-                Grid.Row="2"
-                x:Name="InvoiceListDataGrid"
-                MouseDoubleClick="InvoiceListDataGrid_MouseDoubleClick"
-                CanUserAddRows="False"
-                CanUserResizeColumns="False"
-                AutoGenerateColumns="False"
-                VerticalAlignment="Stretch"
-                VerticalScrollBarVisibility="Auto"
-                SelectionUnit="FullRow"
-                ItemsSource="{Binding InvoiceVM.InvoiceCollectionViewSource.View}"
-                AlternatingRowBackground="#0C000000"
-                ColumnHeaderHeight="28"
-                CanUserDeleteRows="False"
-                PreviewMouseRightButtonUp="InvoiceListDataGrid_PreviewMouseRightButtonUp"
-                PreviewMouseLeftButtonDown="InvoiceListDataGrid_PreviewMouseLeftButtonDown"
-                ContextMenuOpening="InvoiceListDataGrid_ContextMenuOpening"
-                ContextMenuClosing="InvoiceListDataGrid_ContextMenuClosing"
-                RowHeaderWidth="0">
+            <DataGrid x:Name="InvoiceListDataGrid" 
+                      Grid.Row="2"
+                      MouseDoubleClick="InvoiceListDataGrid_MouseDoubleClick"
+                      CanUserAddRows="False"
+                      CanUserResizeColumns="False"
+                      AutoGenerateColumns="False"
+                      VerticalAlignment="Stretch"
+                      VerticalScrollBarVisibility="Auto"
+                      SelectionUnit="FullRow"
+                      ItemsSource="{Binding InvoiceVM.InvoiceCollectionViewSource.View}"
+                      AlternatingRowBackground="#0C000000"
+                      CanUserSortColumns="True"
+                      ColumnHeaderHeight="28"
+                      CanUserDeleteRows="False"
+                      PreviewMouseRightButtonUp="InvoiceListDataGrid_PreviewMouseRightButtonUp"
+                      PreviewMouseLeftButtonDown="InvoiceListDataGrid_PreviewMouseLeftButtonDown"
+                      ContextMenuOpening="InvoiceListDataGrid_ContextMenuOpening"
+                      ContextMenuClosing="InvoiceListDataGrid_ContextMenuClosing"
+                      ColumnHeaderStyle="{StaticResource CustomDataGridColumnHeaderStyle}"
+                      RowHeaderWidth="0">
                 <DataGrid.ContextMenu>
                     <ContextMenu>
                         <MenuItem x:Name="ContextMenuStatusChange"
@@ -293,56 +188,8 @@
 
                     </ContextMenu>
                 </DataGrid.ContextMenu>
-                <DataGrid.CellStyle>
-                    <Style
-                        TargetType="DataGridCell"
-                        BasedOn="{StaticResource DefaultDataGridCellStyle}">
-                        <Setter
-                            Property="OverridesDefaultStyle"
-                            Value="True" />
-                        <Setter
-                            Property="Template">
-                            <Setter.Value>
-                                <ControlTemplate
-                                    TargetType="DataGridCell">
-                                    <ui:DataGridCellPresenter
-                                        Background="{TemplateBinding Background}"
-                                        CurrencyVisualBrush="{DynamicResource DataGridCurrencyVisualPrimaryBrush}"
-                                        CurrencyVisualThickness="0"
-                                        FocusVisualPrimaryBrush="{DynamicResource DataGridCellFocusVisualPrimaryBrush}"
-                                        FocusVisualPrimaryThickness="0"
-                                        FocusVisualSecondaryBrush="{DynamicResource DataGridCellFocusVisualSecondaryBrush}"
-                                        FocusVisualSecondaryThickness="0"
-                                        IsCurrencyVisualVisible="{TemplateBinding IsSelected}"
-                                        IsFocusVisualVisible="{TemplateBinding IsKeyboardFocusWithin}"
-                                        MinHeight="{TemplateBinding MinHeight}"
-                                        SnapsToDevicePixels="True" />
-                                </ControlTemplate>
-                            </Setter.Value>
-                        </Setter>
-                    </Style>
-                </DataGrid.CellStyle>
-
-                <DataGrid.ColumnHeaderStyle>
-                    <Style
-                        TargetType="{x:Type DataGridColumnHeader}">
-                        <Setter
-                            Property="FontSize"
-                            Value="15" />
-                        <Setter
-                            Property="HorizontalContentAlignment"
-                            Value="Center" />
-                        <Setter
-                            Property="Padding"
-                            Value="0" />
-                        <Setter
-                            Property="Margin"
-                            Value="0" />
-                    </Style>
-                </DataGrid.ColumnHeaderStyle>
                 <DataGrid.Columns>
-                <DataGridTemplateColumn
-                    Width="30">
+                    <DataGridTemplateColumn Width="30">
                     <DataGridTemplateColumn.Header>
                             <CheckBox x:Name="SelectAllCheckBox"
                                       Width="20"
@@ -350,12 +197,6 @@
                                       Unchecked="SelectAllCheckBox_Unchecked"
                                       HorizontalAlignment="Center"
                                       HorizontalContentAlignment="Center">
-                                <CheckBox.Resources>
-                                    <Style TargetType="Border">
-                                        <Setter Property="Width"
-                                                Value="20" />
-                                    </Style>
-                                </CheckBox.Resources>
                             </CheckBox>
                         </DataGridTemplateColumn.Header>
                     <DataGridTemplateColumn.CellTemplate>
@@ -363,132 +204,73 @@
                                 <CheckBox
                                     x:Name="GridRowCheckBox"
                                     IsChecked="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected, Mode=TwoWay}"
+                                    Style="{StaticResource RowCheckBoxStyle}"
                                     PreviewMouseLeftButtonDown="InvoiceCheckBox_PreviewMouseLeftButtonDown"
                                     Width="20">
-                                    <!--Checked="InvoiceCheckBox_Checked"
-                                    Unchecked="InvoiceCheckBox_Unchecked"-->
                                     <CheckBox.Resources>
-                                        <Style TargetType="CheckBox"
-                                            BasedOn="{StaticResource DefaultCheckBoxStyle}">
-                                            <Setter
-                                                Property="HorizontalAlignment"
-                                                Value="Center" />
-                                            <Setter
-                                                Property="Width"
-                                                Value="20" />
-                                            <Setter
-                                                Property="Content">
-                                                <Setter.Value>
-                                                    <TextBlock
-                                                        Width="0"
-                                                        Visibility="Collapsed" />
-                                                </Setter.Value>
-                                            </Setter>
+                                        <Style TargetType="Grid">
+                                            <Setter Property="Width"
+                                                    Value="20" />
                                         </Style>
-                                        <Style
-                                            TargetType="Grid">
-                                            <Setter
-                                                Property="Width"
-                                                Value="20" />
+                                        <Style TargetType="Border">
+                                            <Setter Property="Width"
+                                                    Value="20" />
                                         </Style>
-                                        <Style
-                                            TargetType="Border">
-                                            <Setter
-                                                Property="Width"
-                                                Value="20" />
-                                        </Style>
+
                                     </CheckBox.Resources>
                                 </CheckBox>
                             </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
 
                 </DataGridTemplateColumn>
-                    <DataGridTemplateColumn
-                        Header="No."
-                        Width="90*">
-                        <DataGridTemplateColumn.CellTemplate>
-                            
-                            <DataTemplate>
-                                <TextBlock
-                                    
-                                    HorizontalAlignment="Right"
-                                    VerticalAlignment="Center"
-                                    Padding="0,0,5,0"
-                                    Text="{Binding SlipNumber}" />
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                        
-                    </DataGridTemplateColumn>
+                    <DataGridTextColumn Header="№"
+                                        Width="70*"
+                                        CanUserSort="True"
+                                        FontSize="16"
+                                        IsReadOnly="True"
+                                        CellStyle="{StaticResource DataGridSlipNumberCellStyle}"
+                                        Binding="{Binding SlipNumber}" 
+                                        />
+                    <DataGridTextColumn Header="ID"
+                                        Width="25*"
+                                        FontSize="16"
+                                        IsReadOnly="True"
+                                        Visibility="Collapsed"
+                                        CellStyle="{StaticResource DataGridSlipNumberCellStyle}"
+                                        Binding="{Binding InvoiceId}" />
 
-                    <DataGridTemplateColumn
-                        Header="宛先"
-                        Width="100*">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                
-                                <TextBlock
-                                    HorizontalAlignment="Center"
-                                    VerticalAlignment="Center"
-                                    Text="{Binding CustomerName}" />
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
+                    <DataGridTextColumn Header="宛先"
+                                        Width="100*"
+                                        FontSize="16"
+                                        IsReadOnly="True"
+                                        CellStyle="{StaticResource DataGridNameCellStyle}"
+                                        Binding="{Binding CustomerName}"
+                                        />
 
-                    <DataGridTemplateColumn
-                        Header="件名"
-                        Width="200*">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <TextBlock
-                                    HorizontalAlignment="Left"
-                                    VerticalAlignment="Center"
-                                    Padding="5,0,0,0"
-                                    Text="{Binding Subject}" />
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
+                    <DataGridTextColumn Header="件名"
+                                        Width="200*"
+                                        IsReadOnly="True"
+                                        Binding="{Binding Subject}"
+                                        FontSize="16" />
 
-                    <DataGridTemplateColumn
-                        Header="請求金額"
-                        Width="100*">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <TextBlock
-                                    HorizontalAlignment="Right"
-                                    VerticalAlignment="Center"
-                                    Padding="0,0,5,0"
-                                    Text="{Binding InvoiceTotal,StringFormat={}{0:N0}}" />
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
+                    <DataGridTextColumn Header="請求金額"
+                                        Width="100*"
+                                        FontSize="20"
+                                        CellStyle="{StaticResource DataGridAmountCellStyle}"
+                                        Binding="{Binding InvoiceTotal,StringFormat={}{0:N0},Mode=OneWay}" />
 
-                    <DataGridTemplateColumn
-                        Header="発行日"
-                        Width="130*">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <TextBlock
-                                    HorizontalAlignment="Center"
-                                    VerticalAlignment="Center"
-                                    Text="{Binding IssueDateString}" />
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-
-                    <DataGridTemplateColumn
-                        Header="ステータス"
-                        Width="100*">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <TextBlock
-                                    HorizontalAlignment="Center"
-                                    VerticalAlignment="Center"
-                                    Padding="0,0,5,0"
-                                    Text="{Binding InvoiceStatus}" />
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-
+                    <DataGridTextColumn Header="発行日"
+                                        Width="130*"
+                                        FontSize="16"
+                                        IsReadOnly="True"
+                                        CellStyle="{StaticResource DataGridDateCellStyle}"
+                                        Binding="{Binding IssueDateString}"/>
+                    <DataGridTextColumn Header="ステータス"
+                                        Width="100*"
+                                        FontSize="16"
+                                        IsReadOnly="True"
+                                        CellStyle="{StaticResource Cellstyle_HorizontalAlignCenter}"
+                                        Binding="{Binding InvoiceStatus}" />
                 </DataGrid.Columns>
 
             </DataGrid>
@@ -705,7 +487,7 @@
 
                                    Width="160">
                                 <Label.Content>
-                                    <TextBlock Text="{Binding InvoiceVM.AfterSettleUpDeposit,StringFormat=￥{0:N0}‐}" />
+                                    <TextBlock Text="{Binding InvoiceVM.DepositAmount, UpdateSourceTrigger=PropertyChanged,StringFormat=￥{0:N0}‐}" />
                                 </Label.Content>
                             </Label>
                         </Border>
@@ -743,13 +525,13 @@
                         <ComboBox
                             x:Name="InvoiceName"
                             Grid.Row="1"
-                                  ItemsSource="{Binding Source={StaticResource CustomerList}}"
+                            ItemsSource="{Binding Source={StaticResource CustomerList}}"
                             DisplayMemberPath="CustomerName"
                             SelectedValuePath="CustomerId"
                             SelectedValue="{Binding InvoiceVM.CurrentInvoice.CustomerId,Mode=TwoWay}"
                             SelectionChanged="InvoiceName_SelectionChanged"
-                                  InputMethod.PreferredImeState="Off"
-                                  Margin="0,0,25,0"
+                            InputMethod.PreferredImeState="Off"
+                            Margin="0,0,25,0"
                             Width="168"
                             FontSize="20"
                             BorderThickness="0"
@@ -809,7 +591,7 @@
                                    TextAlignment="Right"
                                    VerticalAlignment="Center"
                                    FontWeight="Bold"
-                                   Text="{Binding InvoiceVM.AfterSettleUpAmount, StringFormat=￥{0:N0}‐}"
+                                   Text="{Binding InvoiceVM.CurrentInvoice.InvoiceTotal, Mode=OneWay, UpdateSourceTrigger=PropertyChanged, StringFormat=￥{0:N0}‐}"
                                    Width="160" />
                     </Grid>
                     <Grid x:Name="InvoiceAmountGrid"
@@ -842,7 +624,7 @@
                             TextAlignment="Right"
                             VerticalAlignment="Center"
                             FontWeight="Bold"
-                            Text="{Binding InvoiceVM.ItemsTotalAmount,Mode=OneWay,StringFormat=￥{0:N0}‐}"
+                            Text="{Binding InvoiceVM.CurrentInvoice.ItemsTotal,Mode=OneWay,StringFormat=￥{0:N0}‐}"
                             Width="160" />
                     </Grid>
 
@@ -881,7 +663,7 @@
                         AutoGenerateColumns="False"
                         BorderBrush="Gray"
                         BorderThickness="1"
-                        ItemsSource="{Binding InvoiceVM.InvoiceItemClassList,Mode=TwoWay}"
+                        ItemsSource="{Binding InvoiceVM.CurrentInvoice.InvoiceItems,Mode=TwoWay}"
                         AlternatingRowBackground="#0C000000"
                         ColumnHeaderHeight="30"
                         CanUserDeleteRows="False"
@@ -903,7 +685,6 @@
                         
                         <DataGridTemplateColumn  Width="30">
                             <DataGridTemplateColumn.Header>
-                                
                                 <CheckBox
                                     x:Name="SelectAllItemCheckBox"
                                     Checked="SelectAllCheckBox_Checked"
@@ -914,27 +695,10 @@
                                     <CheckBox
                                         x:Name="GridRowCheckBox"
                                         IsChecked="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected, Mode=TwoWay}"
+                                        Style="{StaticResource RowCheckBoxStyle}"
                                         PreviewMouseLeftButtonDown="InvoiceCheckBox_PreviewMouseLeftButtonDown"
                                         Width="20">
                                         <CheckBox.Resources>
-                                            <Style
-                                                TargetType="CheckBox"
-                                                BasedOn="{StaticResource DefaultCheckBoxStyle}">
-                                                <Setter
-                                                    Property="HorizontalAlignment"
-                                                    Value="Center" />
-                                                <Setter
-                                                    Property="Width"
-                                                    Value="20" />
-                                                <Setter
-                                                    Property="Content">
-                                                    <Setter.Value>
-                                                        <TextBlock
-                                                            Width="0"
-                                                            Visibility="Collapsed" />
-                                                    </Setter.Value>
-                                                </Setter>
-                                            </Style>
                                             <Style
                                                 TargetType="Grid">
                                                 <Setter
@@ -958,46 +722,90 @@
                             Width="200*">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <ComboBox
-                                        x:Name="InvoiceItemName"
-                                        ItemsSource="{Binding Source={StaticResource ItemClassList}}"
-                                        DisplayMemberPath="ItemName"
-                                        SelectedValuePath="ItemId"
-                                        SelectedValue="{Binding ItemId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                        BorderThickness="0"
-                                        HorizontalAlignment="Stretch"
-                                        Background="Transparent"
+                                    <ComboBox x:Name="InvoiceItemName"
+                                              ItemsSource="{Binding DataContext.InvoiceVM.ItemClassList, RelativeSource={RelativeSource AncestorType=Page}}"
+                                              DisplayMemberPath="ItemName"
+                                              SelectedValuePath="ItemId"
+                                              SelectedValue="{Binding ItemId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                              BorderThickness="0"
+                                              HorizontalAlignment="Stretch"
+                                              Background="Transparent"
                                               InputMethod.PreferredImeState="Off"
-                                              IsSynchronizedWithCurrentItem ="False"
-                                        SelectionChanged="InvoiceItemName_SelectionChanged"
-                                        
-                                        />
+                                              IsSynchronizedWithCurrentItem="False"
+                                              SelectionChanged="InvoiceItemName_SelectionChanged">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding ItemName}" />
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
+                                    <!--ItemsSource="{Binding InvoiceVM.CurrentInvoice.InvoiceItems}"-->
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
+                        <DataGridTextColumn Header="InvoiceItemID"
+                                            Width="60*"
+                                            InputMethod.PreferredImeState="Off"
+                                            Binding="{Binding InvoiceItemId,UpdateSourceTrigger=PropertyChanged}"
+                                            CellStyle="{StaticResource Cellstyle_HorizontalAlignRight}"
+                                            FontSize="16"
+                                            AutomationProperties.IsRequiredForForm="True" />
+
                         <DataGridTextColumn Header="単価"
                                             Width="80*"
-                                            Binding="{Binding UnitPrice,Mode=TwoWay,StringFormat={}@{0:N0}}"
-                                            CellStyle="{StaticResource CustomDataGridCellstyleR}"
+                                            FontSize="20"
                                             InputMethod.PreferredImeState="Off"
-                                            AutomationProperties.IsRequiredForForm="True"/>
+                                            AutomationProperties.IsRequiredForForm="True">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Text"
+                                            Value="{Binding UnitPrice,Mode=TwoWay,StringFormat={}@{0:N0},UpdateSourceTrigger=PropertyChanged}" />
+                                    <Setter Property="TextAlignment"
+                                            Value="Right" />
+                                    <Setter Property="VerticalAlignment"
+                                            Value="Center" />
+                                    <Setter Property="Padding"
+                                            Value="0,0,10,0" />
+
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                            <DataGridTextColumn.EditingElementStyle>
+                                <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource DataGridTextBoxStyle}">
+                                    <Setter Property="Text"
+                                            Value="{Binding UnitPrice,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" />
+                                    <Setter Property="Background"
+                                            Value="Beige" />
+                                    <Setter Property="TextAlignment"
+                                            Value="Right" />
+                                    <Setter Property="HorizontalContentAlignment"
+                                            Value="Right" />
+                                    <Setter Property="VerticalContentAlignment"
+                                            Value="Center" />
+                                    <Setter Property="Padding"
+                                            Value="0,0,0,0" />
+                                </Style>
+                            </DataGridTextColumn.EditingElementStyle>
+                        </DataGridTextColumn>
                         <DataGridTextColumn Header="数量"
                                             Width="60*"
                                             InputMethod.PreferredImeState="Off"
-                                            Binding="{Binding Quantity,Mode=TwoWay,StringFormat={}{0:N0}}"
-                                            CellStyle="{StaticResource CustomDataGridCellstyleR}" 
+                                            Binding="{Binding Quantity,Mode=TwoWay,StringFormat={}{0:N0},UpdateSourceTrigger=PropertyChanged}"
+                                            CellStyle="{StaticResource Cellstyle_HorizontalAlignRight}"
+                                            FontSize="16"
                                             AutomationProperties.IsRequiredForForm="True"/>
                         <DataGridTextColumn Header="単位"
                                             Width="50*"
                                             InputMethod.PreferredImeState="Off"
-                                            Binding="{Binding Unit,Mode=TwoWay}"
+                                            Binding="{Binding Unit,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"
                                             CellStyle="{StaticResource CustomDataGridCellStyle}"
+                                            FontSize="16"
                                             AutomationProperties.IsRequiredForForm="True"/>
                         <DataGridTextColumn Header="小計"
                                             Width="90*"
                                             IsReadOnly="True"
-                                            CellStyle="{StaticResource CustomDataGridCellstyleR}"
-                                            Binding="{Binding ItemSubTotal,StringFormat={}{0:N0}}"/>
+                                            FontSize="20"
+                                            CellStyle="{StaticResource Cellstyle_HorizontalAlignRight}"
+                                            Binding="{Binding ItemSubTotal,StringFormat={}{0:N0},UpdateSourceTrigger=PropertyChanged}"/>
                         <DataGridComboBoxColumn Header="税種"
                                                 Width="100*"
                                                 x:Name="TaxTypeNameComboBox"
@@ -1009,14 +817,16 @@
                         <DataGridTextColumn Header="税額"
                                             Width="50*"
                                             IsReadOnly="True"
-                                            Binding="{Binding Tax, StringFormat={}{0:N0}}"
-                                            CellStyle="{StaticResource CustomDataGridCellstyleR}"/>
+                                            Binding="{Binding Tax, StringFormat={}{0:N0},UpdateSourceTrigger=PropertyChanged}"
+                                            FontSize="16"
+                                            CellStyle="{StaticResource Cellstyle_HorizontalAlignRight}"/>
 
                         <DataGridTextColumn Header="項目計"
                                             Width="90*"
                                             IsReadOnly="True"
-                                            Binding="{Binding ItemTotal,StringFormat={}{0:N0}}"
-                                            CellStyle="{StaticResource CustomDataGridCellstyleR}"/>
+                                            FontSize="20"
+                                            Binding="{Binding ItemTotal,StringFormat={}{0:N0},UpdateSourceTrigger=PropertyChanged}"
+                                            CellStyle="{StaticResource Cellstyle_HorizontalAlignRight}"/>
                     </DataGrid.Columns>
                 </DataGrid>
                 <Grid

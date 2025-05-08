@@ -4,7 +4,6 @@
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:local="clr-namespace:Invoice"
-      xmlns:vm="clr-namespace:Invoice.ViewModels"
       xmlns:conv="clr-namespace:Invoice.Converters"
       xmlns:ui="http://schemas.modernwpf.com/2019"
       xmlns:customControl="clr-namespace:Invoice.CustomControl"
@@ -13,70 +12,16 @@
       d:DesignHeight="650"
       d:DesignWidth="800"
       FontFamily="Biz UDGothic"
-      InputMethod.PreferredImeState="Off"
-      Title="Payment">
+      Title="Payment"
+      Tag="入金管理">
     <Page.Resources>
         <conv:InvoiceIdToSlipNumberConverter x:Key="InvoiceIdToSlipNumberConverter" />
-        <CollectionViewSource Source="{Binding SettingsVM.PaymentMethodClassList}"
-                              x:Key="PaymentMethodWhithoutNewPlaceholder" />
         <CollectionViewSource Source="{Binding SettingsVM.TransactionTypeClassList}"
                               x:Key="TransactionTypeWhithoutNewPlaceholder" />
-
-
+        <CollectionViewSource Source="{Binding InvoiceVM.CustomerCollectionViewSource}"
+                              x:Key="FilterCustomerList" />
     </Page.Resources>
     <Grid x:Name="PageRootGrid">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="155" />
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
-
-        <Grid x:Name="NavigationGrid"
-              Grid.Row="0"
-              Background="#4CAF50">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition />
-            </Grid.RowDefinitions>
-            <Label FontSize="32px"
-                   FontWeight="Bold"
-                   Foreground="White"
-                   HorizontalAlignment="Center"
-                   Margin="0,40,0,25"
-                   FontFamily="BIZ UDGothic">入金管理</Label>
-            <StackPanel Grid.Row="1"
-                        Height="30"
-                        VerticalAlignment="Top"
-                        HorizontalAlignment="Center"
-                        Orientation="Horizontal"
-                        Background="Transparent">
-                <StackPanel.Resources>
-                    <Style TargetType="Label">
-                        <Setter Property="Foreground"
-                                Value="White" />
-                        <Setter Property="Margin"
-                                Value="7,0" />
-                        <Setter Property="VerticalAlignment"
-                                Value="Center" />
-                        <Setter Property="Cursor"
-                                Value="Hand" />
-                        <Setter Property="HorizontalContentAlignment"
-                                Value="Center" />
-                        <Setter Property="FontSize"
-                                Value="16px" />
-                    </Style>
-                </StackPanel.Resources>
-                <Label x:Name="DashBoardLabel"
-                       MouseLeftButtonUp="Label_MouseLeftButtonUp">ダッシュボード</Label>
-                <Label x:Name="CustomerLabel"
-                       MouseLeftButtonUp="Label_MouseLeftButtonUp">利用者管理</Label>
-                <Label x:Name="InvoiceLabel"
-                       MouseLeftButtonUp="Label_MouseLeftButtonUp">請求書管理</Label>
-                <Label x:Name="PaymentLabel"
-                       MouseLeftButtonUp="Label_MouseLeftButtonUp">入金管理</Label>
-                <Label x:Name="SettingsLabel"
-                       MouseLeftButtonUp="Label_MouseLeftButtonUp">設定</Label>
-            </StackPanel>
-        </Grid>
         <Grid x:Name="PaymentPageContentsGrid"
               Grid.Row="1"
               Margin="10">
@@ -87,9 +32,7 @@
                 <RowDefinition Height="50" />
             </Grid.RowDefinitions>
             <Grid Grid.Row="0"
-                  Width="700"
-                  MaxWidth="700"
-                  MinWidth="700"
+                  Margin="60,0,60,0"
                   HorizontalAlignment="Stretch"
                   VerticalAlignment="Top">
                 <Label Content="入金一覧"
@@ -149,44 +92,8 @@
                       AlternatingRowBackground="#0C000000"
                       ColumnHeaderHeight="28"
                       CanUserDeleteRows="False"
+                      ColumnHeaderStyle="{StaticResource CustomDataGridColumnHeaderStyle}"
                       RowHeaderWidth="0">
-                <DataGrid.CellStyle>
-                    <Style TargetType="DataGridCell"
-                           BasedOn="{StaticResource DefaultDataGridCellStyle}">
-                        <Setter Property="OverridesDefaultStyle"
-                                Value="True" />
-                        <Setter Property="Template">
-                            <Setter.Value>
-                                <ControlTemplate TargetType="DataGridCell">
-                                    <ui:DataGridCellPresenter Background="{TemplateBinding Background}"
-                                                              CurrencyVisualBrush="{DynamicResource DataGridCurrencyVisualPrimaryBrush}"
-                                                              CurrencyVisualThickness="0"
-                                                              FocusVisualPrimaryBrush="{DynamicResource DataGridCellFocusVisualPrimaryBrush}"
-                                                              FocusVisualPrimaryThickness="0"
-                                                              FocusVisualSecondaryBrush="{DynamicResource DataGridCellFocusVisualSecondaryBrush}"
-                                                              FocusVisualSecondaryThickness="0"
-                                                              IsCurrencyVisualVisible="{TemplateBinding IsSelected}"
-                                                              IsFocusVisualVisible="{TemplateBinding IsKeyboardFocusWithin}"
-                                                              MinHeight="{TemplateBinding MinHeight}"
-                                                              SnapsToDevicePixels="True" />
-                                </ControlTemplate>
-                            </Setter.Value>
-                        </Setter>
-                    </Style>
-                </DataGrid.CellStyle>
-
-                <DataGrid.ColumnHeaderStyle>
-                    <Style TargetType="{x:Type DataGridColumnHeader}">
-                        <Setter Property="FontSize"
-                                Value="15" />
-                        <Setter Property="HorizontalContentAlignment"
-                                Value="Center" />
-                        <Setter Property="Padding"
-                                Value="0" />
-                        <Setter Property="Margin"
-                                Value="0" />
-                    </Style>
-                </DataGrid.ColumnHeaderStyle>
                 <DataGrid.Columns>
                     <DataGridTemplateColumn Width="30">
                         <DataGridTemplateColumn.Header>
@@ -228,78 +135,41 @@
                         </DataGridTemplateColumn.CellTemplate>
 
                     </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="№"
-                                            Width="90*">
-                        <DataGridTemplateColumn.CellTemplate>
-
-                            <DataTemplate>
-                                <TextBlock HorizontalAlignment="Center"
-                                           VerticalAlignment="Center"
-                                           Padding="0,0,5,0"
-                                           Text="{Binding SlipNumber}" />
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-
-                    </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="請求№"
-                                            Width="90*">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <TextBlock HorizontalAlignment="Center"
-                                           VerticalAlignment="Center"
-                                           Padding="0,0,5,0"
-                                           Text="{Binding InvoiceId, Converter={StaticResource InvoiceIdToSlipNumberConverter}}" />
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-
-                    <DataGridTemplateColumn Header="宛先"
-                                            Width="100*">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-
-                                <TextBlock HorizontalAlignment="Center"
-                                           VerticalAlignment="Center"
-                                           Text="{Binding CustomerName}" />
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-
-                    <DataGridTemplateColumn Header="件名"
-                                            Width="200*">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <TextBlock HorizontalAlignment="Left"
-                                           VerticalAlignment="Center"
-                                           Padding="5,0,0,0"
-                                           Text="{Binding Subject}" />
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-
-                    <DataGridTemplateColumn Header="入金額"
-                                            Width="100*">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <TextBlock HorizontalAlignment="Right"
-                                           VerticalAlignment="Center"
-                                           Padding="0,0,5,0"
-                                           Text="{Binding PaymentAmount,StringFormat={}\\{0:N0}-}" />
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-
-                    <DataGridTemplateColumn Header="入金日"
-                                            Width="130*">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <TextBlock HorizontalAlignment="Center"
-                                           VerticalAlignment="Center"
-                                           Text="{Binding PaymentDateString}" />
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-
+                    <DataGridTextColumn Header="№"
+                                        Width="90*"
+                                        CellStyle="{StaticResource DataGridSlipNumberCellStyle}"
+                                        FontSize="16"
+                                        IsReadOnly="True"
+                                        Binding="{Binding SlipNumber}" />
+                    <DataGridTextColumn Header="請求№"
+                                        Width="90*"
+                                        CellStyle="{StaticResource DataGridSlipNumberCellStyle}"
+                                        FontSize="16"
+                                        IsReadOnly="True"
+                                        Binding="{Binding InvoiceId, Converter={StaticResource InvoiceIdToSlipNumberConverter}}" />
+                    <DataGridTextColumn Header="宛先"
+                                        Width="100*"
+                                        FontSize="16"
+                                        CellStyle="{StaticResource DataGridNameCellStyle}"
+                                        IsReadOnly="True"
+                                        Binding="{Binding CustomerName}" />
+                    <DataGridTextColumn Header="件名"
+                                        FontSize="16"
+                                        Width="200*"
+                                        IsReadOnly="True"
+                                        Binding="{Binding Subject}" />
+                    <DataGridTextColumn Header="入金額"
+                                        Width="100*"
+                                        FontSize="20"
+                                        CellStyle="{StaticResource DataGridAmountCellStyle}"
+                                        IsReadOnly="True"
+                                        Binding="{Binding PaymentAmount,StringFormat={}\\{0:N0}-}" />
+                    <DataGridTextColumn Header="入金日"
+                                        Width="130*"
+                                        FontSize="16"
+                                        CellStyle="{StaticResource Cellstyle_HorizontalAlignCenter}"
+                                        IsReadOnly="True"
+                                        Binding="{Binding PaymentDateString}" />
 
                 </DataGrid.Columns>
 
@@ -421,7 +291,7 @@
                                   ItemsSource="{Binding Source={StaticResource TransactionTypeWhithoutNewPlaceholder}}"
                                   DisplayMemberPath="TransactionName"
                                   SelectedValuePath="TransactionTypeId"
-                                  SelectedValue="{Binding TransactionTypeId,Mode=TwoWay}"
+                                  SelectedValue="{Binding PaymentVM.CurrentPayment.TransactionTypeId,Mode=TwoWay}"
                                   FontSize="20"
                                   Grid.Row="1"
                                   BorderThickness="0"
@@ -474,10 +344,10 @@
                         <ComboBox x:Name="CustomerNameComboBox"
                                   Grid.Row="1"
                                   InputMethod.PreferredImeState="Off"
-                                  ItemsSource="{Binding CustomerVM.CustomerClassList}"
+                                  ItemsSource="{Binding Source={StaticResource FilterCustomerList}}"
                                   DisplayMemberPath="CustomerName"
                                   SelectedValuePath="CustomerId"
-                                  SelectedValue="{Binding CurrentPayment.CustomerId,Mode=TwoWay}"
+                                  SelectedValue="{Binding PaymentVM.CurrentPayment.CustomerId,Mode=TwoWay}"
                                   SelectionChanged="CustomerNameComboBox_SelectionChanged"
                                   Margin="0,0,30,0"
                                   Width="168"
@@ -542,7 +412,6 @@
                                  FontWeight="Bold"
                                  Text="{Binding PaymentVM.CurrentPayment.PaymentAmount,StringFormat={}\\{0:N0}-,Mode=TwoWay}"
                                  Width="160"
-                                 
                                  InputMethod.IsInputMethodEnabled="False" />
                     </Grid>
 
@@ -558,6 +427,7 @@
                         </Grid.RowDefinitions>
 
                         <Grid Margin="0,5"
+                              HorizontalAlignment="Right"
                               Grid.Row="0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" />
@@ -569,7 +439,8 @@
                             <Grid HorizontalAlignment="Left"
                                   VerticalAlignment="Bottom"
                                   Grid.Column="0"
-                                  Margin="0,0,0,0">
+                                  Margin="0,0,0,0"
+                                  Visibility="Collapsed">
                                 <Grid.RowDefinitions>
                                     <RowDefinition />
                                     <RowDefinition />
@@ -579,10 +450,9 @@
                                            Margin="0,0,0,2" />
                                 <ComboBox x:Name="CustomerNameFilterComboBox"
                                           Grid.Row="1"
-                                          ItemsSource="{Binding CustomerVM.CustomerClassList}"
+                                          ItemsSource="{Binding Source={StaticResource FilterCustomerList}}"
                                           DisplayMemberPath="CustomerName"
                                           SelectedValuePath="CustomerId"
-                                          SelectedValue="{Binding CurrentPayment.CustomerId,Mode=TwoWay}"
                                           SelectionChanged="CustomerNameFilterComboBox_SelectionChanged"
                                           Margin="0,0,30,0"
                                           Width="168"
@@ -599,8 +469,10 @@
                                              IsOn="True"
                                              OnContent="する"
                                              OffContent="しない"
-                                             Margin="0,-2"
+                                             Margin="0,-5"
                                              Width="100"
+                                             VerticalAlignment="Bottom"
+                                             
                                              InputMethod.PreferredImeState="Off"
                                              Toggled="DateFilterSwitch_Toggled" />
                             <customControl:DateNumberBox x:Name="FilterDateBox"
@@ -609,7 +481,7 @@
                                                          Padding="0,0,0,0"
                                                          TextAlignment="Center"
                                                          SpinButtonPlacementMode="Inline"
-                                                         VerticalAlignment="Center"
+                                                         VerticalAlignment="Bottom"
                                                          FontSize="18"
                                                          FontWeight="Bold"
                                                          Tag="0"
@@ -647,7 +519,6 @@
                                           ItemsSource="{Binding InvoiceVM.InvoiceStatusClassList}"
                                           DisplayMemberPath="InvoiceStatus"
                                           SelectedValuePath="InvoiceStatusId"
-                                          SelectedValue="{Binding CurrentPayment.InvoiceStatusFilterValue}"
                                           SelectionChanged="StatusComboBox_SelectionChanged"
                                           Padding="12,0,0,0"
                                           FontSize="20">
@@ -662,8 +533,9 @@
                             <Button x:Name="FilterClearButton"
                                     Grid.Column="4"
                                     Content="フィルタクリア"
-                                    Width="100"
-                                    Margin="5,0,0,0"
+                                    Width="120"
+                                    Height="32"
+                                    Margin="5,0,5,0"
                                     VerticalAlignment="Bottom"
                                     HorizontalAlignment="Stretch"
                                     HorizontalContentAlignment="Center"
@@ -681,49 +553,13 @@
                                   Height="233"
                                   VerticalScrollBarVisibility="Auto"
                                   SelectionUnit="FullRow"
-                                  SelectionMode="Single"
                                   ItemsSource="{Binding PaymentVM.InvoiceListForPayment.View}"
                                   AlternatingRowBackground="#0C000000"
+                                  CanUserSortColumns="True"
                                   ColumnHeaderHeight="28"
                                   CanUserDeleteRows="False"
+                                  ColumnHeaderStyle="{StaticResource CustomDataGridColumnHeaderStyle}"
                                   RowHeaderWidth="0">
-                            <DataGrid.CellStyle>
-                                <Style TargetType="DataGridCell"
-                                       BasedOn="{StaticResource DefaultDataGridCellStyle}">
-                                    <Setter Property="OverridesDefaultStyle"
-                                            Value="True" />
-                                    <Setter Property="Template">
-                                        <Setter.Value>
-                                            <ControlTemplate TargetType="DataGridCell">
-                                                <ui:DataGridCellPresenter Background="{TemplateBinding Background}"
-                                                                          CurrencyVisualBrush="{DynamicResource DataGridCurrencyVisualPrimaryBrush}"
-                                                                          CurrencyVisualThickness="0"
-                                                                          FocusVisualPrimaryBrush="{DynamicResource DataGridCellFocusVisualPrimaryBrush}"
-                                                                          FocusVisualPrimaryThickness="0"
-                                                                          FocusVisualSecondaryBrush="{DynamicResource DataGridCellFocusVisualSecondaryBrush}"
-                                                                          FocusVisualSecondaryThickness="0"
-                                                                          IsCurrencyVisualVisible="{TemplateBinding IsSelected}"
-                                                                          IsFocusVisualVisible="{TemplateBinding IsKeyboardFocusWithin}"
-                                                                          MinHeight="{TemplateBinding MinHeight}"
-                                                                          SnapsToDevicePixels="True" />
-                                            </ControlTemplate>
-                                        </Setter.Value>
-                                    </Setter>
-                                </Style>
-                            </DataGrid.CellStyle>
-
-                            <DataGrid.ColumnHeaderStyle>
-                                <Style TargetType="{x:Type DataGridColumnHeader}">
-                                    <Setter Property="FontSize"
-                                            Value="15" />
-                                    <Setter Property="HorizontalContentAlignment"
-                                            Value="Center" />
-                                    <Setter Property="Padding"
-                                            Value="0" />
-                                    <Setter Property="Margin"
-                                            Value="0" />
-                                </Style>
-                            </DataGrid.ColumnHeaderStyle>
                             <DataGrid.Columns>
                                 <DataGridTemplateColumn Width="30">
                                     <DataGridTemplateColumn.Header>
@@ -735,24 +571,10 @@
                                         <DataTemplate>
                                             <CheckBox x:Name="GridRowCheckBox"
                                                       IsChecked="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected, Mode=TwoWay}"
+                                                      Style="{StaticResource RowCheckBoxStyle}"
                                                       PreviewMouseLeftButtonDown="GridRowCheckBox_PreviewMouseLeftButtonDown"
                                                       Width="20">
-                                                <!--Checked="InvoiceCheckBox_Checked"
-                                    Unchecked="InvoiceCheckBox_Unchecked"-->
                                                 <CheckBox.Resources>
-                                                    <Style TargetType="CheckBox"
-                                                           BasedOn="{StaticResource DefaultCheckBoxStyle}">
-                                                        <Setter Property="HorizontalAlignment"
-                                                                Value="Center" />
-                                                        <Setter Property="Width"
-                                                                Value="20" />
-                                                        <Setter Property="Content">
-                                                            <Setter.Value>
-                                                                <TextBlock Width="0"
-                                                                           Visibility="Collapsed" />
-                                                            </Setter.Value>
-                                                        </Setter>
-                                                    </Style>
                                                     <Style TargetType="Grid">
                                                         <Setter Property="Width"
                                                                 Value="20" />
@@ -767,79 +589,42 @@
                                     </DataGridTemplateColumn.CellTemplate>
 
                                 </DataGridTemplateColumn>
-                                <DataGridTemplateColumn Header="No."
-                                                        Width="90*">
-                                    <DataGridTemplateColumn.CellTemplate>
-
-                                        <DataTemplate>
-                                            <TextBlock HorizontalAlignment="Right"
-                                                       VerticalAlignment="Center"
-                                                       Padding="0,0,5,0"
-                                                       Text="{Binding SlipNumber}" />
-                                        </DataTemplate>
-                                    </DataGridTemplateColumn.CellTemplate>
-
-                                </DataGridTemplateColumn>
-
-                                <DataGridTemplateColumn Header="宛先"
-                                                        Width="100*">
-                                    <DataGridTemplateColumn.CellTemplate>
-                                        <DataTemplate>
-
-                                            <TextBlock HorizontalAlignment="Center"
-                                                       VerticalAlignment="Center"
-                                                       Text="{Binding CustomerName}" />
-                                        </DataTemplate>
-                                    </DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
-
-                                <DataGridTemplateColumn Header="件名"
-                                                        Width="200*">
-                                    <DataGridTemplateColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <TextBlock HorizontalAlignment="Left"
-                                                       VerticalAlignment="Center"
-                                                       Padding="5,0,0,0"
-                                                       Text="{Binding Subject}" />
-                                        </DataTemplate>
-                                    </DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
-
-                                <DataGridTemplateColumn Header="請求金額"
-                                                        Width="100*">
-                                    <DataGridTemplateColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <TextBlock HorizontalAlignment="Right"
-                                                       VerticalAlignment="Center"
-                                                       Padding="0,0,5,0"
-                                                       Text="{Binding InvoiceTotal,StringFormat={}{0:N0}}" />
-                                        </DataTemplate>
-                                    </DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
-
-                                <DataGridTemplateColumn Header="発行日"
-                                                        Width="130*">
-                                    <DataGridTemplateColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <TextBlock HorizontalAlignment="Center"
-                                                       VerticalAlignment="Center"
-                                                       Text="{Binding IssueDateString}" />
-                                        </DataTemplate>
-                                    </DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
-
-                                <DataGridTemplateColumn Header="ステータス"
-                                                        Width="100*">
-                                    <DataGridTemplateColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <TextBlock HorizontalAlignment="Center"
-                                                       VerticalAlignment="Center"
-                                                       Padding="0,0,5,0"
-                                                       Text="{Binding InvoiceStatus}" />
-                                        </DataTemplate>
-                                    </DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
-
+                                <DataGridTextColumn Header="No."
+                                                    Width="90*"
+                                                    CanUserSort="True"
+                                                    FontSize="16"
+                                                    IsReadOnly="True"
+                                                    CellStyle="{StaticResource Cellstyle_HorizontalAlignCenter}"
+                                                    Binding="{Binding SlipNumber}" />
+                                <DataGridTextColumn Header="宛先"
+                                                    Width="100*"
+                                                    FontSize="16"
+                                                    IsReadOnly="True"
+                                                    CellStyle="{StaticResource Cellstyle_HorizontalAlignCenter}"
+                                                    Binding="{Binding CustomerName}" />
+                                <DataGridTextColumn Header="件名"
+                                                    Width="200*"
+                                                    FontSize="16"
+                                                    IsReadOnly="True"
+                                                    Binding="{Binding Subject}" />
+                                <DataGridTextColumn Header="請求金額"
+                                                    Width="100*"
+                                                    FontSize="20"
+                                                    IsReadOnly="True"
+                                                    CellStyle="{StaticResource Cellstyle_HorizontalAlignRight}"
+                                                    Binding="{Binding InvoiceTotal, Mode=OneWay, StringFormat={}{0:N0}}" />
+                                <DataGridTextColumn Header="発行日"
+                                                    Width="130*"
+                                                    FontSize="16"
+                                                    IsReadOnly="True"
+                                                    CellStyle="{StaticResource Cellstyle_HorizontalAlignCenter}"
+                                                    Binding="{Binding IssueDateString}" />
+                                <DataGridTextColumn Header="ステータス"
+                                                    Width="100*"
+                                                    FontSize="16"
+                                                    IsReadOnly="True"
+                                                    CellStyle="{StaticResource Cellstyle_HorizontalAlignCenter}"
+                                                    Binding="{Binding InvoiceStatus}" />
                             </DataGrid.Columns>
 
                         </DataGrid>

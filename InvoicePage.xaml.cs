@@ -25,6 +25,7 @@ using System.Windows.Shapes;
 using Controls = System.Windows.Controls;
 using MS.Internal;
 using System.Reflection;
+using MigraDoc.DocumentObjectModel.Tables;
 
 namespace Invoice
 {
@@ -39,24 +40,28 @@ namespace Invoice
         private InvoiceViewModel vm;
         private bool isEditing = false;
         private bool isInitializing = true;
+        private bool isFirstLoading = true;
+        private bool addFromCopy = false;
         public CultureInfo cultureInfo = new("ja-JP");
         InvoiceClass CurrentInvoice;
         private InvoiceFiterParam filterParam = new();
         private MainWindow mainWindow;
-        private int prevTransactionTypeId = 0;
+        private bool DebugSwitch = false;
 
+        private int prevTransactionTypeId = 0;
 
         SlipNumberClass SlipNumberInfo = new();
         public InvoicePage(MainWindowViewModel mainWindowViewModel)
         {
             InitializeComponent();
+            DebugSwitch = mainWindowViewModel.DebugOutIsOn;
             this.Loaded += InvoicePage_Loaded;
             vm = mainWindowViewModel.InvoiceVM;
             _customerVM = mainWindowViewModel.CustomerVM;
             _pVM = mainWindowViewModel.PaymentVM;
             _sVM = mainWindowViewModel.SettingsVM;
             this.DataContext = mainWindowViewModel;
-            SlipNumberInfo = SlipNumberClass.GetSlipNumberInfo();
+            
             cultureInfo.DateTimeFormat.Calendar = new JapaneseCalendar();
             cultureInfo.DateTimeFormat.ShortDatePattern = "ggy年M月d日";
             Thread.CurrentThread.CurrentCulture = cultureInfo;
@@ -64,19 +69,24 @@ namespace Invoice
             vm.InvoiceCollectionViewSource = new CollectionViewSource();
             vm.InvoiceCollectionViewSource.Source = vm.InvoiceClassList;
 
-            mainWindow = (MainWindow)Application.Current.MainWindow;
             CurrentInvoice = vm.CurrentInvoice;
-            CurrentInvoice.PropertyChanged += CurrentInvoice_PropertyChanged;
 
             EventManager.RegisterClassHandler(typeof(MainWindow), PreviewMouseDownEvent, new MouseButtonEventHandler(MainWindow_MouseDown));
 
+            mainWindow = (MainWindow)Application.Current.MainWindow;
             InvoiceFilter(new InvoiceFiterParam());
             InvoiceSubject.GotKeyboardFocus += TextBox_GotKeyboardFocus;
             InvoiceSubject.PreviewLostKeyboardFocus += TextBox_PreviewLostKeyboardFocus;
             MessageTextBox.GotKeyboardFocus += TextBox_GotKeyboardFocus;
             MessageTextBox.PreviewLostKeyboardFocus += TextBox_PreviewLostKeyboardFocus;
+            filterParam.PropertyChanged += FilterParam_PropertyChanged;
 
         }
+        
+        private void FilterParam_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+        }
+
         private void InvoiceFilter(InvoiceFiterParam param)
         {
             var source = vm.InvoiceCollectionViewSource;
@@ -97,8 +107,14 @@ namespace Invoice
                         e.Accepted = false;
                 }
             };
+            if (isFirstLoading)
+            {
+                source.SortDescriptions.Clear();
+                source.SortDescriptions.Add(new SortDescription(nameof(InvoiceClass.IssueDate), ListSortDirection.Descending));
+            }
+
         }
-        
+
         private DateTime StartOfMonth(DateTime? date)
         {
             if (date.HasValue) return new DateTime(date.Value.Year, date.Value.Month, 1);
@@ -114,18 +130,10 @@ namespace Invoice
                 return DateTime.MinValue;
         }
 
-        private void Label_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
-        {
-            if (sender is Label label)
-            {
-                var mainWindow = Application.Current.MainWindow as MainWindow;
-                mainWindow?.NavigateToPage(label.Name);
-            }
-        }
-
         private void InvoicePage_Loaded(object sender, RoutedEventArgs e)
         {
             vm.ReloadInvoiceList();
+            vm.InvoiceCollectionViewSource.Source = vm.InvoiceClassList;
             InvoiceFilter(filterParam);
             if (isInitializing)
             {
@@ -133,6 +141,7 @@ namespace Invoice
                 var grid = arrow.Parent as Grid;
                 grid.HorizontalAlignment = HorizontalAlignment.Right;
             }
+            isFirstLoading = false;
         }
 
         private void DateBox_DateSelected(object sender, CalendarDateChangedEventArgs e)
@@ -146,17 +155,18 @@ namespace Invoice
         {
             if (sender is ComboBox comboBox)
             {
-                if(comboBox.SelectedItem is CustomerClass customer && customer.CustomerId != 0)
+                if(comboBox.SelectedItem is CustomerClass customer && customer.CustomerId != -1)
                 {
                     filterParam.CustomerId = customer.CustomerId; 
                 }
-                else if(comboBox.SelectedItem is InvoiceStatusClass status && status.InvoiceStatusId != 0)
+                else if(comboBox.SelectedItem is InvoiceStatusClass status && status.InvoiceStatusId != -1)
                 {
                     filterParam.InvoiceStatusId = status.InvoiceStatusId;
                 }
                 InvoiceFilter(filterParam);
             }
         }
+        
         private void ShowDatailPane()
         {
             Border pane = InvoiceDetailPane;
@@ -164,6 +174,10 @@ namespace Invoice
             {
                 var mainWindow = Application.Current.MainWindow as MainWindow;
                 mainWindow.Height += pane.Height - InvoicePageContentsGrid.ActualHeight;
+            }
+            else
+            {
+                pane.Height = InvoicePageContentsGrid.ActualHeight;
             }
             InvoicePageContentsGrid.IsEnabled = false;
             var renderTransform = PaneTransform;
@@ -199,6 +213,7 @@ namespace Invoice
             renderTransform.BeginAnimation(System.Windows.Media.TranslateTransform.YProperty, slideDownAnimation);
             //pane.Visibility = Visibility.Collapsed;
             InvoicePageContentsGrid.IsEnabled = true;
+            vm.CurrentInvoice = new InvoiceClass();
         }
 
         private void AddInvoiceButton_Click(object sender, RoutedEventArgs e)
@@ -206,9 +221,10 @@ namespace Invoice
             isInitializing = true;
             isEditing = false;
             vm.CurrentInvoice = new InvoiceClass();
-            vm.InvoiceItemClassList.Clear();
+            vm.CurrentInvoice.InvoiceItems.Clear();
             var defaultItems = _sVM.DefaultItemsList.ToList();
-            defaultItems.ForEach(item => vm.InvoiceItemClassList.Add(item.ToInvoiceItem()));
+            defaultItems.ForEach(item => vm.CurrentInvoice.InvoiceItems.Add(item.ToInvoiceItem()));
+            
             DateTime issueDate;
             if (ShowAllInvoice.IsOn)
             {
@@ -225,6 +241,7 @@ namespace Invoice
 
             vm.SaveButtonText = "保存";
             vm.PaneTitle = "新規請求書作成";
+            //vm.CurrentInvoice.RecalculateTotals();
             ShowDatailPane();
 
         }
@@ -239,20 +256,12 @@ namespace Invoice
                 prevTransactionTypeId = vm.CurrentInvoice.TransactionTypeId ?? 1;
                 vm.SaveButtonText = "更新";
                 vm.PaneTitle = "請求書編集";
-                vm.InvoiceItemClassList.Clear(); 
-                var items = InvoiceItemClass.GetInvoiceItemsByInvoiceId(selectedInvoice.InvoiceId);
-                items.ForEach(item => vm.InvoiceItemClassList.Add(item));
                 if (vm.CurrentInvoice.TransactionTypeId == 2)
                 {
                     TransactionTypeComboBox.SelectedIndex = 1;
-   
                 }
-
-                               
                 ShowDatailPane();
-
             }
-
         }
 
         private void InvoiceListDataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
@@ -271,40 +280,49 @@ namespace Invoice
             }
             foreach (int invoiceId in idList)
             {
-                var payment = _pVM.PaymentClassList.FirstOrDefault(payment => payment.InvoiceId == invoiceId);
-                if (payment != null)
+                var result = UnitOfWork.ExecuteWithTransaction(uow =>
                 {
-                    var a = MessageBox.Show(
-                                            owner: mainWindow,
-                                            messageBoxText:
-                                            $"この請求に対する入金記録があります\n" +
-                                            $"入金記録も削除しますか？\n" +
-                                            $"Yes...入金を削除\n" +
-                                            $"No...入金の請求書情報が削除される\n",
-                                            caption: "記録未選択",
-                                            button: MessageBoxButton.YesNoCancel,
-                                            defaultResult: MessageBoxResult.No,
-                                            icon: MessageBoxImage.Hand
-                                            
-                                            );
-                    switch (a)
+                    var payment = _pVM.PaymentClassList.FirstOrDefault(payment => payment.InvoiceId == invoiceId);
+                    if (payment != null)
                     {
-                        case MessageBoxResult.Yes:
-                            PaymentClass.DeletePaymentById(TypeOfID.Payment ,invoiceId);
-                            break;
+                        var a = MessageBox.Show(
+                                                owner: mainWindow,
+                                                messageBoxText:
+                                                $"この請求に対する入金記録があります\n" +
+                                                $"入金記録も削除しますか？\n" +
+                                                $"Yes...入金を削除\n" +
+                                                $"No...入金の請求書情報が削除される\n",
+                                                caption: "記録未選択",
+                                                button: MessageBoxButton.YesNoCancel,
+                                                defaultResult: MessageBoxResult.No,
+                                                icon: MessageBoxImage.Hand
 
-                        case MessageBoxResult.No:
-                            PaymentClass.ClearInvoiceIdFromPayment(invoiceId);
-                            break;
-                        case MessageBoxResult.Cancel:
-                            return;
+                                                );
+                        switch (a)
+                        {
+                            case MessageBoxResult.Yes:
+                                PaymentClass.TryDeletePaymentById(TypeOfID.Payment, invoiceId,uow);
+                                break;
+                            case MessageBoxResult.No:
+                                PaymentClass.ClearInvoiceIdFromPayment(invoiceId,uow);
+                                break;
+                            case MessageBoxResult.Cancel:
+                            default:
+                                return false;
+                        }
                     }
+                    InvoiceClass.DeleteInvoiceByInvoiceId(invoiceId,uow);
+                    return true;
+                },null);
+                if (result == false)
+                {
+                    MessageBox.Show("請求書の削除に失敗しました。");
+                    return;
                 }
-                InvoiceClass.DeleteInvoiceByInvoiceId(invoiceId);
             }
             _pVM.ReloadPaymentList();
             vm.ReloadInvoiceList();
-            vm.ReloadBalanceList();
+            _customerVM.ReloadBalances();
 
         }
 
@@ -315,33 +333,32 @@ namespace Invoice
             
             HideDetailPane();
             vm.CurrentInvoice = null;
-            vm.InvoiceItemClassList.Clear();
         }
 
         private void AddInvoiceItemButton_Click(object sender, RoutedEventArgs e)
         {
             // ViewModelへの参照を取得（DataContextをInvoiceViewModelに設定している場合）
-            var viewModel = vm as InvoiceViewModel;
-            if (viewModel != null)
+            
+            if (vm != null)
             {
                 var newItem = new InvoiceItemClass();
-                newItem.ItemOrder = vm.InvoiceItemClassList.Count + 1;
-                viewModel.InvoiceItemClassList.Add(newItem);
+                newItem.ItemOrder = vm.CurrentInvoice.InvoiceItems.Count + 1;
+                vm.CurrentInvoice.InvoiceItems.Add(newItem);
+                foreach (var item in vm.CurrentInvoice.InvoiceItems)
+                {
+                    item.ItemOrder = vm.CurrentInvoice.InvoiceItems.IndexOf(item) + 1;
+                }
             }
         }
 
         private void SaveInvoiceButton_Click(object sendwe, RoutedEventArgs e)
         {
-            var invoice = vm.CurrentInvoice.DeepClone();
-            invoice.SubTotal = vm.InvoiceItemClassList.Sum(x => x.ItemSubTotal);
-            invoice.Tax = vm.InvoiceItemClassList.Sum(x => x.Tax);
-            //invoice.InvoiceTotal = vm.InvoiceItemClassList.Sum(x => x.ItemTotal);
-            invoice.InvoiceItems.AddRange(vm.InvoiceItemClassList.ToList<InvoiceItemClass>());
+            var invoice = vm.CurrentInvoice;
+
+            
             var statusInfo = StatusComboBox.SelectedItem as InvoiceStatusClass;
             invoice.InvoiceStatusId = statusInfo?.InvoiceStatusId ?? 1;
             invoice.InvoiceStatus = statusInfo?.InvoiceStatus ?? "作成中";
-
-            invoice.IssueDateString = vm.CurrentInvoice.IssueDateString;
 
             try
             {
@@ -356,56 +373,66 @@ namespace Invoice
                 }
                 _pVM.ReloadPaymentList();
                 vm.ReloadInvoiceList();
-                vm.ReloadBalanceList();
+                
+                _customerVM.ReloadBalances();
                 HideDetailPane();
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message);
+                MessageBox.Show($"{GetType().Name}.{MethodBase.GetCurrentMethod().Name} : {ex.Message}");
             }
         }
         
         public void AddNewInvoice(InvoiceClass invoice)
         { //新規登録
-            var prefix = string.IsNullOrWhiteSpace(SlipNumberInfo.InvoicePrefix) ? "" : SlipNumberInfo.InvoicePrefix;
-            var suffix = string.IsNullOrWhiteSpace(SlipNumberInfo.InvoiceSuffix) ? "" : SlipNumberInfo.InvoiceSuffix;
-            prefix += invoice.IssueDate?.ToString("yyMM_");
-            var numberString = (SlipNumberInfo.InvoiceLatest + 1).ToString("0000");
-            var slipNumber = $"{prefix}{numberString}{suffix}";
-            invoice.InvoiceItems.Clear();
-            invoice.InvoiceItems.AddRange(vm.InvoiceItemClassList.ToList<InvoiceItemClass>());
-            invoice.SlipNumber = slipNumber;
-            invoice.ItemsTotal = vm.ItemsTotalAmount;
-            invoice.PaydByDeposit = vm.ItemsTotalAmount - vm.AfterSettleUpAmount;
-            invoice.InvoiceTotal = vm.AfterSettleUpAmount;
-            if(invoice.TransactionTypeId == 2 && invoice.InvoiceTotal == 0)
-            {
-                invoice.InvoiceStatus = "入金済";
-                invoice.InvoiceStatusId = 3;
-                invoice.PaymentDate = invoice.IssueDate;
-                invoice.PaydByDeposit = vm.ItemsTotalAmount - vm.AfterSettleUpAmount;
-            }
-            else
-            {
-                invoice.InvoiceStatus = "請求済";
-                invoice.InvoiceStatusId = 2;
-                invoice.PaymentDate = null;
-                invoice.PaydByDeposit = 0;
-            }
-            invoice.TryAddInvoice();
-            SlipNumberInfo.InclimentInvoiceLatest();
+            
+            var slipNumberInfo = _sVM.slipNumbers;
+            var slipNumber = slipNumberInfo.GetSlipNumber(invoice.IssueDate);
+            var numberString = slipNumber.InvoiceNumber;
+            invoice.SlipNumber = numberString;
+            invoice.PaydByDeposit = vm.CurrentInvoice.PaydByDeposit;
+            SetInvoiceStatus(invoice);
+            if (invoice.TryAddInvoice() == true) slipNumber.InclimentInvoiceLatest();
 
         }
 
         public void UpdateInvoice(InvoiceClass invoice)
         { //更新
+            var ret = UnitOfWork.ExecuteWithTransaction(uow =>
+            {
+                SetInvoiceStatus(invoice);
+                if (prevTransactionTypeId == 2)
+                { //更新前が前受清算の請求情報
+                    //前受金→前受金
+                    if (invoice.TransactionTypeId == 2)
+                        return DepositClass.TryUpdateDeposit(invoice, uow);
+                        //前受金→売掛金
+                    else 
+                        return DepositClass.DeleteDepositById(TypeOfID.Invoice, invoice.InvoiceId, uow);
+                }
+                else
+                { //更新前が売掛金の請求情報
+                    //売掛金→前受金
+                    if (invoice.TransactionTypeId == 2)
+                        return DepositClass.TryAddDeposit(invoice, uow);
+                    //売掛金→売掛金
+                    else
+                        return true;//何もしない
+                }
+            }, null);
+            if (ret == true)
+                // 請求書の更新実行
+                if (!invoice.TryUpdateInvoice()) throw new Exception("請求書の更新に失敗しました。");
+        }
 
-            if(invoice.TransactionTypeId == 2)
+        private void SetInvoiceStatus(InvoiceClass invoice)
+        {
+            if (invoice.TransactionTypeId == 2 && invoice.InvoiceTotal == 0)
             {
                 invoice.InvoiceStatus = "入金済";
                 invoice.InvoiceStatusId = 3;
                 invoice.PaymentDate = invoice.IssueDate;
-                invoice.PaydByDeposit = vm.ItemsTotalAmount - vm.AfterSettleUpAmount;
+                invoice.PaydByDeposit = vm.CurrentInvoice.PaydByDeposit;
             }
             else
             {
@@ -415,32 +442,11 @@ namespace Invoice
                 invoice.PaydByDeposit = 0;
             }
 
-            if (prevTransactionTypeId == 2)
-            {
-                //更新前が前受清算の請求情報
-                if (invoice.TransactionTypeId == 2)
-                    //前受金→前受金
-                    DepositClass.TryUpdateDeposit(invoice);
-                else
-                    //前受金→売掛金
-                    DepositClass.DeleteDepositById(TypeOfID.Invoice,invoice.InvoiceId);
-            }
-            else
-            {
-                //更新前が売掛金の請求情報
-                if (invoice.TransactionTypeId == 2)
-                    //売掛金→前受金
-                    DepositClass.TryAddDeposit(invoice);
-                else { }//売掛金→売掛金
-            }
-
-            // 請求書の更新実行
-            if (!invoice.TryUpdateInvoice()) throw new Exception("請求書の更新に失敗しました。");
         }
 
         private void InvoiceItemName_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-
+            
             //if (isInitializing) return;
 
             if (sender is ComboBox comboBox)
@@ -450,6 +456,7 @@ namespace Invoice
                 if (isInitializing) return;
                 if (invoiceItem != null && selectedItem != null)
                 {
+
                     //if (invoiceItem.ItemId == selectedItem.ItemId && invoiceItem.ItemTotal != 0) return;
                     ItemClass comboBoxSelectedItem = new();
                     if (selectedItem is InvoiceItemClass item)
@@ -458,24 +465,17 @@ namespace Invoice
                         comboBoxSelectedItem = selectedItem as ItemClass;
 
                     invoiceItem.SetItem(comboBoxSelectedItem);
-                    invoiceItem.ReTotal(invoiceItem);
+                    //invoiceItem.ReTotal(invoiceItem);
                     var contentPresenter = comboBox.TemplatedParent as ContentPresenter;
                     var dataGridCell = contentPresenter.Parent as DataGridCell;
                     var dataGridCellsPanel = VisualTreeHelper.GetParent(dataGridCell) as DataGridCellsPanel;
                     var taxTypeNameComboBox = TaxTypeNameComboBox as DataGridComboBoxColumn;
                     var itemSource = taxTypeNameComboBox.ItemsSource as ListCollectionView;
                     itemSource.MoveCurrentToFirst();
-                    //var taxTypeNameComboBox = VisualTreeHelperExtensions.FindVisualChildByName<ComboBox>(dataGridCellsPanel, "TaxTypeNameComboBox") as ComboBox;
-                    //taxTypeNameComboBox.Text = invoiceItem.TaxTypeName;
                 }
                 else
                 {
                     if (comboBox.DataContext == null) return;
-                    if (comboBox.DataContext.ToString() == "{DataGrid.NewItemPlaceholder}")
-                    {
-                        //invoiceItem = new InvoiceItemClass();
-                        //invoiceItem.SetItem(comboBox.SelectedItem as ItemClass);
-                    }
                 }
             }
 
@@ -563,14 +563,13 @@ namespace Invoice
             orderList.Sort((a, b) => b - a);
             foreach (var itemOrder in orderList)
             {
-                var item = vm.InvoiceItemClassList[itemOrder - 1];
+                var item = vm.CurrentInvoice.InvoiceItems[itemOrder - 1];
                 var id = item.InvoiceItemId;
-                vm.InvoiceItemClassList.Remove(item);
+                vm.CurrentInvoice.InvoiceItems.Remove(item);
             }
-            int order = 1;
-            foreach (var item in dataGrid.Items)
+            foreach (var item in vm.CurrentInvoice.InvoiceItems)
             {
-                if (item is InvoiceItemClass invoiceItem) invoiceItem.ItemOrder = order++;
+                item.ItemOrder = vm.CurrentInvoice.InvoiceItems.IndexOf(item) + 1;
             }
 
         }
@@ -592,44 +591,30 @@ namespace Invoice
         {
             var dataGrid = InvoiceListDataGrid;
             //var selectedItems = dataGrid.SelectedItems.Cast<InvoiceClass>().Reverse() ;
-            var selectedItems = GetSelectedItemsInDisplayOrder(dataGrid);
-            foreach (var item in selectedItems)
+            var selectedInvoices = GetSelectedItemsInDisplayOrder(dataGrid);
+            addFromCopy = true;
+            foreach (InvoiceClass invoice in selectedInvoices)
             {
-                if (item is InvoiceClass invoice)
-                {
-                    var newInvoice = invoice.DeepClone();
-                    var tempNewIssueDate = invoice.IssueDate?.AddMonths(2) ?? DateTime.Now;
-                    newInvoice.IssueDate = new DateTime(tempNewIssueDate.Year, tempNewIssueDate.Month, 1).AddDays(-1);
-                    newInvoice.SlipNumber ="";
-                    newInvoice.InvoiceStatusId = 1;
-                    newInvoice.InvoiceStatus = "作成中";
-                    newInvoice.IssueDateString = newInvoice.IssueDate?.ToShortDateString();
-                    newInvoice.DueDate = newInvoice.IssueDate?.AddDays(16);
-                    newInvoice.Subject = newInvoice.IssueDate?.ToString("利用料 ggy年M月分");
-                    var items = InvoiceItemClass.GetInvoiceItemsByInvoiceId(invoice.InvoiceId);
-                    newInvoice.InvoiceItems.AddRange(items);
-                    AddNewInvoice(newInvoice);
-                    //CopyInvoiceAdd(newInvoice);
-                    //SlipNumberInfo.InclimentInvoiceLatest();
-                }
+                var newInvoice = invoice.DeepClone();
+                var tempNewIssueDate = invoice.IssueDate?.AddMonths(2) ?? DateTime.Now;
+                newInvoice.InvoiceId = 0;
+                newInvoice.IssueDate = new DateTime(tempNewIssueDate.Year, tempNewIssueDate.Month, 1).AddDays(-1);
+                newInvoice.SlipNumber ="";
+                newInvoice.InvoiceStatusId = 1;
+                newInvoice.InvoiceStatus = "作成中";
+                newInvoice.IssueDateString = newInvoice.IssueDate?.ToShortDateString();
+                newInvoice.DueDate = newInvoice.IssueDate?.AddDays(16);
+                newInvoice.Subject = newInvoice.IssueDate?.ToString("利用料 ggy年M月分");
+                vm.CurrentInvoice = newInvoice.DeepClone();
+                AddNewInvoice(vm.CurrentInvoice);
             }
             _pVM.ReloadPaymentList();
             vm.ReloadInvoiceList();
-            vm.ReloadBalanceList();
+            _customerVM.ReloadBalances();
+            addFromCopy = false;
 
         }
 
-        private void CopyInvoiceAdd(InvoiceClass invoice)
-        {
-            var prefix = string.IsNullOrWhiteSpace(SlipNumberInfo.InvoicePrefix) ? "" : SlipNumberInfo.InvoicePrefix;
-            var suffix = string.IsNullOrWhiteSpace(SlipNumberInfo.InvoiceSuffix) ? "" : SlipNumberInfo.InvoiceSuffix;
-            prefix += invoice.IssueDate?.ToString("yyMM_");
-            var numberString = (SlipNumberInfo.InvoiceLatest + 1).ToString("0000");
-            var slipNumber = $"{prefix}{numberString}{suffix}";
-            invoice.SlipNumber = slipNumber;
-            AddNewInvoice(invoice);
-        }
-        
         private List<InvoiceClass> GetSelectedItemsInDisplayOrder(DataGrid dataGrid)
         {
             var selectedItems = dataGrid.SelectedItems.Cast<InvoiceClass>().ToList();
@@ -646,10 +631,6 @@ namespace Invoice
             return displayOrderItems;
         }
         
-        private void InvoiceItemsDataGrid_AddingNewItem(object sender, AddingNewItemEventArgs e)
-        {
-        }
-
         private void CreateInvoiceButton_Click(object sender, RoutedEventArgs e)
         {
             if(InvoiceListDataGrid.SelectedItems.Count > 0)
@@ -662,7 +643,8 @@ namespace Invoice
                         var fileName = FileNameHelper.GenerateInvoiceFilename(@"c:\users\ma\desktop", invoice);
                         if (invoice.InvoiceItems.Count <= 0)
                         {
-                            invoice.InvoiceItems = InvoiceItemClass.GetInvoiceItemsByInvoiceId(invoice.InvoiceId);
+                            var items = InvoiceItemClass.GetInvoiceItemsByInvoiceId(invoice.InvoiceId);
+                            items.ForEach(item => invoice.InvoiceItems.Add(item));
                         }
                         generator.CreateInvoicePdf(invoice,fileName);
                     }
@@ -670,10 +652,7 @@ namespace Invoice
 
             }
         }
-        private void InvoiceItemsDataGrid_InitializingNewItem(object sender, InitializingNewItemEventArgs e)
-        {
-        }
-        
+
         private void ContextMenuDeposit_Click(object sender, RoutedEventArgs e)
         {
             if (InvoiceListDataGrid.SelectedItems.Count > 0)
@@ -709,7 +688,7 @@ namespace Invoice
 
         private void InvoiceListDataGrid_PreviewMouseRightButtonUp(object sender, MouseButtonEventArgs e)
         {
-
+            
             var originalSource = e.OriginalSource;
             if (originalSource is ScrollViewer)
                 e.Handled = true;
@@ -750,47 +729,57 @@ namespace Invoice
 
         private void TransactionTypeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            DepositLabelController();
+            DepositLabelController(sender, e);
         }
 
-        private void DepositLabelController()
+        private void DepositLabelController(object sender, SelectionChangedEventArgs e)
         {
+
             var comboBox = TransactionTypeComboBox;
             var selectedItem = comboBox.SelectedItem as TransactionTypeClass;
             if (selectedItem == null) return;
+            var invoice = vm.CurrentInvoice;
+            var balanceList = _customerVM.BalanceClassList;
+            var isNewInvoice = invoice.InvoiceId == 0;
+            var customerList = _customerVM.CustomerClassList;
+            
+
+            if (isNewInvoice)
+            {
+
+            }
             if (selectedItem.TransactionName == "前受金")
             {
+                var customer = customerList.FirstOrDefault(c => c.CustomerId == invoice.CustomerId);
+                var customerBalanceList = balanceList
+                    .Where(
+                    b => b.CustomerId == customer.CustomerId
+                      && b.TransactionDate <= invoice.IssueDate
+                      && b.InvoiceId != invoice.InvoiceId
+                      )
+                    .ToList();
+                var debitTotal = customerBalanceList.Where(b => b.DebOrCreId == 1).Sum(b => b.TransactionAmount);
+                var creditTotal = customerBalanceList.Where(b => b.DebOrCreId == 2).Sum(b => b.TransactionAmount);
+                var depositUntilIssueDate = creditTotal - debitTotal;// 前受残高
+                customerBalanceList.ForEach(bal => Debug.WriteLine($"{bal.InvoiceId} : {bal.TransactionDate} : {bal.DebOrCreId} : {bal.TransactionAmount}"));
+                var afterPaydDeposit = depositUntilIssueDate - invoice.ItemsTotal;// 当該請求額支払後 前受残高
+                var vallist = customerBalanceList.Where(b => b.TransactionTypeId == 1);
+                var paydByDeposit = afterPaydDeposit <= 0 ? depositUntilIssueDate : invoice.ItemsTotal;// 前受精算額（前受が不足の場合は前受残高）
+                // var invoiceTotal = invoice.ItemsTotal - paydByDeposit;// 当該請求書による請求額
+                vm.CurrentInvoice.DepositUntilIssueDate = depositUntilIssueDate;
+                vm.CurrentInvoice.PaydByDeposit = paydByDeposit;
+                var total = vm.CurrentInvoice.InvoiceTotal;
                 InvoiceAmountGrid.Visibility = Visibility.Visible;
                 DepositAmountGrid.Visibility = Visibility.Visible;
-                var customerList = _customerVM.CustomerClassList;
-                var customer = customerList.FirstOrDefault(c => c.CustomerId == vm.CurrentInvoice.CustomerId);
-                if (customer != null)
-                {
-
-                    if (customer.CustomerBalance <= 0)
-                    {
-                        var balanceList = vm.BalanceClassList;
-                        var customerBalanceList = balanceList.Where(b => b.CustomerId == customer.CustomerId && b.TransactionDate <= vm.CurrentInvoice.IssueDate).ToList();
-                        var debitTotal = customerBalanceList.Where(b => b.TransactionTypeId == 1).Sum(b => b.TransactionAmount);
-                        var creditTotal = customerBalanceList.Where(b => b.TransactionTypeId == 2).Sum(b => b.TransactionAmount);
-                        var totalDepositUntilIssueDate = debitTotal - creditTotal;
-                        
-                        vm.DepositAmount = vm.CurrentInvoice.ItemsTotal - totalDepositUntilIssueDate <= 0 ? 0 : vm.CurrentInvoice.ItemsTotal - totalDepositUntilIssueDate;
-                    }
-                    else
-                        vm.DepositAmount = 0;
-                }
             }
             else
             {
+                vm.CurrentInvoice.PaydByDeposit = 0;
+                vm.CurrentInvoice.DepositUntilIssueDate = 0;
+                var total = vm.CurrentInvoice.InvoiceTotal;
                 InvoiceAmountGrid.Visibility = Visibility.Collapsed;
                 DepositAmountGrid.Visibility = Visibility.Collapsed;
-                vm.DepositAmount = 0;
             }
-        }
-        private void CurrentInvoice_PropertyChanged(object? sender, PropertyChangedEventArgs e)
-        {
-            Debug.WriteLine(e.PropertyName);
         }
 
         private void MainWindow_MouseDown(object sender, MouseButtonEventArgs e)
@@ -799,6 +788,7 @@ namespace Invoice
             if (DateBox.PopupIsOpen)
             {
                 DateBox.PopupIsOpen = false;
+                e.Handled = true;
             }
         }
 
@@ -806,11 +796,11 @@ namespace Invoice
         {
             if (sender is TextBox textbox)
             {
-                //InputMethod.SetPreferredImeConversionMode(textbox, ImeConversionModeValues.Native | ImeConversionModeValues.FullShape);
                 InputMethod.SetIsInputMethodEnabled(textbox, true);
                 InputMethod.SetPreferredImeState(textbox, InputMethodState.On);
             }
         }
+
         private void TextBox_PreviewLostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
         {
             if (sender is TextBox textbox)
@@ -819,6 +809,7 @@ namespace Invoice
                 InputMethod.SetPreferredImeState(mainWindow, InputMethodState.Off);
             }
         }
+
 
     }
 }

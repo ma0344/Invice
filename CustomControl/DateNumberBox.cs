@@ -1,25 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
+﻿using ModernWpf;
 using ModernWpf.Controls;
 using System.ComponentModel;
-using static System.Runtime.InteropServices.JavaScript.JSType;
-using ModernWpf;
+using System.Globalization;
+using System.Runtime.CompilerServices;
+using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
-using System.Diagnostics;
+using System.Windows.Data;
+using System.Windows.Input;
+using System.Windows.Media;
 
 namespace Invoice.CustomControl
 {
@@ -34,6 +23,8 @@ namespace Invoice.CustomControl
         public event PropertyChangedEventHandler? PropertyChanged;
         private bool _initializing = true;
         private bool _isUpdating = false;
+        private bool _isFirstLoad = true;
+        public CultureInfo cultureInfo = new("ja-JP");
         public event DateSelectedEventHandler? DateSelected;
         public delegate void DateSelectedEventHandler(object sender, CalendarDateChangedEventArgs e);
         private CalendarDateChangedEventArgs calendarDateChangedEventArgs;
@@ -46,6 +37,8 @@ namespace Invoice.CustomControl
 
         public DateNumberBox()
         {
+            cultureInfo.DateTimeFormat.Calendar = new JapaneseCalendar();
+            cultureInfo.DateTimeFormat.ShortDatePattern = "ggy年M月d日";
             this.IsEnabledChanged -= DateNumberBox_IsEnabledChanged;
             this.IsEnabledChanged += DateNumberBox_IsEnabledChanged;
             Loaded += DateNumberBox_Loaded;
@@ -88,7 +81,7 @@ namespace Invoice.CustomControl
 
         public string DateText
         {
-            get => _calendar.DisplayDate.ToString("ggy年M月", CultureInfo.CurrentCulture);
+            get => _calendar.DisplayDate.ToString("ggy年M月", cultureInfo);
         }
 
         public bool PopupIsOpen
@@ -223,12 +216,27 @@ namespace Invoice.CustomControl
                 InitializeOverlayTextBlock(grid);
                 UpdateOverlayTextColor();
             }
+            var up = this.FindDescendantByName("UpSpinButton") as RepeatButton;
+            var upContent = RotateStreamGeometry(((StreamGeometry)up.Content),-90);
+            up.Content = upContent;
+            var down = this.FindDescendantByName("DownSpinButton") as RepeatButton;
+            var downContent = RotateStreamGeometry(((StreamGeometry)down.Content), -90);
+            down.Content = downContent;
             _calendar.MonthSelected += _calendar_MonthSelected;
-            _popup.Visibility = Visibility.Hidden;
-            PopupIsOpen = true;
-            PopupIsOpen = false;
-            _popup.Visibility = Visibility.Visible;
-            _initializing = false;
+            if (_isFirstLoad)
+            {
+                _popup.Visibility = Visibility.Hidden;
+                PopupIsOpen = true;
+                PopupIsOpen = false;
+                _popup.Visibility = Visibility.Visible;
+                _isFirstLoad = false;
+            }
+            else
+            {
+                PopupIsOpen = false;
+            }
+                _initializing = false;
+            _overlayTextBlock.Text = DateText;
 
         }
 
@@ -243,6 +251,27 @@ namespace Invoice.CustomControl
         }
 
         // カスタムロジック
+        
+        private Point GetCenter(Rect bounds)
+        {
+            var x = bounds.X;
+            var y = bounds.Y;
+            var w = bounds.Width;
+            var h = bounds.Height;
+            var centerX = x + (w / 2);
+            var centerY = y + (h / 2);
+            return new Point(centerX, centerY);
+        }
+
+        private StreamGeometry RotateStreamGeometry(StreamGeometry orgGeometry, int deg)
+        {
+            var rotatedGeometry = orgGeometry.Clone();
+            var c = GetCenter(orgGeometry.Bounds);
+            var transform = new RotateTransform(deg, c.X, c.Y);
+            rotatedGeometry.Transform = transform;
+            return rotatedGeometry;
+        }
+        
         private void UpdateOverlayTextColor()
         {
             if (_overlayTextBlock == null) return;
@@ -303,7 +332,7 @@ namespace Invoice.CustomControl
             {
                 e.Handled = true;
             };
-            PopupIsOpen = true;
+            PopupIsOpen = false;
         }
 
         private void InitializeOverlayTextBlock(Grid grid)
@@ -353,8 +382,15 @@ namespace Invoice.CustomControl
 
         private void _overlayTextBlock_MouseDown(object sender, MouseButtonEventArgs e)
         {
-            PopupIsOpen = true;
-            Dispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.Render);
+            if (PopupIsOpen)
+            {
+                PopupIsOpen = false;
+            }
+            else
+            {
+                PopupIsOpen = true;
+                Dispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.Render);
+            }
             e.Handled = true;
         }
 

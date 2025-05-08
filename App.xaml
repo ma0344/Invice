@@ -14,6 +14,160 @@
                 <!-- Other merged dictionaries here -->
             </ResourceDictionary.MergedDictionaries>
             <!-- Other app resources here -->
+
+            <Style TargetType="Button"
+                   BasedOn="{StaticResource DefaultButtonStyle}">
+                <Setter Property="FontFamily"
+                        Value="Biz UDGothic" />
+            </Style>
+            <Style x:Key="CustomDataGridCellStyle"
+                   TargetType="DataGridCell"
+                   BasedOn="{StaticResource DefaultDataGridCellStyle}">
+                <Setter Property="Padding"
+                        Value="5,0" />
+                <Setter Property="VerticalContentAlignment"
+                        Value="Center" />
+                <Setter Property="OverridesDefaultStyle"
+                        Value="True" />
+                <Setter Property="FontSize"
+                        Value="20" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="DataGridCell">
+                            <ui:DataGridCellPresenter Background="{TemplateBinding Background}"
+                                                      CurrencyVisualBrush="{DynamicResource DataGridCurrencyVisualPrimaryBrush}"
+                                                      CurrencyVisualThickness="0"
+                                                      FocusVisualPrimaryBrush="{DynamicResource DataGridCellFocusVisualPrimaryBrush}"
+                                                      FocusVisualPrimaryThickness="0"
+                                                      FocusVisualSecondaryBrush="{DynamicResource DataGridCellFocusVisualSecondaryBrush}"
+                                                      FocusVisualSecondaryThickness="0"
+                                                      IsCurrencyVisualVisible="{TemplateBinding IsSelected}"
+                                                      IsFocusVisualVisible="{TemplateBinding IsKeyboardFocusWithin}"
+                                                      MinHeight="{TemplateBinding MinHeight}"
+                                                      SnapsToDevicePixels="True" />
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <Style x:Key="RowCheckBoxStyle"
+                   TargetType="CheckBox"
+                   BasedOn="{StaticResource DefaultCheckBoxStyle}">
+                <Setter Property="HorizontalAlignment"
+                        Value="Center" />
+                <Setter Property="Width"
+                        Value="20" />
+                <Setter Property="Content">
+                    <Setter.Value>
+                        <TextBlock Width="0"
+                                   Visibility="Collapsed" />
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            
+            
+            
+            <Style TargetType="DataGridCell"
+                   x:Key="Cellstyle_HorizontalAlignRight"
+                   BasedOn="{StaticResource CustomDataGridCellStyle}">
+                <Setter Property="HorizontalAlignment"
+                        Value="Right" />
+                <Setter Property="Padding"
+                        Value="0,0,5,0" />
+            </Style>
+            <Style x:Key="DataGridAmountCellStyle"
+                   TargetType="DataGridCell"
+                   BasedOn="{StaticResource Cellstyle_HorizontalAlignRight}">
+                <Setter Property="FontSize"
+                        Value="20" />
+
+            </Style>
+            <Style TargetType="DataGridCell"
+                   x:Key="Cellstyle_HorizontalAlignCenter"
+                   BasedOn="{StaticResource CustomDataGridCellStyle}">
+                <Setter Property="HorizontalAlignment"
+                        Value="Center" />
+                <Setter Property="Padding"
+                        Value="0,0,0,0" />
+            </Style>
+            <Style x:Key="DataGridSlipNumberCellStyle"
+                   TargetType="DataGridCell"
+                   BasedOn="{StaticResource Cellstyle_HorizontalAlignCenter}">
+                <Setter Property="FontSize"
+                        Value="15" />
+            </Style>
+            <Style x:Key="DataGridNameCellStyle"
+                   TargetType="DataGridCell"
+                   BasedOn="{StaticResource Cellstyle_HorizontalAlignCenter}">
+                <Setter Property="FontSize"
+                        Value="15" />
+            </Style>
+            <Style x:Key="DataGridDateCellStyle"
+                   TargetType="DataGridCell"
+                   BasedOn="{StaticResource Cellstyle_HorizontalAlignCenter}">
+                <Setter Property="FontSize"
+                        Value="20" />
+            </Style>
+
+            <Style x:Key="DataGridTextBoxStyle"
+                   TargetType="TextBox"
+                   BasedOn="{StaticResource DefaultTextBoxStyle}">
+                <Setter Property="BorderThickness"
+                        Value="0" />
+                <Setter Property="Background"
+                        Value="Transparent" />
+                <Setter Property="HorizontalContentAlignment"
+                        Value="Center" />
+                <Style.Triggers>
+                    <Trigger Property="IsMouseOver"
+                             Value="True">
+                        <Setter Property="Background"
+                                Value="Transparent" />
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+
+
+            <Style x:Key="CustomDataGridColumnHeaderStyle"
+                   TargetType="{x:Type DataGridColumnHeader}">
+                <Setter Property="FontSize"
+                        Value="15" />
+                <Setter Property="HorizontalContentAlignment"
+                        Value="Center" />
+                <Setter Property="Padding"
+                        Value="0" />
+                <Setter Property="Margin"
+                        Value="0" />
+            </Style>
+            <Style x:Key="DefaultDataGrid"
+                   TargetType="DataGrid"
+                   BasedOn="{StaticResource DefaultDataGridStyle}">
+                <Setter Property="Background"
+                        Value="#09000000" />
+                <Setter Property="CanUserResizeColumns"
+                        Value="False" />
+                <Setter Property="AutoGenerateColumns"
+                        Value="False" />
+                <Setter Property="VerticalAlignment"
+                        Value="Stretch" />
+                <Setter Property="SelectionUnit"
+                        Value="FullRow" />
+                <Setter Property="AlternatingRowBackground"
+                        Value="#0C000000" />
+                <Setter Property="BorderBrush"
+                        Value="#0C000000" />
+                <Setter Property="BorderThickness"
+                        Value="1" />
+                <Setter Property="ColumnHeaderHeight"
+                        Value="28" />
+                <Setter Property="CanUserDeleteRows"
+                        Value="False" />
+                <Setter Property="ColumnHeaderStyle"
+                        Value="{StaticResource CustomDataGridColumnHeaderStyle}" />
+                <Setter Property="RowHeaderWidth"
+                        Value="0" />
+            </Style>
+
         </ResourceDictionary>
+        
     </Application.Resources>
 </Application>

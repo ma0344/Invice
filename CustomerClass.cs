@@ -1,0 +1,121 @@
+﻿using MySqlConnector;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Invoice
+{
+    // T_CUSTOMER テーブルに対応するクラス
+    public class CustomerClass : INotifyPropertyChanged, ILoggable
+    {
+        public int CustomerId { get; set; } = 0;
+
+        private string _customerName = "";
+        public string CustomerName
+        {
+            get => _customerName;
+            set
+            {
+                _customerName = value;
+                OnPropertyChanged(nameof(CustomerName));
+            }
+        }
+
+        private string _customerKana = "";
+        public string CustomerKana
+        {
+            get => _customerKana;
+            set
+            {
+                _customerKana = value;
+                OnPropertyChanged(nameof(CustomerKana));
+            }
+        }
+        private int _customerBalance = 0;
+        public int CustomerBalance
+        {
+            get => _customerBalance;
+            set
+            {
+                _customerBalance = value;
+                OnPropertyChanged(nameof(CustomerBalance));
+            }
+        }
+
+
+        private bool _customerVisible = true;
+        public bool CustomerVisible
+        {
+            get => _customerVisible;
+            set
+            {
+                if (_customerVisible != value)
+                {
+                    _customerVisible = value;
+                    OnPropertyChanged(nameof(CustomerVisible));
+                }
+            }
+        }
+
+        public static List<CustomerClass> GetCustomers()
+        {
+            var commandString = "SELECT * FROM T_CUSTOMER";
+            var customers = new List<CustomerClass>();
+            string connectionString = ConnectionInfo.Builder.ConnectionString;
+            using var connection = new MySqlConnection(connectionString);
+            connection.Open();
+            using var command = new MySqlCommand(commandString, connection);
+            using var reader = command.ExecuteReader();
+            customers.Add(new CustomerClass());
+            while (reader.Read())
+            {
+                var customer = new CustomerClass();
+                customer.CustomerId = reader.GetInt32("CUSTOMER_ID");
+                customer.CustomerName = reader.GetString("CUSTOMER_NAME");
+                customer.CustomerKana = reader.GetString("CUSTOMER_KANA");
+                customer.CustomerBalance = reader.GetInt32("BALANCE");
+                customer.CustomerVisible = reader.GetBoolean("VISIBLE");
+                customers.Add(customer);
+            }
+            return customers;
+
+        }
+        public void UpdateCustomerInDatabase()
+        {
+
+            UnitOfWork unitOfWork = new UnitOfWork();
+            var command = unitOfWork.CreateCommand();
+            command.CommandText = "UPDATE T_CUSTOMER SET CUSTOMER_NAME=@name, CUSTOMER_KANA=@kana, BALANCE=@balance, VISIBLE=@visible WHERE CUSTOMER_ID=@id";
+            command.Parameters.AddWithValue("@name", CustomerName);
+            command.Parameters.AddWithValue("@kana", CustomerKana);
+            command.Parameters.AddWithValue("@balance", CustomerBalance);
+            command.Parameters.Add("@visible", MySqlDbType.Bit).Value = CustomerVisible;
+            command.Parameters.AddWithValue("@id", CustomerId);
+            command.ExecuteNonQuery();
+        }
+        public event PropertyChangedEventHandler? PropertyChanged;
+        protected void OnPropertyChanged(string propertyName)
+        {
+
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        public void AddCustomerInDatabase()
+        {
+
+            string connectionString = ConnectionInfo.Builder.ConnectionString;
+            using var connection = new MySqlConnection(connectionString);
+            connection.Open();
+            using var command = new MySqlCommand("INSERT INTO T_CUSTOMER (CUSTOMER_NAME, CUSTOMER_KANA, BALANCE, VISIBLE) " + "\r\n" + "VALUES (@name, @kana, @balance, @visible)", connection);
+            command.Parameters.AddWithValue("@name", CustomerName);
+            command.Parameters.AddWithValue("@kana", CustomerKana);
+            command.Parameters.AddWithValue("@balance", CustomerBalance);
+            command.Parameters.Add("@visible", MySqlDbType.Bit).Value = true;
+            command.ExecuteNonQuery();
+        }
+    }
+
+}

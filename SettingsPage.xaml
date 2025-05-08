@@ -12,97 +12,16 @@
       d:DesignHeight="600"
       d:DesignWidth="800"
       FontFamily="Biz UDGothic"
-      Title="Settings">
+      Title="Settings"
+      Tag="設定">
     <Page.Resources>
-        <Style TargetType="Button"
-               BasedOn="{StaticResource {x:Type Button}}">
-            <Setter Property="FontFamily"
-                    Value="Biz UDGothic" />
-        </Style>
+
         <CollectionViewSource Source="{Binding SettingsVM.TransactionTypeClassList}"
                               x:Key="TransactionTypeWithoutPlaceHolder" />
         <CollectionViewSource Source="{Binding SettingsVM.ItemClassList}"
                               x:Key="ItemClassList" />
         <CollectionViewSource Source="{Binding SettingsVM.TaxTypeClassList}"
                               x:Key="TaxTypeListWithoutPlaceHolder" />
-        <Style x:Key="CustomDataGridCellStyle"
-               TargetType="DataGridCell"
-               BasedOn="{StaticResource DefaultDataGridCellStyle}">
-            <Setter Property="OverridesDefaultStyle"
-                    Value="True" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="DataGridCell">
-                        <ui:DataGridCellPresenter Background="{TemplateBinding Background}"
-                                                  CurrencyVisualBrush="{DynamicResource DataGridCurrencyVisualPrimaryBrush}"
-                                                  CurrencyVisualThickness="0"
-                                                  FocusVisualPrimaryBrush="{DynamicResource DataGridCellFocusVisualPrimaryBrush}"
-                                                  FocusVisualPrimaryThickness="0"
-                                                  FocusVisualSecondaryBrush="{DynamicResource DataGridCellFocusVisualSecondaryBrush}"
-                                                  FocusVisualSecondaryThickness="0"
-                                                  IsCurrencyVisualVisible="{TemplateBinding IsSelected}"
-                                                  IsFocusVisualVisible="{TemplateBinding IsKeyboardFocusWithin}"
-                                                  MinHeight="{TemplateBinding MinHeight}"
-                                                  SnapsToDevicePixels="True" />
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-        <Style TargetType="DataGridCell"
-               x:Key="CustomDataGridCellstyleR"
-               BasedOn="{StaticResource CustomDataGridCellStyle}">
-            <Setter Property="HorizontalAlignment"
-                    Value="Right" />
-            <Setter Property="Padding"
-                    Value="0,0,5,0" />
-        </Style>
-
-        <Style x:Key="DataGridTextBoxStyle"
-               TargetType="TextBox"
-               BasedOn="{StaticResource DefaultTextBoxStyle}">
-            <Setter Property="BorderThickness"
-                    Value="0" />
-            <Setter Property="Background"
-                    Value="Transparent" />
-            <Setter Property="HorizontalContentAlignment"
-                    Value="Center" />
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver"
-                            Value="True">
-                    <Setter Property="Background"
-                            Value="Transparent" />
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-        <Style x:Key="CustomDataGridColumnHeaderStyle"
-               TargetType="{x:Type DataGridColumnHeader}">
-            <Setter Property="FontSize"
-                    Value="15" />
-            <Setter Property="HorizontalContentAlignment"
-                    Value="Center" />
-            <Setter Property="Padding"
-                    Value="0" />
-            <Setter Property="Margin"
-                    Value="0" />
-        </Style>
-        <Style x:Key="DefaultDataGrid"
-               TargetType="DataGrid" 
-               BasedOn="{StaticResource DefaultDataGridStyle}">
-            <Setter Property="Background" Value="#09000000"/>
-            <Setter Property="CanUserResizeColumns" Value="False"/>
-            <Setter Property="AutoGenerateColumns" Value="False"/>
-            <Setter Property="VerticalAlignment" Value="Stretch"/>
-            <Setter Property="SelectionUnit" Value="FullRow"/>
-            <Setter Property="AlternatingRowBackground" Value="#0C000000"/>
-            <Setter Property="BorderBrush" Value="#0C000000"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="ColumnHeaderHeight" Value="28"/>
-            <Setter Property="CanUserDeleteRows" Value="False"/>
-            <Setter Property="CellStyle" Value="{StaticResource CustomDataGridCellStyle}"/>
-            <Setter Property="ColumnHeaderStyle" Value="{StaticResource CustomDataGridColumnHeaderStyle}"/>
-            <Setter Property="RowHeaderWidth"
-                    Value="0" />
-        </Style>
         <DataTemplate x:Key="DataGridColumnCheckBoxTemplate">
             <CheckBox x:Name="GridRowCheckBox"
                       IsChecked="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected, Mode=TwoWay}"
@@ -134,61 +53,8 @@
             </CheckBox>
         </DataTemplate>
     </Page.Resources>
-    
     <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="155" />
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
-
         <Grid Grid.Row="0"
-              x:Name="NavigationGrid"
-              Background="#4CAF50">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition />
-            </Grid.RowDefinitions>
-            <Label FontSize="32px"
-                   FontWeight="Bold"
-                   Foreground="White"
-                   HorizontalAlignment="Center"
-                   Margin="0,40,0,25"
-                   FontFamily="BIZ UDGothic">設 定</Label>
-            <StackPanel Grid.Row="1"
-                        Height="30"
-                        VerticalAlignment="Top"
-                        HorizontalAlignment="Center"
-                        Orientation="Horizontal"
-                        Background="Transparent">
-                <StackPanel.Resources>
-                    <Style TargetType="Label">
-                        <Setter Property="Foreground"
-                                Value="White" />
-                        <Setter Property="Margin"
-                                Value="7,0" />
-                        <Setter Property="VerticalAlignment"
-                                Value="Center" />
-                        <Setter Property="Cursor"
-                                Value="Hand" />
-                        <Setter Property="HorizontalContentAlignment"
-                                Value="Center" />
-                        <Setter Property="FontSize"
-                                Value="16px" />
-                    </Style>
-                </StackPanel.Resources>
-                <Label x:Name="DashBoardLabel"
-                       MouseLeftButtonUp="Label_MouseLeftButtonUp">ダッシュボード</Label>
-                <Label x:Name="CustomerLabel"
-                       MouseLeftButtonUp="Label_MouseLeftButtonUp">利用者管理</Label>
-                <Label x:Name="InvoiceLabel"
-                       MouseLeftButtonUp="Label_MouseLeftButtonUp">請求書管理</Label>
-                <Label x:Name="PaymentLabel"
-                       MouseLeftButtonUp="Label_MouseLeftButtonUp">入金管理</Label>
-                <Label x:Name="SettingsLabel"
-                       MouseLeftButtonUp="Label_MouseLeftButtonUp">設定</Label>
-            </StackPanel>
-        </Grid>
-        <Grid Grid.Row="1"
               x:Name="ItemPageContentsGrid">
             <TabControl TabStripPlacement="Top"
                         FontSize="15"
@@ -214,8 +80,8 @@
                         </Grid>
                     </TabItem.Header>
 
-                    <Grid Width="700"
-                          x:Name="ItemSettingsGrid">
+                    <Grid x:Name="ItemSettingsGrid"
+                          Margin="60,0">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="*" />
@@ -238,67 +104,35 @@
                                 <DataGridTemplateColumn Width="30"
                                                         CellTemplate="{StaticResource DataGridColumnCheckBoxTemplate}">
                                 </DataGridTemplateColumn>
-                                <DataGridTemplateColumn Header="項目名"
-                                                        Width="300">
-                                    <DataGridTemplateColumn.CellTemplate>
-
-                                        <DataTemplate>
-                                            <TextBlock HorizontalAlignment="Left"
-                                                       VerticalAlignment="Center"
-                                                       Padding="5,0"
-                                                       Text="{Binding ItemName,Mode=TwoWay}" />
-                                        </DataTemplate>
-                                    </DataGridTemplateColumn.CellTemplate>
-
-                                </DataGridTemplateColumn>
-
-                                <DataGridTemplateColumn Header="コード"
-                                                        Width="80">
-                                    <DataGridTemplateColumn.CellTemplate>
-                                        <DataTemplate>
-
-                                            <TextBlock HorizontalAlignment="Center"
-                                                       VerticalAlignment="Center"
-                                                       Text="{Binding ItemCode}" />
-                                        </DataTemplate>
-                                    </DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
-
-                                <DataGridTemplateColumn Header="単位"
-                                                        Width="55">
-                                    <DataGridTemplateColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <TextBlock HorizontalAlignment="Left"
-                                                       VerticalAlignment="Center"
-                                                       Padding="5,0,0,0"
-                                                       Text="{Binding Unit}" />
-                                        </DataTemplate>
-                                    </DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
-
-                                <DataGridTemplateColumn Header="単価"
-                                                        Width="80">
-                                    <DataGridTemplateColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <TextBlock x:Name="UnitPliceTextBlock"
-                                                       HorizontalAlignment="Right"
-                                                       VerticalAlignment="Center"
-                                                       Padding="0,0,5,0"
-                                                       Text="{Binding UnitPrice,StringFormat={}@{0:N0}}" />
-                                        </DataTemplate>
-                                    </DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
-                                <DataGridTemplateColumn Header="税種"
-                                                        Width="80">
-                                    <DataGridTemplateColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <TextBlock HorizontalAlignment="Center"
-                                                       VerticalAlignment="Center"
-                                                       Padding="5,0,0,0"
-                                                       Text="{Binding TaxTypeName}" />
-                                        </DataTemplate>
-                                    </DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
+                                <DataGridTextColumn Header="項目名"
+                                                    Width="300*"
+                                                    IsReadOnly="True"
+                                                    FontSize="15"
+                                                    Binding="{Binding ItemName,Mode=TwoWay}" />
+                                <DataGridTextColumn Header="コード"
+                                                    Width="80*"
+                                                    CellStyle="{StaticResource Cellstyle_HorizontalAlignCenter}"
+                                                    IsReadOnly="True"
+                                                    FontSize="20"
+                                                    Binding="{Binding ItemCode}" />
+                                <DataGridTextColumn Header="単位"
+                                                    Width="55*"
+                                                    CellStyle="{StaticResource Cellstyle_HorizontalAlignCenter}"
+                                                    IsReadOnly="True"
+                                                    FontSize="20"
+                                                    Binding="{Binding Unit}" />
+                                <DataGridTextColumn Header="単価"
+                                                    Width="80*"
+                                                    CellStyle="{StaticResource Cellstyle_HorizontalAlignRight}"
+                                                    IsReadOnly="True"
+                                                    FontSize="18"
+                                                    Binding="{Binding UnitPrice,StringFormat={}@{0:N0}}" />
+                                <DataGridTextColumn Header="税種"
+                                                    Width="80*"
+                                                    CellStyle="{StaticResource Cellstyle_HorizontalAlignCenter}"
+                                                    IsReadOnly="True"
+                                                    FontSize="16"
+                                                    Binding="{Binding TaxTypeName}" />
                             </DataGrid.Columns>
 
                         </DataGrid>
@@ -727,14 +561,14 @@
                                 <DataGridTextColumn Header="単価"
                                                     Width="80*"
                                                     Binding="{Binding UnitPrice,Mode=TwoWay,StringFormat={}@{0:N0}}"
-                                                    CellStyle="{StaticResource CustomDataGridCellstyleR}"
+                                                    CellStyle="{StaticResource Cellstyle_HorizontalAlignRight}"
                                                     InputMethod.PreferredImeState="Off"
                                                     AutomationProperties.IsRequiredForForm="True" />
                                 <DataGridTextColumn Header="数量"
                                                     Width="60*"
                                                     InputMethod.PreferredImeState="Off"
                                                     Binding="{Binding Quantity,Mode=TwoWay,StringFormat={}{0:N0}}"
-                                                    CellStyle="{StaticResource CustomDataGridCellstyleR}"
+                                                    CellStyle="{StaticResource Cellstyle_HorizontalAlignRight}"
                                                     AutomationProperties.IsRequiredForForm="True" />
                                 <DataGridTextColumn Header="単位"
                                                     Width="50*"
@@ -745,7 +579,7 @@
                                 <DataGridTextColumn Header="小計"
                                                     Width="90*"
                                                     IsReadOnly="True"
-                                                    CellStyle="{StaticResource CustomDataGridCellstyleR}"
+                                                    CellStyle="{StaticResource Cellstyle_HorizontalAlignRight}"
                                                     Binding="{Binding ItemSubTotal,StringFormat={}{0:N0}}" />
                                 <DataGridComboBoxColumn Header="税種"
                                                         Width="100*"
@@ -759,13 +593,13 @@
                                                     Width="50*"
                                                     IsReadOnly="True"
                                                     Binding="{Binding Tax, StringFormat={}{0:N0}}"
-                                                    CellStyle="{StaticResource CustomDataGridCellstyleR}" />
+                                                    CellStyle="{StaticResource Cellstyle_HorizontalAlignRight}" />
 
                                 <DataGridTextColumn Header="項目計"
                                                     Width="90*"
                                                     IsReadOnly="True"
                                                     Binding="{Binding ItemTotal,StringFormat={}{0:N0}}"
-                                                    CellStyle="{StaticResource CustomDataGridCellstyleR}" />
+                                                    CellStyle="{StaticResource Cellstyle_HorizontalAlignRight}" />
                             </DataGrid.Columns>
                         </DataGrid>
                         <Grid Grid.Row="4"
