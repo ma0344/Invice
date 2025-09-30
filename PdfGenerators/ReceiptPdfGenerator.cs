@@ -1,4 +1,4 @@
-﻿using Invoice;
+﻿using Invoice.Classes;
 using MigraDoc.DocumentObjectModel;
 using MigraDoc.DocumentObjectModel.Shapes;
 using MigraDoc.DocumentObjectModel.Tables;
@@ -10,7 +10,7 @@ using System.Globalization;
 using System.IO;
 
 
-namespace Invoice
+namespace Invoice.PdfGenerators
 {
     public class FontType
     {
@@ -222,7 +222,7 @@ namespace Invoice
                 totalArea.Top = Unit.FromMillimeter(30 + gap);
 
                 Table totalTable = totalArea.AddTable();
-                totalTable.Shading.Color = Color.FromArgb((byte)0xFF, (byte)0xDC, (byte)0xDC, (byte)0xDC);
+                totalTable.Shading.Color = Color.FromArgb(0xFF, 0xDC, 0xDC, 0xDC);
                 Column totalCol1 = totalTable.AddColumn(Unit.FromMillimeter(30));
                 Column totalCol2 = totalTable.AddColumn(Unit.FromMillimeter(120));
                 Row totalRow = totalTable.AddRow();
@@ -307,7 +307,7 @@ namespace Invoice
                 TextFrame companyInfoArea = bottomRow.Cells[2].AddTextFrame();
                 Table companyInfoTable = companyInfoArea.AddTable();
                 companyInfoTable.Borders.Width = 0;
-                companyInfoTable.Borders.Color = Color.FromArgb((byte)0xff, (byte)0x00, (byte)0x00, (byte)0x00);
+                companyInfoTable.Borders.Color = Color.FromArgb(0xff, 0x00, 0x00, 0x00);
                 Column companyInfoColumn = companyInfoTable.AddColumn(Unit.FromMillimeter(65));
 
                 Row companyNameRow = companyInfoTable.AddRow();

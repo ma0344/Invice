@@ -13,6 +13,6 @@ using System.Windows;
 using CsvHelper;
 using CsvHelper.Configuration;
 
-namespace Invoice
+namespace Invoice.Accounting
 {
 }

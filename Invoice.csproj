@@ -16,9 +16,13 @@
 
   <ItemGroup>
     <Compile Remove="Git\**" />
+    <Compile Remove="Themes\新しいフォルダー\**" />
     <EmbeddedResource Remove="Git\**" />
+    <EmbeddedResource Remove="Themes\新しいフォルダー\**" />
     <None Remove="Git\**" />
+    <None Remove="Themes\新しいフォルダー\**" />
     <Page Remove="Git\**" />
+    <Page Remove="Themes\新しいフォルダー\**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -184,6 +188,9 @@
     </None>
     <None Update="DepartmentDictionary.csv">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="settings.ini">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 

@@ -2,13 +2,14 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Data;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 
-namespace Invoice
+namespace Invoice.Classes
 {
     // T_INVOICE_ITEMS テーブルに対応するクラス
     public class InvoiceItemClass : ItemClass, INotifyPropertyChanged, ILoggable
@@ -89,7 +90,7 @@ namespace Invoice
         // SelectedTax
         public TaxTypeClass SelectedTax
         {
-            get => TaxTypeClass.TaxTypes.FirstOrDefault(t => t.TaxTypeId == TaxTypeId);
+            get => TaxTypeClass.TaxTypes.FirstOrDefault(t => t.TaxTypeId == TaxTypeId)!;
         }
 
         // Tax
@@ -104,19 +105,9 @@ namespace Invoice
             get => ItemSubTotal + Tax;
         }
 
-        public void ReTotal()
-        {
 
-            OnPropertyChanged(nameof(UnitPrice));
-            OnPropertyChanged(nameof(Quantity));
-            OnPropertyChanged(nameof(Unit));
-            OnPropertyChanged(nameof(ItemSubTotal));
-            OnPropertyChanged(nameof(Tax));
-            OnPropertyChanged(nameof(ItemTotal));
-        }
-
-        private ItemClass _selectedItem;
-        public ItemClass SelectedItem
+        private ItemClass? _selectedItem;
+        public ItemClass? SelectedItem
         {
             get => _selectedItem;
             set
@@ -140,12 +131,27 @@ namespace Invoice
             }
         }
 
+        public void ReTotal()
+        {
+            NotifyPropertiesChanged(nameof(UnitPrice), nameof(Quantity), nameof(Unit), nameof(ItemSubTotal), nameof(Tax), nameof(ItemTotal));
+        }
+
+        private void NotifyPropertiesChanged(params string[] propertyNames)
+        {
+            foreach (var propertyName in propertyNames)
+            {
+                OnPropertyChanged(propertyName);
+            }
+        }
+
+
         public void SetItem(ItemClass item)
         {
 
             if (item == null) return;
             ItemId = item.ItemId;
             ItemName = item.ItemName;
+            ItemCode = item.ItemCode;
             UnitPrice = item.UnitPrice;
             Quantity = 1;
             Unit = item.Unit;
@@ -226,7 +232,7 @@ namespace Invoice
                    oldItem.TaxTypeId == newItem.TaxTypeId;
         }
 
-        public static void ProcessInvoiceItemsBatch(List<InvoiceItemClass> deleteItems, List<InvoiceItemClass> updateItems, List<InvoiceItemClass> addItems, int invoiceId, UnitOfWork unitOfWork)
+        public static void ProcessInvoiceItemsBatch(List<InvoiceItemClass>? addItems = null, List<InvoiceItemClass>? updateItems = null, List<InvoiceItemClass>? deleteItems = null, int invoiceId = 0, UnitOfWork? unitOfWork = null)
         {
             UnitOfWork.ExecuteWithTransaction(uow =>
             {
@@ -252,37 +258,9 @@ namespace Invoice
             }, unitOfWork);
         }
 
-        public static void AddInvoiceItems(int invoiceId, ObservableCollection<InvoiceItemClass> ItemList, UnitOfWork unitOfWork)
-        {
-            int order = 1;
-            string query = @"INSERT INTO T_INVOICE_ITEMS (INVOICE_ID, ITEM_ORDER, ITEM_ID, ITEM_NAME, UNIT_PRICE, QUANTITY, UNIT,ITEM_SUBTOTAL, TAX_TYPE_ID, TAX, ITEM_TOTAL) "
-                + "\r\n" +
-                "VALUES (@InvoiceId, @ItemOrder, @ItemId, @ItemName, @UnitPrice, @Quantity, @Unit, @ItemSubtotal, @TaxTypeId, @Tax, @ItemTotal)";
-            var command = unitOfWork.CreateCommand(query);
-            foreach (var item in ItemList)
-            {
-                item.ItemOrder = order++;
-                command.Parameters.AddWithValue("@InvoiceId", invoiceId);
-                command.Parameters.AddWithValue("@ItemOrder", item.ItemOrder);
-                command.Parameters.AddWithValue("@ItemId", item.ItemId);
-                command.Parameters.AddWithValue("@ItemName", item.ItemName);
-                command.Parameters.AddWithValue("@UnitPrice", item.UnitPrice);
-                command.Parameters.AddWithValue("@Quantity", item.Quantity);
-                command.Parameters.AddWithValue("@Unit", item.Unit);
-                command.Parameters.AddWithValue("@ItemSubtotal", item.ItemSubTotal);
-                command.Parameters.AddWithValue("@TaxTypeId", item.TaxTypeId);
-                command.Parameters.AddWithValue("@Tax", item.Tax);
-                command.Parameters.AddWithValue("@ItemTotal", item.ItemTotal);
-                command.ExecuteNonQuery();
-                item.InvoiceItemId = (int)command.LastInsertedId;
-                command.Parameters.Clear();
-            }
-
-
-        }
         public static void AddInvoiceItems(ObservableCollection<InvoiceItemClass> ItemList, int invoiceId, UnitOfWork unitOfWork)
         {
-            AddInvoiceItemsBatch(invoiceId, ItemList.ToList(), unitOfWork);
+            ProcessInvoiceItemsBatch(addItems: [..ItemList], invoiceId: invoiceId, unitOfWork: unitOfWork);
         }
 
         public static void AddInvoiceItemsBatch(int invoiceId, List<InvoiceItemClass> items, UnitOfWork unitOfWork)
@@ -331,13 +309,13 @@ namespace Invoice
 
         private static List<InvoiceItemClass> CreateUpdateItems(List<InvoiceItemClass> notExistNewItems, List<InvoiceItemClass> notExistOldItems, int invoiceId)
         {
-            return notExistNewItems.Zip(notExistOldItems, (newItem, oldItem) =>
+            return [..notExistNewItems.Zip(notExistOldItems, (newItem, oldItem) =>
             {
                 var addingItem = newItem.DeepClone();
                 addingItem.InvoiceItemId = oldItem.InvoiceItemId;
                 addingItem.InvoiceId = invoiceId;
                 return addingItem;
-            }).ToList();
+            })];
         }
 
         public static void UpdateInvoiceItems(int invoiceId, ObservableCollection<InvoiceItemClass> newItems, UnitOfWork unitOfWork)
@@ -362,7 +340,7 @@ namespace Invoice
             var addingItems = notExistNewItems.Skip(notExistOldItems.Count).ToList();
             var deleteItems = notExistOldItems.Skip(notExistNewItems.Count).ToList();
 
-            ProcessInvoiceItemsBatch(deleteItems, updateItems, addingItems, invoiceId, unitOfWork);
+            ProcessInvoiceItemsBatch(addingItems, updateItems, deleteItems, invoiceId, unitOfWork);
         }
 
         public static void UpdateInvoiceItemsBatch(List<InvoiceItemClass> items, UnitOfWork unitOfWork)
@@ -372,35 +350,29 @@ namespace Invoice
             // 更新対象の列を定義
             var columnsToUpdate = new Dictionary<string, Func<InvoiceItemClass, object>>
                 {
+                    { "INVOICE_ID", item => item.InvoiceId },
                     { "ITEM_ORDER", item => item.ItemOrder },
-                    { "QUANTITY", item => item.Quantity },
+                    { "ITEM_ID", item => item.ItemId },
+                    { "ITEM_NAME", item => item.ItemName },
                     { "UNIT_PRICE", item => item.UnitPrice },
+                    { "QUANTITY", item => item.Quantity },
+                    { "UNIT", item => item.Unit },
                     { "ITEM_SUBTOTAL", item => item.ItemSubTotal },
                     { "TAX_TYPE_ID", item => item.TaxTypeId },
                     { "TAX", item => item.Tax },
-                    { "ITEM_TOTAL", item => item.ItemTotal },
-                    { "UNIT", item => item.Unit }
+                    { "ITEM_TOTAL", item => item.ItemTotal }
                 };
 
             // クエリの動的生成
             var queryBuilder = new StringBuilder("UPDATE T_INVOICE_ITEMS SET ");
-
             foreach (var column in columnsToUpdate.Keys)
             {
                 queryBuilder.Append($"{column} = CASE ");
-                foreach (var item in items)
-                {
-                    queryBuilder.Append($"WHEN INVOICE_ITEM_ID = {item.InvoiceItemId} THEN @{column}_{item.InvoiceItemId} ");
-                }
-                queryBuilder.Append("END, ");
+                queryBuilder.Append(string.Join(" ", items.Select(item => $"WHEN INVOICE_ITEM_ID = {item.InvoiceItemId} THEN @{column}_{item.InvoiceItemId}")));
+                queryBuilder.Append(" END, ");
             }
-
-            // 最後のカンマを削除
-            queryBuilder.Length -= 2;
-
-            // WHERE 条件を追加
-            var idList = string.Join(",", items.Select(i => i.InvoiceItemId));
-            queryBuilder.Append($" WHERE INVOICE_ITEM_ID IN ({idList})");
+            queryBuilder.Length -= 2; // 最後のカンマを削除
+            queryBuilder.Append($" WHERE INVOICE_ITEM_ID IN ({string.Join(",", items.Select(i => i.InvoiceItemId))})");
 
             // コマンドの作成
             var command = unitOfWork.CreateCommand(queryBuilder.ToString());
@@ -430,18 +402,7 @@ namespace Invoice
 
         public static void DeleteInvoiceItems(List<InvoiceItemClass> items, UnitOfWork unitOfWork)
         {
-            foreach (var item in items)
-            {
-                DeleteInvoiceItemByInvoiceItemId(item.InvoiceItemId, unitOfWork);
-            }
-        }
-
-        public static void DeleteInvoiceItemByInvoiceItemId(int invoiceItemId, UnitOfWork unitOfWork)
-        {
-            string query = "DELETE FROM T_INVOICE_ITEMS WHERE INVOICE_ITEM_ID = @InvoiceItemId";
-            var command = unitOfWork.CreateCommand(query);
-            command.Parameters.AddWithValue("@InvoiceItemId", invoiceItemId);
-            command.ExecuteNonQuery();
+            ProcessInvoiceItemsBatch(deleteItems: items, unitOfWork: unitOfWork);
         }
 
         public static void DeleteInvoiceItemsBatch(List<InvoiceItemClass> items, UnitOfWork unitOfWork)
@@ -456,7 +417,7 @@ namespace Invoice
             command.ExecuteNonQuery();
         }
 
-        public InvoiceItemClass DeepClone(InvoiceItemClass item)
+        public static InvoiceItemClass DeepClone(InvoiceItemClass item)
         {
             return new InvoiceItemClass()
             {
@@ -480,25 +441,25 @@ namespace Invoice
 
             return new InvoiceItemClass
             {
-                ItemId = this.ItemId,
-                ItemName = this.ItemName,
-                ItemCode = this.ItemCode,
-                Unit = this.Unit,
-                UnitPrice = this.UnitPrice,
-                TaxTypeId = this.TaxTypeId,
-                TaxTypeName = this.TaxTypeName,
-                InvoiceItemId = this.InvoiceItemId,
-                InvoiceId = this.InvoiceId,
-                ItemOrder = this.ItemOrder,
-                Quantity = this.Quantity,
-                SelectedItem = this.SelectedItem,
+                ItemId = ItemId,
+                ItemName = ItemName,
+                ItemCode = ItemCode,
+                Unit = Unit,
+                UnitPrice = UnitPrice,
+                TaxTypeId = TaxTypeId,
+                TaxTypeName = TaxTypeName,
+                InvoiceItemId = InvoiceItemId,
+                InvoiceId = InvoiceId,
+                ItemOrder = ItemOrder,
+                Quantity = Quantity,
+                SelectedItem = SelectedItem?.Copy(),
             };
         }
+
 
         public event PropertyChangedEventHandler? PropertyChanged;
         protected void OnPropertyChanged([CallerMemberName] string propertyName = "")
         {
-
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }

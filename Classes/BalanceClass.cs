@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace Invoice
+namespace Invoice.Classes
 {
     // T_BALANCE テーブルに対応するクラス
     public class BalanceClass : ILoggable
@@ -18,16 +18,16 @@ namespace Invoice
         public int? InvoiceId { get; set; }
         public int? PaymentId { get; set; }
         public int? DepositId { get; set; }
-        public string SlipNumber { get; set; }
+        public string SlipNumber { get; set; } = string.Empty;
         public int DebOrCreId { get; set; }
         public DateTime TransactionDate { get; set; }
         public int TransactionTypeId { get; set; }
         public int TransactionAmount { get; set; }
-        public string CustomerName { get; set; }
-        public string TransactionTypeName { get; set; }
+        public string CustomerName { get; set; } = string.Empty;
+        public string TransactionTypeName { get; set; } = string.Empty;
         public string DateString => TransactionDate.ToShortDateString();
-        public decimal? DebitAmount => DebOrCreId == 1 ? TransactionAmount : (decimal?)null;
-        public decimal? CreditAmount => DebOrCreId == 2 ? TransactionAmount : (decimal?)null;
+        public decimal? DebitAmount => DebOrCreId == 1 ? TransactionAmount : null;
+        public decimal? CreditAmount => DebOrCreId == 2 ? TransactionAmount : null;
 
         // データベースから全てのレコードを取得
         public static List<BalanceClass> GetAllBalances()
@@ -83,7 +83,7 @@ namespace Invoice
             }
         }
 
-        public static List<BalanceClass> GetBalancesById(IDs ids, UnitOfWork unitOfWork, [CallerMemberName] string callerName = "", [CallerLineNumber] long callerLineNumber = 0)
+        public static List<BalanceClass> GetBalancesById(IDs ids, UnitOfWork unitOfWork, [CallerMemberName] string _1 = "", [CallerLineNumber] long _2 = 0)
         {
             var balances = new List<BalanceClass>();
             string query = "SELECT * FROM T_BALANCE WHERE ";
@@ -137,7 +137,7 @@ namespace Invoice
                     balance.PaymentId = null;
                     balance.DepositId = null;
                     balance.DebOrCreId = 1;
-                    balance.SlipNumber = invoice.SlipNumber;
+                    balance.SlipNumber = invoice.SlipNumber ?? "";
                     balance.TransactionDate = invoice.IssueDate ?? DateTime.Now;
                     balance.TransactionTypeId = invoice.TransactionTypeId ?? 0;
                     balance.TransactionAmount = invoice.InvoiceTotal ?? 0;
@@ -169,7 +169,7 @@ namespace Invoice
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"{nameof(BalanceClass)}.{MethodBase.GetCurrentMethod().Name} : {ex.Message}");
+                MessageBox.Show($"{nameof(BalanceClass)}.{MethodBase.GetCurrentMethod()!.Name} : {ex.Message}");
                 return false;
             }
         }
@@ -181,8 +181,8 @@ namespace Invoice
             command.Parameters.AddWithValue("@InvoiceId", balance.InvoiceId);
             command.Parameters.AddWithValue("@PaymentId", balance.PaymentId);
             command.Parameters.AddWithValue("@DepositId", balance.DepositId);
-            command.Parameters.AddWithValue("@DebOrCreId", balance.DebOrCreId);
             command.Parameters.AddWithValue("@SlipNumber", balance.SlipNumber);
+            command.Parameters.AddWithValue("@DebOrCreId", balance.DebOrCreId);
             command.Parameters.AddWithValue("@TransactionDate", balance.TransactionDate);
             command.Parameters.AddWithValue("@TransactionTypeId", balance.TransactionTypeId);
             command.Parameters.AddWithValue("@TransactionAmount", balance.TransactionAmount);
@@ -246,7 +246,7 @@ namespace Invoice
                     balance.PaymentId = null;
                     balance.DepositId = null;
                     balance.DebOrCreId = 1;
-                    balance.SlipNumber = invoice.SlipNumber;
+                    balance.SlipNumber = invoice.SlipNumber ?? "";
                     balance.TransactionDate = invoice.IssueDate ?? DateTime.Now;
                     balance.TransactionTypeId = 1;
                     balance.TransactionAmount = invoice.InvoiceTotal ?? 0;
@@ -286,7 +286,7 @@ namespace Invoice
             }, unitOfWork);
         }
 
-        public static void DeleteBalanceById(TypeOfID type, int id, UnitOfWork unitOfWork, [CallerMemberName] string callerName = "", [CallerLineNumber] long callerLineNumber = 0)
+        public static void DeleteBalanceById(TypeOfID type, int id, UnitOfWork unitOfWork, [CallerMemberName] string _1 = "", [CallerLineNumber] long _2 = 0)
         {
             string query = QueryBuilder.StringBuilder(command: "DELETE", tableName: "T_BALANCE", type);
             var command = unitOfWork.CreateCommand(query);
@@ -303,7 +303,7 @@ namespace Invoice
         /// <param name="depositId"></param>
         /// <param name="balanceId"></param>
         /// <exception cref="ArgumentException"></exception>
-        public static void DeleteBalanceById(IDs ids, UnitOfWork unitOfWork, [CallerMemberName] string callerName = "", [CallerLineNumber] long callerLineNumber = 0)
+        public static void DeleteBalanceById(IDs ids, UnitOfWork unitOfWork, [CallerMemberName] string _1 = "", [CallerLineNumber] long _2 = 0)
         {
             string query = "DELETE FROM T_BALANCE WHERE ";
             CommandBuilder.Builder(ids, query, unitOfWork).ExecuteNonQuery();

@@ -381,8 +381,6 @@
                                  Text="{Binding PaymentVM.CurrentPayment.Subject,Mode=TwoWay}"
                                  Width="390"
                                  VerticalAlignment="Top" />
-                                 <!--GotFocus="ReceiptSubject_GotFocus"
-                                 LostFocus="ReceiptSubject_LostFocus"-->
                     </Grid>
                     <Grid Grid.Column="3"
                           Margin="0,0,0,0">

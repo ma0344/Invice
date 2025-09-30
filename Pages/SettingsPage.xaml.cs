@@ -21,6 +21,8 @@ using Invoice.ViewModels;
 using ModernWpf;
 using Invoice.Converters;
 using MigraDoc.DocumentObjectModel;
+using Invoice.Classes;
+using Invoice.Pages;
 
 namespace Invoice
 {

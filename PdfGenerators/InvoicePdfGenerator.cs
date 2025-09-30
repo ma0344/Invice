@@ -3,7 +3,6 @@ using System.IO;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using Invoice;
 using MigraDoc.DocumentObjectModel;
 using MigraDoc.DocumentObjectModel.Tables;
 using MigraDoc.Rendering;
@@ -17,6 +16,7 @@ using ModernWpf.Controls;
 using PdfSharp.Snippets.Drawing;
 using MigraDoc.DocumentObjectModel.Shapes;
 using System.Security.Permissions;
+using Invoice.Classes;
 
 
 

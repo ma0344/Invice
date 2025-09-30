@@ -7,6 +7,8 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media.Animation;
+using Invoice.Classes;
+using Invoice.Pages;
 using Invoice.ViewModels;
 using Invoice.ViewModels.Invoice.ViewModels;
 using ModernWpf;
@@ -22,18 +24,14 @@ namespace Invoice
     {
         CustomerViewModel vm;
         private bool isEditing = false;
-        private bool isPageInitialized = false;
-        private CustomerFilterParam customerfilterParam = new();
-        private BalanceFilterParam balanceFilterParam = new();
+        private readonly CustomerFilterParam customerfilterParam = new();
+        private readonly BalanceFilterParam balanceFilterParam = new();
         public CultureInfo cultureInfo = new("ja-JP");
-        InvoiceClass CurrentInvoice;
-        private bool DebugSwitch = false;
 
         public CustomerPage(MainWindowViewModel mainWindowViewModel)
         {
             InitializeComponent();
             vm = mainWindowViewModel.CustomerVM;
-            DebugSwitch = mainWindowViewModel.DebugOutIsOn;
             this.Loaded += PageLoaded;
             DataContext = mainWindowViewModel;
             vm.CustomerCollectionViewSource = new CollectionViewSource();
@@ -109,7 +107,7 @@ namespace Invoice
 
         }
 
-        private void CustomerVM_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        private void CustomerVM_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
         }
         
@@ -120,15 +118,6 @@ namespace Invoice
             {
                 vm.ShowAllCustomer = toggleSwitch.IsOn;
                 CustomerFilter();
-            }
-        }
-
-        private void Label_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
-        {
-            if (sender is Label label)
-            {
-                var mainWindow = Application.Current.MainWindow as MainWindow;
-                mainWindow?.NavigateToPage(label.Name);
             }
         }
 
@@ -150,7 +139,7 @@ namespace Invoice
                 if (container is DataGridRow row)
                 {
                     row.IsSelected = true;
-                    VisualTreeHelperExtensions.FindVisualChildByName<CheckBox>(row, "CustomerCheckBox").IsChecked = true;
+                    VisualTreeHelperExtensions.FindVisualChildByName<CheckBox>(row, "CustomerCheckBox")!.IsChecked = true;
                 }
             }
         }
@@ -164,7 +153,7 @@ namespace Invoice
                 if (container is DataGridRow row)
                 {
                     row.IsSelected = true;
-                    VisualTreeHelperExtensions.FindVisualChildByName<CheckBox>(row, "CustomerCheckBox").IsChecked = false;
+                    VisualTreeHelperExtensions.FindVisualChildByName<CheckBox>(row, "CustomerCheckBox")!.IsChecked = false;
                 }
             }
         }

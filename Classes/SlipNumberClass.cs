@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Invoice
+namespace Invoice.Classes
 {
 
     // T_SLIP_NUMBER_INFO テーブルに対応するクラス
@@ -201,7 +201,7 @@ namespace Invoice
             var slipNumber = SlipNumberList.FirstOrDefault(s => s.SlipTerm == date);
             if (slipNumber == null)
             {
-                slipNumber = AddSlipNumberByMonth((DateTime)date);
+                slipNumber = AddSlipNumberByMonth(date);
                 SlipNumberList.Add(slipNumber);
             }
             return slipNumber;

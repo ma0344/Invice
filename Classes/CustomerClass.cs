@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Invoice
+namespace Invoice.Classes
 {
     // T_CUSTOMER テーブルに対応するクラス
     public class CustomerClass : INotifyPropertyChanged, ILoggable
@@ -85,16 +85,19 @@ namespace Invoice
         }
         public void UpdateCustomerInDatabase()
         {
-
-            UnitOfWork unitOfWork = new UnitOfWork();
-            var command = unitOfWork.CreateCommand();
-            command.CommandText = "UPDATE T_CUSTOMER SET CUSTOMER_NAME=@name, CUSTOMER_KANA=@kana, BALANCE=@balance, VISIBLE=@visible WHERE CUSTOMER_ID=@id";
-            command.Parameters.AddWithValue("@name", CustomerName);
-            command.Parameters.AddWithValue("@kana", CustomerKana);
-            command.Parameters.AddWithValue("@balance", CustomerBalance);
-            command.Parameters.Add("@visible", MySqlDbType.Bit).Value = CustomerVisible;
-            command.Parameters.AddWithValue("@id", CustomerId);
-            command.ExecuteNonQuery();
+            UnitOfWork.ExecuteWithTransaction(uow =>
+            {
+                var query = "UPDATE T_CUSTOMER SET CUSTOMER_NAME=@name, CUSTOMER_KANA=@kana, BALANCE=@balance, VISIBLE=@visible WHERE CUSTOMER_ID=@id";
+                var command = uow.CreateCommand(query);
+                command.Parameters.AddWithValue("@name", CustomerName);
+                command.Parameters.AddWithValue("@kana", CustomerKana);
+                command.Parameters.AddWithValue("@balance", CustomerBalance);
+                command.Parameters.Add("@visible", MySqlDbType.Bit).Value = CustomerVisible;
+                command.Parameters.AddWithValue("@id", CustomerId);
+                command.ExecuteNonQuery();
+                return true;
+            }, null);
+            
         }
         public event PropertyChangedEventHandler? PropertyChanged;
         protected void OnPropertyChanged(string propertyName)

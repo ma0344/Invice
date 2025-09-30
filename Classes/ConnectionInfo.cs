@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 
 
-namespace Invoice
+namespace Invoice.Classes
 {
     public static class ConnectionInfo
     {
@@ -26,7 +26,7 @@ namespace Invoice
         {
             Server = ConfigurationSection["Server"] as string ?? "192.168.10.10",
             //"192.168.10.10",
-            Port = uint.Parse((string)ConfigurationSection["Port"] ?? "3307"),
+            Port = uint.Parse(ConfigurationSection["Port"] ?? "3307"),
             UserID = ConfigurationSection["UserID"] as string ?? "application",
             Password = ConfigurationSection["Password"] as string ?? "Ma0344@GmailCom",
             Database = ConfigurationSection["Database"] as string ?? "invoice",

@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Invoice
+namespace Invoice.Classes
 {
 
     // T_DEPOSIT テーブルに対応するクラス
@@ -18,10 +18,10 @@ namespace Invoice
         public int CustomerId { get; set; }
         public DateTime DepositDate { get; set; }
         public int DepositAmount { get; set; }
-        public string SlipNumber { get; set; }
+        public string SlipNumber { get; set; } = string.Empty;
         public int DebOrCreId { get; set; }
 
-        public List<DepositClass> GetDeposits(TypeOfID type = 0, int id = 0)
+        public static List<DepositClass> GetDeposits(TypeOfID type = 0, int id = 0)
         {
 
             var deposits = new List<DepositClass>();
@@ -54,7 +54,7 @@ namespace Invoice
             return deposits;
         }
 
-        public static DepositClass GetDeposit(TypeOfID type = 0, int? id = 0)
+        public static DepositClass? GetDeposit(TypeOfID type = 0, int? id = 0)
         {
             if (id == null) return null;
             string connectionString = ConnectionInfo.Builder.ConnectionString;
@@ -102,7 +102,7 @@ namespace Invoice
                 deposit.CustomerId = invoice.CustomerId;
                 deposit.DepositDate = invoice.IssueDate ?? DateTime.Now;
                 deposit.DepositAmount = invoice.PaydByDeposit;
-                deposit.SlipNumber = invoice.SlipNumber;
+                deposit.SlipNumber = invoice.SlipNumber ?? "";
                 deposit.DebOrCreId = 1;
             }
             return UnitOfWork.ExecuteWithTransaction(uow =>
@@ -122,8 +122,7 @@ namespace Invoice
 
         public static int AddDeposit(UnitOfWork unitOfWork, DepositClass? deposit = null)
         {
-            if (deposit == null) deposit = new DepositClass();
-
+            deposit ??= new();
             var query = "INSERT INTO T_DEPOSIT (INVOICE_ID, PAYMENT_ID, CUSTOMER_ID, DEPOSIT_DATE, DEPOSIT_AMOUNT, SLIP_NUMBER, DEBIT_OR_CREDIT_ID) " + "\r\n" + "VALUES (@InvoiceId, @PaymentId, @CustomerId, @DepositDate, @DepositAmount, @SlipNumber, @DebitOrCreditId)";
             var command = unitOfWork.CreateCommand(query);
             command.Parameters.AddWithValue("@InvoiceId", deposit.InvoiceId);
@@ -156,7 +155,7 @@ namespace Invoice
                     deposit = GetDeposit(TypeOfID.Payment, payment.PaymentId);
                     if (payment.PaymentAmount <= 0)
                     {
-                        if (deposit != null) deposit.DeleteDeposit(uow);
+                        deposit?.DeleteDeposit(uow);
                         return true;
                     }
 
@@ -178,7 +177,7 @@ namespace Invoice
                     deposit = GetDeposit(TypeOfID.Invoice, invoice.InvoiceId);
                     if (invoice.PaydByDeposit <= 0)
                     {
-                        if (deposit != null) deposit.DeleteDeposit(uow);
+                        deposit?.DeleteDeposit(uow);
                         return true;
                     }
 

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using System.Windows.Media;
 using System.Windows;
 
-namespace Invoice
+namespace Invoice.Pages
 {
     public static class VisualTreeHelperExtensions
     {

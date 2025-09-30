@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Invoice
+namespace Invoice.Classes
 {
     // T_PAYMENT テーブルに対応するクラス
     public class PaymentClass : INotifyPropertyChanged, ILoggable
@@ -138,7 +138,7 @@ namespace Invoice
             }
         }
 
-        private string _Subject;
+        private string _Subject = string.Empty;
         public string Subject
         {
             get { return _Subject; }
@@ -152,7 +152,7 @@ namespace Invoice
             }
         }
 
-        private string _PaymentDateString;
+        private string _PaymentDateString = string.Empty;
         public string PaymentDateString
         {
             get { return _PaymentDateString; }
@@ -209,16 +209,18 @@ namespace Invoice
             using var reader = command.ExecuteReader();
             while (reader.Read())
             {
-                var payment = new PaymentClass();
-                payment.PaymentId = reader.GetInt32("PAYMENT_ID");
-                payment.InvoiceId = reader.IsDBNull("INVOICE_ID") ? null : reader.GetInt32("INVOICE_ID");
-                payment.DepositId = reader.IsDBNull("DEPOSIT_ID") ? null : reader.GetInt32("DEPOSIT_ID");
-                payment.TransactionTypeId = reader.GetInt32("TRANSACTION_TYPE_ID");
-                payment.SlipNumber = reader.GetString("SLIP_NUMBER");
-                payment.CustomerId = reader.GetInt32("CUSTOMER_ID");
-                payment.PaymentDate = reader.GetDateTime("PAYMENT_DATE");
-                payment.PaymentAmount = reader.GetInt32("PAYMENT_AMOUNT");
-                payment.Subject = reader.IsDBNull("SUBJECT") ? "" : reader.GetString("SUBJECT");
+                var payment = new PaymentClass()
+                {
+                    PaymentId = reader.GetInt32("PAYMENT_ID"),
+                    InvoiceId = reader.IsDBNull("INVOICE_ID") ? null : reader.GetInt32("INVOICE_ID"),
+                    DepositId = reader.IsDBNull("DEPOSIT_ID") ? null : reader.GetInt32("DEPOSIT_ID"),
+                    TransactionTypeId = reader.GetInt32("TRANSACTION_TYPE_ID"),
+                    SlipNumber = reader.GetString("SLIP_NUMBER"),
+                    CustomerId = reader.GetInt32("CUSTOMER_ID"),
+                    PaymentDate = reader.GetDateTime("PAYMENT_DATE"),
+                    PaymentAmount = reader.GetInt32("PAYMENT_AMOUNT"),
+                    Subject = reader.IsDBNull("SUBJECT") ? "" : reader.GetString("SUBJECT"),
+                };
                 payment.PaymentDateString = payment.PaymentDate.ToShortDateString();
                 payments.Add(payment);
             }
@@ -297,7 +299,7 @@ namespace Invoice
 
         public bool TryDeletePayment(UnitOfWork? unitOfWork = null)
         {
-
+            unitOfWork ??= new UnitOfWork();
             return UnitOfWork.ExecuteWithTransaction(uow =>
             {
                 DeletePayment(unitOfWork);
@@ -327,7 +329,7 @@ namespace Invoice
 
         public static void DeletePaymentById(TypeOfID type, int id, UnitOfWork unitOfWork)
         {
-            string query = "DELETE FROM T_PAYMENT WHERE PAYMENT_ID = @PaymentId";
+            string query = QueryBuilder.StringBuilder(command:"DELETE", tableName: "T_PAYMENT", type: type);
             var command = unitOfWork.CreateCommand(query);
             command.Parameters.AddWithValue("@PaymentId", id);
             command.ExecuteNonQuery();

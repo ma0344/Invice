@@ -10,39 +10,39 @@ using System.Collections.Specialized;
 using System.Windows;
 using Invoice.ViewModels.Invoice.ViewModels;
 using System.Diagnostics;
+using Invoice.Classes;
 
 namespace Invoice.ViewModels
 {
     public partial class InvoiceViewModel : INotifyPropertyChanged
     {
-        event EventHandler UpdateTotalAmountEvent;
-        public delegate void PropertyChangedHandler(object sender, PropertyChangedEventArgs e);
-        public PropertyChangedHandler PropertyChangedEvent;
-        private CustomerViewModel customerVM;
-        private SettingsViewModel settingsVM;
+        event EventHandler? UpdateTotalAmountEvent;
+        public delegate void PropertyChangedHandler(object? sender, PropertyChangedEventArgs e);
+        public PropertyChangedHandler? PropertyChangedEvent;
+        private readonly CustomerViewModel customerVM;
+        private readonly SettingsViewModel settingsVM;
         public InvoiceViewModel()
         {
-
             var mainWindow = Application.Current.MainWindow as MainWindow;
-            var dataContext = mainWindow.DataContext as MainWindowViewModel;
-            customerVM = dataContext.CustomerVM;
+            var dataContext = mainWindow!.DataContext as MainWindowViewModel;
+            customerVM = dataContext!.CustomerVM;
             settingsVM = dataContext.SettingsVM;
             ItemClassList = settingsVM.ItemClassList;
             TaxTypeClassList = settingsVM.TaxTypeClassList;
             InvoiceStatusClassList = settingsVM.InvoiceStatusClassList;
             TransactionTypeClassList = settingsVM.TransactionTypeClassList;
             var invoiceItems = InvoiceItemClass.GetInvoiceItems();
-            InvoiceItemClassList = new ObservableCollection<InvoiceItemClass>(invoiceItems);
+            InvoiceItemClassList = [..invoiceItems];
             //var invoiceList = InvoiceClass.GetAllInvoice();
-            InvoiceClassList = new ObservableCollection<InvoiceClass>();
+            InvoiceClassList = [];
             DepositFromInvoicePage = false;
 
             var customers = customerVM.CustomerClassList;
             foreach (var invoice in InvoiceClassList)
             {
                 invoice.PropertyChanged += Invoice_PropertyChanged;
-                invoice.CustomerName = customers.FirstOrDefault(customer => customer.CustomerId == invoice.CustomerId).CustomerName;
-                invoice.InvoiceStatus = InvoiceStatusClassList.FirstOrDefault(status => status.InvoiceStatusId == invoice.InvoiceStatusId).InvoiceStatus;
+                invoice.CustomerName = customers.FirstOrDefault(customer => customer.CustomerId == invoice.CustomerId)!.CustomerName;
+                invoice.InvoiceStatus = InvoiceStatusClassList.FirstOrDefault(status => status.InvoiceStatusId == invoice.InvoiceStatusId)!.InvoiceStatus;
             }
             //InvoiceClassList.CollectionChanged += InvoiceList_CollectionChanged;
             CurrentInvoice = new InvoiceClass();
@@ -81,15 +81,15 @@ namespace Invoice.ViewModels
         }
 
         
-        public CollectionViewSource InvoiceCollectionViewSource { get; set; }
+        public CollectionViewSource? InvoiceCollectionViewSource { get; set; }
 
-        public ObservableCollection<CustomerClass> CustomerCollectionViewSource
+        public static ObservableCollection<CustomerClass> CustomerCollectionViewSource
         {
             get
             {
                 var mainWindow = Application.Current.MainWindow as MainWindow;
-                var dataContext = mainWindow.DataContext as MainWindowViewModel;
-                var customerVM = dataContext.CustomerVM;
+                var dataContext = mainWindow!.DataContext as MainWindowViewModel;
+                var customerVM = dataContext!.CustomerVM;
                 var customerList = customerVM.CustomerClassList.ToList();
                 ObservableCollection<CustomerClass> filterdCustomerList = [];
                 foreach (CustomerClass customer in customerList)
@@ -228,22 +228,22 @@ namespace Invoice.ViewModels
             }
         }
 
-        private InvoiceStatusClass _SelectedStatus;
-        public InvoiceStatusClass SelectedStatus
-        {
-            get => _SelectedStatus;
-            set { _SelectedStatus = value; }
-        }
+        //private InvoiceStatusClass _SelectedStatus;
+        //public InvoiceStatusClass SelectedStatus
+        //{
+        //    get => _SelectedStatus;
+        //    set { _SelectedStatus = value; }
+        //}
         public void InvoiceListReset(List<InvoiceClass> invoices)
         {
             InvoiceClassList.Clear();
             foreach(var invoice in invoices)
             {
                 var mainWindow = Application.Current.MainWindow as MainWindow;
-                var dataContext = mainWindow.DataContext as MainWindowViewModel;
-                var customerVM = dataContext.CustomerVM;
-                invoice.CustomerName = customerVM.CustomerClassList.FirstOrDefault(c => c.CustomerId == invoice.CustomerId).CustomerName;
-                invoice.InvoiceStatus = InvoiceStatusClassList.FirstOrDefault(s => s.InvoiceStatusId == invoice.InvoiceStatusId).InvoiceStatus;
+                var dataContext = mainWindow!.DataContext as MainWindowViewModel;
+                var customerVM = dataContext!.CustomerVM;
+                invoice.CustomerName = customerVM.CustomerClassList.FirstOrDefault(c => c.CustomerId == invoice.CustomerId)!.CustomerName;
+                invoice.InvoiceStatus = InvoiceStatusClassList.FirstOrDefault(s => s.InvoiceStatusId == invoice.InvoiceStatusId)!.InvoiceStatus;
                 InvoiceClassList.Add(invoice);
             }
         }
@@ -265,8 +265,8 @@ namespace Invoice.ViewModels
 
                 }
                 invoice.InvoiceItems.Clear();
-                invoice.CustomerName = customerVM.CustomerClassList.FirstOrDefault(c => c.CustomerId == invoice.CustomerId).CustomerName;
-                invoice.InvoiceStatus = InvoiceStatusClassList.FirstOrDefault(s => s.InvoiceStatusId == invoice.InvoiceStatusId).InvoiceStatus;
+                invoice.CustomerName = customerVM.CustomerClassList.FirstOrDefault(c => c.CustomerId == invoice.CustomerId)!.CustomerName;
+                invoice.InvoiceStatus = InvoiceStatusClassList.FirstOrDefault(s => s.InvoiceStatusId == invoice.InvoiceStatusId)!.InvoiceStatus;
                 var items = invoiceItems.Where(i => i.InvoiceId == invoice.InvoiceId).ToList();
                 items.Sort((a, b) => a.ItemOrder - b.ItemOrder);
                 items.ForEach(item => invoice.InvoiceItems.Add(item));
@@ -276,7 +276,7 @@ namespace Invoice.ViewModels
             }
 
             // InvoiceCollectionViewSource の更新
-            InvoiceCollectionViewSource.Source = InvoiceClassList;
+            InvoiceCollectionViewSource!.Source = InvoiceClassList;
 
 
         }
@@ -302,7 +302,7 @@ namespace Invoice.ViewModels
                 UpdateTotalAmount();
         }
 
-        private void InvoiceItem_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        private void InvoiceItem_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
             if (e.PropertyName == nameof(InvoiceItemClass.ItemTotal) && CurrentInvoice is InvoiceClass invoice)
             {
@@ -333,7 +333,7 @@ namespace Invoice.ViewModels
 
         }
 
-        private void Invoice_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        private void Invoice_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
             if (e.PropertyName == nameof(InvoiceClass.InvoiceItems) && CurrentInvoice is InvoiceClass invoice)
             {

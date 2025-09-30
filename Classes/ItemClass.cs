@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Invoice
+namespace Invoice.Classes
 {
 
     // T_ITEM テーブルに対応するクラス
@@ -108,7 +108,16 @@ namespace Invoice
         public ItemClass Copy()
         {
 
-            return (ItemClass)this.MemberwiseClone();
+            return new ItemClass
+            {
+                ItemId = ItemId,
+                ItemName = ItemName,
+                ItemCode = ItemCode,
+                Unit = Unit,
+                UnitPrice = UnitPrice,
+                TaxTypeId = TaxTypeId,
+                TaxTypeName = TaxTypeName
+            };
         }
 
         public void AddItem()
@@ -212,8 +221,8 @@ namespace Invoice
 
         // TaxTypeId
         // SelectedTax
-        private TaxTypeClass _selectedTax;
-        public TaxTypeClass SelectedTax
+        private TaxTypeClass? _selectedTax;
+        public TaxTypeClass? SelectedTax
         {
             get => _selectedTax;
             set
@@ -309,18 +318,17 @@ namespace Invoice
 
         public InvoiceItemClass ToInvoiceItem()
         {
-
-            var invoiceItem = new InvoiceItemClass();
-            invoiceItem.ItemOrder = ItemOrder;
-            invoiceItem.ItemId = ItemId;
-            invoiceItem.ItemName = ItemName;
-            invoiceItem.UnitPrice = UnitPrice;
-            invoiceItem.Quantity = Quantity;
-            invoiceItem.Unit = Unit;
-            invoiceItem.TaxTypeId = TaxTypeId;
-            invoiceItem.TaxTypeName = TaxTypeName;
-
-            return invoiceItem;
+            return new InvoiceItemClass()
+            {
+                ItemOrder = ItemOrder,
+                ItemId = ItemId,
+                ItemName = ItemName,
+                UnitPrice = UnitPrice,
+                Quantity = Quantity,
+                Unit = Unit,
+                TaxTypeId = TaxTypeId,
+                TaxTypeName = TaxTypeName,
+            };
         }
 
         public static void AddDefaultItems(List<DefaultItemsClass> items)

@@ -15,7 +15,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace Invoice
+namespace Invoice.Classes
 {
     // T_DEBIT_OR_CREDIT テーブルに対応するクラス
     public class DebitOrCreditClass
@@ -273,13 +273,13 @@ namespace Invoice
         public string getTaxTypeName(int taxTypeId)
         {
 
-            return TaxTypeClass.GetTaxes().FirstOrDefault(t => t.TaxTypeId == taxTypeId)?.TaxTypeName ?? "";
+            return GetTaxes().FirstOrDefault(t => t.TaxTypeId == taxTypeId)?.TaxTypeName ?? "";
         }
 
         public TaxTypeClass GetTaxTypeClassByID(int taxTypeId)
         {
 
-            return TaxTypeClass.GetTaxes().FirstOrDefault(t => t.TaxTypeId == taxTypeId);
+            return GetTaxes().FirstOrDefault(t => t.TaxTypeId == taxTypeId);
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;

@@ -1,4 +1,5 @@
-﻿using Invoice.ViewModels;
+﻿using Invoice.Classes;
+using Invoice.ViewModels;
 using Invoice.ViewModels.Invoice.ViewModels;
 using ModernWpf;
 using System.Collections.ObjectModel;

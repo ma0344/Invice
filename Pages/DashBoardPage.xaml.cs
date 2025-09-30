@@ -1,4 +1,7 @@
-﻿using Invoice.ViewModels;
+﻿using Invoice.Accounting;
+using Invoice.Classes;
+using Invoice.Pages;
+using Invoice.ViewModels;
 using Invoice.ViewModels.Invoice.ViewModels;
 using ModernWpf;
 using ModernWpf.Controls;

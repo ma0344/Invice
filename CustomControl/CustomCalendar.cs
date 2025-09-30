@@ -8,7 +8,6 @@ namespace Invoice.CustomControl
         public delegate void MonthSelectedEventHandler(object sender, CalendarDateChangedEventArgs e);
         public event  MonthSelectedEventHandler? MonthSelected;
         private bool _isHandlingEvent = false;
-        private int? _returnDate;
         public int? ReturnDay
         {
             get { return (int?)GetValue(ReturnDayProperty); }
@@ -28,12 +27,11 @@ namespace Invoice.CustomControl
             DisplayMode = CalendarMode.Year;
         }
 
-        public static readonly DependencyProperty ReturnDayProperty =
-    DependencyProperty.Register(
-        nameof(ReturnDay),
-        typeof(int?),
-        typeof(CustomCalendar),
-        new PropertyMetadata(1, OnReturnDayChanged, CorectReturnDate));
+        public static readonly DependencyProperty ReturnDayProperty = DependencyProperty.Register(
+                                                                            nameof(ReturnDay),
+                                                                            typeof(int?),
+                                                                            typeof(CustomCalendar),
+                                                                            new PropertyMetadata(1, OnReturnDayChanged, CorectReturnDate));
 
         private static void OnReturnDayChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
@@ -76,12 +74,10 @@ namespace Invoice.CustomControl
             _isHandlingEvent = false;
         }
 
-        private void CustomCalendar_Loaded(object sender, RoutedEventArgs e)
+        private void CustomCalendar_Loaded(object? sender, RoutedEventArgs e)
         {
             //DisplayMode = CalendarMode.Year;
         }
-
-        private static readonly Func<DateTime> GetCurrentDate = () => DateTime.Now;
 
         private void CustomCalendar_DisplayDateChanged(object? sender, CalendarDateChangedEventArgs e)
         {
@@ -92,7 +88,7 @@ namespace Invoice.CustomControl
                     OnMonthSelected(sender, e);
         }
 
-        protected virtual void OnMonthSelected(object sender, CalendarDateChangedEventArgs? e)
+        protected virtual void OnMonthSelected(object? sender, CalendarDateChangedEventArgs? e)
         {
             MonthSelected?.Invoke(this, e);
         }

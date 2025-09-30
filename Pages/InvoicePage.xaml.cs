@@ -26,6 +26,9 @@ using Controls = System.Windows.Controls;
 using MS.Internal;
 using System.Reflection;
 using MigraDoc.DocumentObjectModel.Tables;
+using Invoice.Classes;
+using Invoice.Accounting;
+using Invoice.Pages;
 
 namespace Invoice
 {
@@ -34,27 +37,23 @@ namespace Invoice
     /// </summary>
     public partial class InvoicePage : Controls.Page
     {
-        private CustomerViewModel _customerVM;
-        private PaymentViewModel _pVM;
-        private SettingsViewModel _sVM;
-        private InvoiceViewModel vm;
+        private readonly CustomerViewModel _customerVM;
+        private readonly PaymentViewModel _pVM;
+        private readonly SettingsViewModel _sVM;
+        private readonly InvoiceViewModel vm;
         private bool isEditing = false;
         private bool isInitializing = true;
         private bool isFirstLoading = true;
         private bool addFromCopy = false;
         public CultureInfo cultureInfo = new("ja-JP");
-        InvoiceClass CurrentInvoice;
-        private InvoiceFiterParam filterParam = new();
-        private MainWindow mainWindow;
-        private bool DebugSwitch = false;
+        private readonly InvoiceFiterParam filterParam = new();
+        private readonly MainWindow mainWindow;
 
         private int prevTransactionTypeId = 0;
 
-        SlipNumberClass SlipNumberInfo = new();
         public InvoicePage(MainWindowViewModel mainWindowViewModel)
         {
             InitializeComponent();
-            DebugSwitch = mainWindowViewModel.DebugOutIsOn;
             this.Loaded += InvoicePage_Loaded;
             vm = mainWindowViewModel.InvoiceVM;
             _customerVM = mainWindowViewModel.CustomerVM;
@@ -66,10 +65,10 @@ namespace Invoice
             cultureInfo.DateTimeFormat.ShortDatePattern = "ggy年M月d日";
             Thread.CurrentThread.CurrentCulture = cultureInfo;
             Thread.CurrentThread.CurrentUICulture = cultureInfo;
-            vm.InvoiceCollectionViewSource = new CollectionViewSource();
-            vm.InvoiceCollectionViewSource.Source = vm.InvoiceClassList;
-
-            CurrentInvoice = vm.CurrentInvoice;
+            vm.InvoiceCollectionViewSource = new()
+            {
+                Source = vm.InvoiceClassList
+            };
 
             EventManager.RegisterClassHandler(typeof(MainWindow), PreviewMouseDownEvent, new MouseButtonEventHandler(MainWindow_MouseDown));
 
@@ -89,33 +88,53 @@ namespace Invoice
 
         private void InvoiceFilter(InvoiceFiterParam param)
         {
-            var source = vm.InvoiceCollectionViewSource;
-            source.Filter += (sender, e) =>
+            if (vm.InvoiceCollectionViewSource is CollectionViewSource source)
             {
-                if (e.Item is InvoiceClass invoice)
+                //source.Filter += (sender, e) =>
+                //{
+                //    if (e.Item is InvoiceClass invoice)
+                //    {
+                //        if ((param.CustomerId == 0 || invoice.CustomerId == param.CustomerId) &&
+                //            (param.InvoiceStatusId == 0 || invoice.InvoiceStatusId == param.InvoiceStatusId) &&
+                //            (param.TransactionTypeId == 0 || invoice.TransactionTypeId == param.TransactionTypeId) &&
+                //            (param.IssueDate == null || (StartOfMonth(param.IssueDate) <= invoice.IssueDate && invoice.IssueDate <= EndOfMonth(param.IssueDate))) &&
+                //            (param.DueDate == null || invoice.DueDate == param.DueDate) &&
+                //            (param.PaymentDate == null || invoice.PaymentDate == param.PaymentDate) &&
+                //            (string.IsNullOrWhiteSpace(param.Subject) || invoice.Subject == param.Subject) &&
+                //            (param.InvoiceId == 0 || invoice.InvoiceId == param.InvoiceId))
+                //            e.Accepted = true;
+                //        else
+                //            e.Accepted = false;
+                //    }
+                //};
+                source.Filter += (sender, e) =>
                 {
-                    if ((param.CustomerId == 0 || invoice.CustomerId == param.CustomerId) &&
-                        (param.InvoiceStatusId == 0 || invoice.InvoiceStatusId == param.InvoiceStatusId) &&
-                        (param.TransactionTypeId == 0 || invoice.TransactionTypeId == param.TransactionTypeId) &&
-                        (param.IssueDate == null || (StartOfMonth(param.IssueDate) <= invoice.IssueDate && invoice.IssueDate <= EndOfMonth(param.IssueDate))) &&
-                        (param.DueDate == null || invoice.DueDate == param.DueDate) &&
-                        (param.PaymentDate == null || invoice.PaymentDate == param.PaymentDate) &&
-                        (string.IsNullOrWhiteSpace(param.Subject) || invoice.Subject == param.Subject) &&
-                        (param.InvoiceId == 0 || invoice.InvoiceId == param.InvoiceId))
-                        e.Accepted = true;
-                    else
-                        e.Accepted = false;
-                }
-            };
-            if (isFirstLoading)
-            {
-                source.SortDescriptions.Clear();
-                source.SortDescriptions.Add(new SortDescription(nameof(InvoiceClass.IssueDate), ListSortDirection.Descending));
-            }
+                    if (e.Item is InvoiceClass invoice)
+                    {
+                        var conditions = new List<bool>
+                        {
+                            param.CustomerId == 0 || invoice.CustomerId == param.CustomerId,
+                            param.InvoiceStatusId == 0 || invoice.InvoiceStatusId == param.InvoiceStatusId,
+                            param.TransactionTypeId == 0 || invoice.TransactionTypeId == param.TransactionTypeId,
+                            param.IssueDate == null || (StartOfMonth(param.IssueDate) <= invoice.IssueDate && invoice.IssueDate <= EndOfMonth(param.IssueDate)),
+                            param.DueDate == null || invoice.DueDate == param.DueDate,
+                            param.PaymentDate == null || invoice.PaymentDate == param.PaymentDate,
+                            string.IsNullOrWhiteSpace(param.Subject) || invoice.Subject == param.Subject,
+                            param.InvoiceId == 0 || invoice.InvoiceId == param.InvoiceId
+                        };
+                        e.Accepted = conditions.All(c => c);
+                    }
+                };
 
+                if (isFirstLoading)
+                {
+                    source.SortDescriptions.Clear();
+                    source.SortDescriptions.Add(new SortDescription(nameof(InvoiceClass.IssueDate), ListSortDirection.Descending));
+                }
+            }
         }
 
-        private DateTime StartOfMonth(DateTime? date)
+        private static DateTime StartOfMonth(DateTime? date)
         {
             if (date.HasValue) return new DateTime(date.Value.Year, date.Value.Month, 1);
             else
@@ -123,7 +142,7 @@ namespace Invoice
             
         }
 
-        private DateTime EndOfMonth(DateTime? date)
+        private static DateTime EndOfMonth(DateTime? date)
         {
             if (date.HasValue) return new DateTime(date.Value.Year, date.Value.Month, DateTime.DaysInMonth(date.Value.Year, date.Value.Month));
             else
@@ -133,15 +152,18 @@ namespace Invoice
         private void InvoicePage_Loaded(object sender, RoutedEventArgs e)
         {
             vm.ReloadInvoiceList();
-            vm.InvoiceCollectionViewSource.Source = vm.InvoiceClassList;
-            InvoiceFilter(filterParam);
-            if (isInitializing)
+            if (vm.InvoiceCollectionViewSource is CollectionViewSource viewSource)
             {
-                var arrow = FilterExpander.FindDescendantByName("arrow");
-                var grid = arrow.Parent as Grid;
-                grid.HorizontalAlignment = HorizontalAlignment.Right;
+                viewSource.Source = vm.InvoiceClassList;
+                InvoiceFilter(filterParam);
+                if (isInitializing)
+                {
+                    var arrow = FilterExpander.FindDescendantByName("arrow");
+                    if (arrow != null && arrow.Parent is Grid grid)
+                        grid.HorizontalAlignment = HorizontalAlignment.Right;
+                }
+                isFirstLoading = false;
             }
-            isFirstLoading = false;
         }
 
         private void DateBox_DateSelected(object sender, CalendarDateChangedEventArgs e)
@@ -172,8 +194,8 @@ namespace Invoice
             Border pane = InvoiceDetailPane;
             if (InvoicePageContentsGrid.ActualHeight < pane.Height)
             {
-                var mainWindow = Application.Current.MainWindow as MainWindow;
-                mainWindow.Height += pane.Height - InvoicePageContentsGrid.ActualHeight;
+                if(Application.Current.MainWindow is MainWindow mainWindow)
+                    mainWindow.Height += pane.Height - InvoicePageContentsGrid.ActualHeight;
             }
             else
             {
@@ -189,7 +211,7 @@ namespace Invoice
                 EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
             };
             slideUpAnimation.Completed += SlideUpAnimation_Completed;
-            renderTransform.BeginAnimation(System.Windows.Media.TranslateTransform.YProperty, slideUpAnimation);
+            renderTransform.BeginAnimation(TranslateTransform.YProperty, slideUpAnimation);
 
 
 
@@ -202,18 +224,20 @@ namespace Invoice
 
         private void HideDetailPane()
         {
-            var renderTransform = InvoiceDetailPane.RenderTransform as System.Windows.Media.TranslateTransform;
-            var slideDownAnimation = new DoubleAnimation
+            if(InvoiceDetailPane.RenderTransform is TranslateTransform renderTransform)
             {
-                From = 0,
-                To = InvoiceDetailPane.Height,
-                Duration = TimeSpan.FromMilliseconds(300),
-                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
-            };
-            renderTransform.BeginAnimation(System.Windows.Media.TranslateTransform.YProperty, slideDownAnimation);
-            //pane.Visibility = Visibility.Collapsed;
-            InvoicePageContentsGrid.IsEnabled = true;
-            vm.CurrentInvoice = new InvoiceClass();
+                var slideDownAnimation = new DoubleAnimation
+                {
+                    From = 0,
+                    To = InvoiceDetailPane.Height,
+                    Duration = TimeSpan.FromMilliseconds(300),
+                    EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+                };
+                renderTransform.BeginAnimation(TranslateTransform.YProperty, slideDownAnimation);
+                //pane.Visibility = Visibility.Collapsed;
+                InvoicePageContentsGrid.IsEnabled = true;
+                vm.CurrentInvoice = new InvoiceClass();
+            }
         }
 
         private void AddInvoiceButton_Click(object sender, RoutedEventArgs e)
@@ -237,7 +261,7 @@ namespace Invoice
                 issueDate = new DateTime(DateTime.Today.Year, DateTime.Today.Month, DateTime.DaysInMonth(DateTime.Today.Year, DateTime.Today.Month));
             }
             vm.CurrentInvoice.IssueDate = issueDate;
-            vm.CurrentInvoice.Subject = $"利用料 {issueDate.ToString("ggy年M月分")}";
+            vm.CurrentInvoice.Subject = $"利用料 {issueDate:ggy年M月分}";
 
             vm.SaveButtonText = "保存";
             vm.PaneTitle = "新規請求書作成";
@@ -273,7 +297,7 @@ namespace Invoice
         {
             if (InvoiceListDataGrid.SelectedItems.Count == 0) return;
             var selectedItemsList = InvoiceListDataGrid.SelectedItems;
-            List<int> idList = new();
+            List<int> idList = [];
             foreach (var item in InvoiceListDataGrid.SelectedItems)
             {
                 if (item is InvoiceClass invoice) idList.Add(invoice.InvoiceId);
@@ -301,7 +325,7 @@ namespace Invoice
                         switch (a)
                         {
                             case MessageBoxResult.Yes:
-                                PaymentClass.TryDeletePaymentById(TypeOfID.Payment, invoiceId,uow);
+                                PaymentClass.TryDeletePaymentById(TypeOfID.Invoice, invoiceId,uow);
                                 break;
                             case MessageBoxResult.No:
                                 PaymentClass.ClearInvoiceIdFromPayment(invoiceId,uow);
@@ -328,11 +352,8 @@ namespace Invoice
 
         private void InvoiceCancelButton_Click(object sender, RoutedEventArgs e)
         {
-            var buttonName = ((Button)sender).Name;
-            var pane = InvoiceDetailPane;
-            
             HideDetailPane();
-            vm.CurrentInvoice = null;
+            vm.CurrentInvoice = new();
         }
 
         private void AddInvoiceItemButton_Click(object sender, RoutedEventArgs e)
@@ -341,8 +362,10 @@ namespace Invoice
             
             if (vm != null)
             {
-                var newItem = new InvoiceItemClass();
-                newItem.ItemOrder = vm.CurrentInvoice.InvoiceItems.Count + 1;
+                var newItem = new InvoiceItemClass()
+                {
+                    ItemOrder = vm.CurrentInvoice.InvoiceItems.Count + 1
+                };
                 vm.CurrentInvoice.InvoiceItems.Add(newItem);
                 foreach (var item in vm.CurrentInvoice.InvoiceItems)
                 {
@@ -379,7 +402,7 @@ namespace Invoice
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"{GetType().Name}.{MethodBase.GetCurrentMethod().Name} : {ex.Message}");
+                MessageBox.Show($"{GetType().Name}.{MethodBase.GetCurrentMethod()!.Name} : {ex.Message}");
             }
         }
         
@@ -452,30 +475,29 @@ namespace Invoice
             if (sender is ComboBox comboBox)
             {
                 var selectedItem =comboBox.SelectedItem;
-                var invoiceItem = comboBox.DataContext as InvoiceItemClass;
                 if (isInitializing) return;
-                if (invoiceItem != null && selectedItem != null)
+                if (comboBox.DataContext is InvoiceItemClass invoiceItem)
                 {
+                    if (invoiceItem != null && selectedItem != null)
+                    {
+                        ItemClass? comboBoxSelectedItem = new();
+                        if (selectedItem is InvoiceItemClass item)
+                            comboBoxSelectedItem = vm.ItemClassList.FirstOrDefault(i => i.ItemId == item.ItemId);
+                        else
+                            comboBoxSelectedItem = selectedItem as ItemClass;
 
-                    //if (invoiceItem.ItemId == selectedItem.ItemId && invoiceItem.ItemTotal != 0) return;
-                    ItemClass comboBoxSelectedItem = new();
-                    if (selectedItem is InvoiceItemClass item)
-                        comboBoxSelectedItem = vm.ItemClassList.FirstOrDefault(i => i.ItemId == item.ItemId);
+                        invoiceItem.SetItem(comboBoxSelectedItem!);
+                        var contentPresenter = comboBox.TemplatedParent as ContentPresenter;
+                        var dataGridCell = contentPresenter!.Parent as DataGridCell;
+                        var dataGridCellsPanel = VisualTreeHelper.GetParent(dataGridCell) as DataGridCellsPanel;
+                        var taxTypeNameComboBox = TaxTypeNameComboBox as DataGridComboBoxColumn;
+                        var itemSource = taxTypeNameComboBox.ItemsSource as ListCollectionView;
+                        itemSource!.MoveCurrentToFirst();
+                    }
                     else
-                        comboBoxSelectedItem = selectedItem as ItemClass;
-
-                    invoiceItem.SetItem(comboBoxSelectedItem);
-                    //invoiceItem.ReTotal(invoiceItem);
-                    var contentPresenter = comboBox.TemplatedParent as ContentPresenter;
-                    var dataGridCell = contentPresenter.Parent as DataGridCell;
-                    var dataGridCellsPanel = VisualTreeHelper.GetParent(dataGridCell) as DataGridCellsPanel;
-                    var taxTypeNameComboBox = TaxTypeNameComboBox as DataGridComboBoxColumn;
-                    var itemSource = taxTypeNameComboBox.ItemsSource as ListCollectionView;
-                    itemSource.MoveCurrentToFirst();
-                }
-                else
-                {
-                    if (comboBox.DataContext == null) return;
+                    {
+                        if (comboBox.DataContext == null) return;
+                    }
                 }
             }
 
@@ -483,8 +505,7 @@ namespace Invoice
 
         private void InvoiceIssueDate_SelectedDateChanged(object sender, SelectionChangedEventArgs e)
         {
-            var datePicker = sender as DatePicker;
-            if (datePicker.SelectedDate != null && vm != null)
+            if (sender is DatePicker datePicker && datePicker.SelectedDate != null && vm != null)
             {
                 var issueDate = (DateTime)datePicker.SelectedDate;
                 vm.CurrentInvoice.IssueDateString = issueDate.ToShortDateString();
@@ -497,15 +518,9 @@ namespace Invoice
 
         private void InvoiceName_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (e.AddedItems.Count == 0) return;
-            var item = e.AddedItems[0] as CustomerClass;
-            if (item.CustomerId == 0) return;
-
-            var comboBox = sender as ComboBox;
-            var customerItem = comboBox.SelectedItem as CustomerClass;
-            if (customerItem.CustomerId > 0)
+            if (e.AddedItems.Count > 0 && e.AddedItems[0] is CustomerClass item && item.CustomerId > 0 && sender is ComboBox comboBox && comboBox.SelectedItem is CustomerClass customerItem && customerItem.CustomerId > 0)
             {
-                vm.CurrentInvoice.CustomerName = _customerVM.CustomerClassList.FirstOrDefault(c => c.CustomerId == customerItem.CustomerId).CustomerName;
+                    vm.CurrentInvoice.CustomerName = _customerVM.CustomerClassList.FirstOrDefault(c => c.CustomerId == customerItem.CustomerId)!.CustomerName;
             }
         }
 
@@ -519,7 +534,7 @@ namespace Invoice
                 {
                     
                     row.IsSelected = true;
-                    VisualTreeHelperExtensions.FindVisualChildByName<CheckBox>(row, "GridRowCheckBox").IsChecked = true;
+                    VisualTreeHelperExtensions.FindVisualChildByName<CheckBox>(row, "GridRowCheckBox")!.IsChecked = true;
                 }
             }
         }
@@ -533,7 +548,7 @@ namespace Invoice
                 if (container is DataGridRow row)
                 {
                     row.IsSelected = false;
-                    VisualTreeHelperExtensions.FindVisualChildByName<CheckBox>(row, "GridRowCheckBox").IsChecked = false;
+                    VisualTreeHelperExtensions.FindVisualChildByName<CheckBox>(row, "GridRowCheckBox")!.IsChecked = false;
 
                 }
             }
@@ -542,20 +557,22 @@ namespace Invoice
 
         private void InvoiceCheckBox_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            var checkBox = sender as CheckBox;
-            var InvoiceItem = checkBox.FindAscendant<DataGridRow>();
-            if (InvoiceItem != null)
+            if(sender is CheckBox checkBox)
             {
-                InvoiceItem.IsSelected = checkBox.IsChecked == false;
+                var InvoiceItem = checkBox.FindAscendant<DataGridRow>();
+                if (InvoiceItem != null)
+                {
+                    InvoiceItem.IsSelected = checkBox.IsChecked == false;
+                }
+                e.Handled = true;
             }
-            e.Handled = true;
         }
 
         private void DeleteInvoiceItemButton_Click(object sender, RoutedEventArgs e)
         {
             var dataGrid = InvoiceItemsDataGrid;
             var selectedItems = dataGrid.SelectedItems;
-            List<int> orderList = new ();
+            List<int> orderList = [];
             foreach (var item in selectedItems)
             {
                 if (item is InvoiceItemClass invoiceItem) orderList.Add(invoiceItem.ItemOrder);
@@ -615,16 +632,16 @@ namespace Invoice
 
         }
 
-        private List<InvoiceClass> GetSelectedItemsInDisplayOrder(DataGrid dataGrid)
+        private static List<InvoiceClass> GetSelectedItemsInDisplayOrder(DataGrid dataGrid)
         {
             var selectedItems = dataGrid.SelectedItems.Cast<InvoiceClass>().ToList();
             var displayOrderItems = new List<InvoiceClass>();
 
             foreach (var item in dataGrid.Items)
             {
-                if (selectedItems.Contains(item))
+                if (selectedItems.Contains(item) && item is InvoiceClass invoice)
                 {
-                    displayOrderItems.Add(item as InvoiceClass);
+                    displayOrderItems.Add(invoice);
                 }
             }
 
@@ -635,12 +652,15 @@ namespace Invoice
         {
             if(InvoiceListDataGrid.SelectedItems.Count > 0)
             {
+                var outputDir = SettingsManager.Get("OutputDirectory");
+                if (string.IsNullOrWhiteSpace(outputDir))
+                    outputDir = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
                 foreach (var item in InvoiceListDataGrid.SelectedItems)
                 {
                     if (item is InvoiceClass invoice)
                     {
                         InvoicePdfGenerator generator = new();
-                        var fileName = FileNameHelper.GenerateInvoiceFilename(@"c:\users\ma\desktop", invoice);
+                        var fileName = FileNameHelper.GenerateInvoiceFilename(outputDir, invoice);
                         if (invoice.InvoiceItems.Count <= 0)
                         {
                             var items = InvoiceItemClass.GetInvoiceItemsByInvoiceId(invoice.InvoiceId);
@@ -655,9 +675,9 @@ namespace Invoice
 
         private void ContextMenuDeposit_Click(object sender, RoutedEventArgs e)
         {
-            if (InvoiceListDataGrid.SelectedItems.Count > 0)
+            if (InvoiceListDataGrid.SelectedItems.Count > 0 && InvoiceListDataGrid.SelectedItems[0] is InvoiceClass invoice)
             {
-                vm.CurrentInvoice = InvoiceListDataGrid.SelectedItems[0] as InvoiceClass;
+                vm.CurrentInvoice = invoice;
                 System.Windows.Controls.Page paymentPage = mainWindow.Payment;
                 vm.DepositFromInvoicePage = true;
                 mainWindow.MainFrame.Navigate(paymentPage);
@@ -669,7 +689,7 @@ namespace Invoice
         {
             if (sender is MenuItem menuItem)
             {
-                var status = menuItem.Header.ToString();
+                var status = menuItem.Header.ToString() ?? "";
                 var statusList = vm.InvoiceStatusClassList;
                 var dataGrid = InvoiceListDataGrid;
                 var selectedItems = dataGrid.SelectedItems;
@@ -678,7 +698,7 @@ namespace Invoice
                     if (item is InvoiceClass invoice)
                     {
                         invoice.InvoiceStatus = status;
-                        invoice.InvoiceStatusId = statusList.FirstOrDefault(st => st.InvoiceStatus == status).InvoiceStatusId;
+                        invoice.InvoiceStatusId = statusList.FirstOrDefault(st => st.InvoiceStatus == status)!.InvoiceStatusId;
                         invoice.TryUpdateInvoice();
                     }
                 }
@@ -736,49 +756,44 @@ namespace Invoice
         {
 
             var comboBox = TransactionTypeComboBox;
-            var selectedItem = comboBox.SelectedItem as TransactionTypeClass;
-            if (selectedItem == null) return;
-            var invoice = vm.CurrentInvoice;
             var balanceList = _customerVM.BalanceClassList;
-            var isNewInvoice = invoice.InvoiceId == 0;
             var customerList = _customerVM.CustomerClassList;
-            
+            var invoice = vm.CurrentInvoice;
 
-            if (isNewInvoice)
+            if (comboBox.SelectedItem is TransactionTypeClass selectedItem && selectedItem != null )
             {
-
-            }
-            if (selectedItem.TransactionName == "前受金")
-            {
-                var customer = customerList.FirstOrDefault(c => c.CustomerId == invoice.CustomerId);
-                var customerBalanceList = balanceList
-                    .Where(
-                    b => b.CustomerId == customer.CustomerId
-                      && b.TransactionDate <= invoice.IssueDate
-                      && b.InvoiceId != invoice.InvoiceId
-                      )
-                    .ToList();
-                var debitTotal = customerBalanceList.Where(b => b.DebOrCreId == 1).Sum(b => b.TransactionAmount);
-                var creditTotal = customerBalanceList.Where(b => b.DebOrCreId == 2).Sum(b => b.TransactionAmount);
-                var depositUntilIssueDate = creditTotal - debitTotal;// 前受残高
-                customerBalanceList.ForEach(bal => Debug.WriteLine($"{bal.InvoiceId} : {bal.TransactionDate} : {bal.DebOrCreId} : {bal.TransactionAmount}"));
-                var afterPaydDeposit = depositUntilIssueDate - invoice.ItemsTotal;// 当該請求額支払後 前受残高
-                var vallist = customerBalanceList.Where(b => b.TransactionTypeId == 1);
-                var paydByDeposit = afterPaydDeposit <= 0 ? depositUntilIssueDate : invoice.ItemsTotal;// 前受精算額（前受が不足の場合は前受残高）
-                // var invoiceTotal = invoice.ItemsTotal - paydByDeposit;// 当該請求書による請求額
-                vm.CurrentInvoice.DepositUntilIssueDate = depositUntilIssueDate;
-                vm.CurrentInvoice.PaydByDeposit = paydByDeposit;
-                var total = vm.CurrentInvoice.InvoiceTotal;
-                InvoiceAmountGrid.Visibility = Visibility.Visible;
-                DepositAmountGrid.Visibility = Visibility.Visible;
-            }
-            else
-            {
-                vm.CurrentInvoice.PaydByDeposit = 0;
-                vm.CurrentInvoice.DepositUntilIssueDate = 0;
-                var total = vm.CurrentInvoice.InvoiceTotal;
-                InvoiceAmountGrid.Visibility = Visibility.Collapsed;
-                DepositAmountGrid.Visibility = Visibility.Collapsed;
+                if (selectedItem.TransactionName == "前受金")
+                {
+                    var customer = customerList.FirstOrDefault(c => c.CustomerId == invoice.CustomerId);
+                    var customerBalanceList = balanceList
+                        .Where(
+                        b => b.CustomerId == customer!.CustomerId
+                          && b.TransactionDate <= invoice.IssueDate
+                          && b.InvoiceId != invoice.InvoiceId
+                          )
+                        .ToList();
+                    var debitTotal = customerBalanceList.Where(b => b.DebOrCreId == 1).Sum(b => b.TransactionAmount);
+                    var creditTotal = customerBalanceList.Where(b => b.DebOrCreId == 2).Sum(b => b.TransactionAmount);
+                    var depositUntilIssueDate = creditTotal - debitTotal;// 前受残高
+                    customerBalanceList.ForEach(bal => Debug.WriteLine($"{bal.InvoiceId} : {bal.TransactionDate} : {bal.DebOrCreId} : {bal.TransactionAmount}"));
+                    var afterPaydDeposit = depositUntilIssueDate - invoice.ItemsTotal;// 当該請求額支払後 前受残高
+                    var vallist = customerBalanceList.Where(b => b.TransactionTypeId == 1);
+                    var paydByDeposit = afterPaydDeposit <= 0 ? depositUntilIssueDate : invoice.ItemsTotal;// 前受精算額（前受が不足の場合は前受残高）
+                    // var invoiceTotal = invoice.ItemsTotal - paydByDeposit;// 当該請求書による請求額
+                    vm.CurrentInvoice.DepositUntilIssueDate = depositUntilIssueDate;
+                    vm.CurrentInvoice.PaydByDeposit = paydByDeposit;
+                    var total = vm.CurrentInvoice.InvoiceTotal;
+                    InvoiceAmountGrid.Visibility = Visibility.Visible;
+                    DepositAmountGrid.Visibility = Visibility.Visible;
+                }
+                else
+                {
+                    vm.CurrentInvoice.PaydByDeposit = 0;
+                    vm.CurrentInvoice.DepositUntilIssueDate = 0;
+                    var total = vm.CurrentInvoice.InvoiceTotal;
+                    InvoiceAmountGrid.Visibility = Visibility.Collapsed;
+                    DepositAmountGrid.Visibility = Visibility.Collapsed;
+                }
             }
         }
 
@@ -805,8 +820,8 @@ namespace Invoice
         {
             if (sender is TextBox textbox)
             {
-                InputMethod.SetIsInputMethodEnabled(mainWindow, false);
-                InputMethod.SetPreferredImeState(mainWindow, InputMethodState.Off);
+                InputMethod.SetIsInputMethodEnabled(textbox, false);
+                InputMethod.SetPreferredImeState(textbox, InputMethodState.Off);
             }
         }
 

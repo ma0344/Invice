@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Media;
 
-namespace Invoice
+namespace Invoice.Classes
 {
     public interface ILoggable
     {
@@ -31,7 +31,9 @@ namespace Invoice
             Debug.WriteLine($"Exited: {loggable.GetType().Name}.{methodName}");
         }
     }
-    
+
+
+
     public class UnitOfWork : IDisposable
     {
         private readonly MySqlConnection _connection;
@@ -123,6 +125,8 @@ namespace Invoice
         }
 
     }
+
+
     public class TrackedCommand
     {
         private readonly MySqlCommand _innerCommand;
@@ -216,11 +220,11 @@ namespace Invoice
     public class InvoiceItemsClass_ : ObservableCollection<InvoiceItemClass>, INotifyPropertyChanged, ILoggable
     {
 
-        public int ItemsTotal { get => this.Items.Sum(i => i.ItemTotal); }
+        public int ItemsTotal { get => Items.Sum(i => i.ItemTotal); }
 
-        public int Tax { get => this.Items.Sum(i => i.Tax); }
+        public int Tax { get => Items.Sum(i => i.Tax); }
 
-        public int ItemsSubTotal { get => this.Items.Sum(i => i.ItemSubTotal); }
+        public int ItemsSubTotal { get => Items.Sum(i => i.ItemSubTotal); }
 
 
         public InvoiceItemsClass_(List<InvoiceItemClass>? items = null)

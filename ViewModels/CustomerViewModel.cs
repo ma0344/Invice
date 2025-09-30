@@ -13,6 +13,7 @@ using System.Windows.Data;
 using System.Windows.Input;
 using System.Collections.Specialized;
 using Invoice.ViewModels.Invoice.ViewModels;
+using Invoice.Classes;
 
 namespace Invoice.ViewModels
 {
@@ -26,8 +27,8 @@ namespace Invoice.ViewModels
             var balances = BalanceClass.GetAllBalances();
             BalanceClassList = new ObservableCollection<BalanceClass>(balances);
             var mainWindow = Application.Current.MainWindow as MainWindow;
-            var dataContext = mainWindow.DataContext as MainWindowViewModel;
-            var transactionTypes = dataContext.SettingsVM.TransactionTypeClassList;
+            var dataContext = mainWindow!.DataContext as MainWindowViewModel;
+            var transactionTypes = dataContext!.SettingsVM.TransactionTypeClassList;
             foreach (BalanceClass balance in BalanceClassList)
             {
                 balance.CustomerName = CustomerClassList.FirstOrDefault(c => c.CustomerId == balance.CustomerId)?.CustomerName ?? "不明";
@@ -35,12 +36,6 @@ namespace Invoice.ViewModels
             }
         }
     
-        enum SaveMode
-        {
-            Add = 0,
-            Edit = 1,
-        }
-
         private int _CustomerBalance = 0;
         public int CustomerBalance
         {
@@ -129,25 +124,6 @@ namespace Invoice.ViewModels
             }
         }
 
-        private void CustomerList_CollectionChanged(object sender,NotifyCollectionChangedEventArgs e)
-        {
-            if (e.NewItems != null)
-            {
-                foreach(CustomerClass customer in e.NewItems)
-                {
-                    customer.PropertyChanged += Customer_PropertyChanged;
-
-                }
-            }
-            if (e.OldItems != null)
-            {
-                foreach(CustomerClass customer in e.OldItems)
-                {
-                    customer.PropertyChanged += Customer_PropertyChanged;
-                }
-            }
-        }
-
         private void Customer_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             if (e.PropertyName == nameof(CustomerClass.CustomerVisible))
@@ -164,23 +140,7 @@ namespace Invoice.ViewModels
                 OnPropertyChanged(nameof(CustomerClassList));
             }
         }
-        private bool CanSaveCustomer(CustomerClass info, SaveMode mode)
-        {
 
-            if (info == null)
-                return false;
-
-            // 必須項目のチェック
-            if (string.IsNullOrWhiteSpace(info.CustomerName))
-                return false;
-
-            if (string.IsNullOrWhiteSpace(info.CustomerKana))
-                return false;
-
-            // その他の検証ルールを追加可能
-
-            return true;
-        }
         public void ReloadCustomers(bool selectAll)
         {
             var customers = CustomerClass.GetCustomers();

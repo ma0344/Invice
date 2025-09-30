@@ -10,8 +10,10 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Reflection;
+using Invoice.Classes;
+using System.Diagnostics;
 
-namespace Invoice
+namespace Invoice.Accounting
 {
     public enum MakeType
     {
@@ -213,8 +215,9 @@ namespace Invoice
             rowCounter = 0;
             AccountingDataBaseClass convertedLineData;
             var convertedData = new List<AccountingDataBaseClass>();
-            foreach (InvoiceClass invoice in invoices)
+            foreach (InvoiceClass orgInvoice in invoices)
             {
+                var invoice = orgInvoice.DeepClone();
                 if (reqData is not null)
                 {
                     rowCounter++;
@@ -234,12 +237,16 @@ namespace Invoice
                     var accountingDic = convertedLineData.AccountingDic;
                     foreach (var item in invoice.InvoiceItems)
                     {
-                        if (item.ItemCode == "99") continue;
+                        if (item.ItemCode == "99" || item.ItemName == "特定障害者特別給付として国保連請求済み") continue;
                         rowCounter++;
                         var creditCode = GetAccountCode(item.ItemName);
                         var creditSubCode = GetItemSubCode(item.ItemName);
-                        if (item.ItemName.Contains("家賃") && invoice.InvoiceItems.Any(i => i.ItemCode == "99"))
-                            item.UnitPrice += invoice.InvoiceItems.First(i => i.ItemCode == "99").ItemTotal;
+
+                        if (item.ItemName.Contains("家賃") && invoice.InvoiceItems.Any(i => (i.ItemCode == "99" || i.ItemName == "特定障害者特別給付として国保連請求済み")))
+                        {
+                            item.UnitPrice = item.UnitPrice * item.Quantity + invoice.InvoiceItems.First(i => (i.ItemCode == "99" || i.ItemName == "特定障害者特別給付として国保連請求済み")).ItemTotal;
+                            item.Quantity = 1;
+                        }
                         convertedLineData = new AccountingDataBaseClass
                         (
                             SlipNumber: reqData.VoucherNumber,
@@ -342,7 +349,7 @@ namespace Invoice
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"{GetType().Name}.{MethodBase.GetCurrentMethod().Name} : {ex.Message}");
+                MessageBox.Show($"{GetType().Name}.{MethodBase.GetCurrentMethod()!.Name} : {ex.Message}");
             }
         }
 

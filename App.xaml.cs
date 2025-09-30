@@ -20,7 +20,7 @@ namespace Invoice
         private void Application_Startup(object sender, StartupEventArgs e)
         {
             // Load the main window
-            MainWindow mainWindow = new MainWindow();
+            MainWindow mainWindow = new();
             mainWindow.Show();
         }
 
@@ -42,57 +42,40 @@ namespace Invoice
         private void TextBox_GotFocus(object sender, RoutedEventArgs e)
 
         {
-
             // Select all text only if the mouse isn't down.
-
             // This makes tabbing to the textbox select all.
-
-            TextBox textBox = sender as TextBox;
-
-            if (Mouse.LeftButton == MouseButtonState.Released)
-
+            if (sender is TextBox textBox)
             {
-
-                textBox.SelectAll();
-
-                textBox.Tag = true; //use the tag propety to signal that the box is already focused
-
+                if (Mouse.LeftButton == MouseButtonState.Released)
+                {
+                    textBox.SelectAll();
+                    textBox.Tag = true; //use the tag propety to signal that the box is already focused
+                }
             }
-
         }
 
         private void TextBox_LostFocus(object sender, RoutedEventArgs e)
-
         {
-
-            TextBox textBox = sender as TextBox;
-
-            textBox.SelectionLength = 0;
-
-            textBox.Tag = false; //use the tag propety to signal that the box is already focused
-
+            if (sender is TextBox textBox)
+            {
+                textBox.SelectionLength = 0;
+                textBox.Tag = false; //use the tag propety to signal that the box is already focused
+            }
         }
 
         private void TextBox_PreviewMouseUp(object sender, RoutedEventArgs e)
 
         {
-
             // If a user clicked in, want to select all text, unless they made a different selection...
-
             // so select all only if the textbox isn't already focused, and the user hasn't selected any text.
-
-            TextBox textBox = sender as TextBox;
-
-            if ((textBox.Tag == null || (bool)textBox.Tag == false) && textBox.SelectionLength == 0)
-
+            if (sender is TextBox textBox)
             {
-
-                textBox.Tag = true; //use the tag propety to signal that the box is already focused
-
-                textBox.SelectAll();
-
+                if ((textBox.Tag == null || (bool)textBox.Tag == false) && textBox.SelectionLength == 0)
+                {
+                    textBox.Tag = true; //use the tag propety to signal that the box is already focused
+                    textBox.SelectAll();
+                }
             }
-
         }
     }
 
