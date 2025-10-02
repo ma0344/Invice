@@ -101,7 +101,7 @@ namespace Invoice.Classes
                 deposit.PaymentId = null;
                 deposit.CustomerId = invoice.CustomerId;
                 deposit.DepositDate = invoice.IssueDate ?? DateTime.Now;
-                deposit.DepositAmount = invoice.PaydByDeposit;
+                deposit.DepositAmount = invoice.PaidByDeposit;
                 deposit.SlipNumber = invoice.SlipNumber ?? "";
                 deposit.DebOrCreId = 1;
             }
@@ -175,7 +175,7 @@ namespace Invoice.Classes
                 else if (obj is InvoiceClass invoice)
                 {
                     deposit = GetDeposit(TypeOfID.Invoice, invoice.InvoiceId);
-                    if (invoice.PaydByDeposit <= 0)
+                    if (invoice.PaidByDeposit <= 0)
                     {
                         deposit?.DeleteDeposit(uow);
                         return true;
@@ -190,7 +190,7 @@ namespace Invoice.Classes
                     deposit.PaymentId = null;
                     deposit.CustomerId = invoice.CustomerId;
                     deposit.DepositDate = invoice.PaymentDate ?? DateTime.Now;
-                    deposit.DepositAmount = invoice.PaydByDeposit;
+                    deposit.DepositAmount = invoice.PaidByDeposit;
                     deposit.SlipNumber = invoice.SlipNumber ?? "";
                     deposit.DebOrCreId = 1;
                 }

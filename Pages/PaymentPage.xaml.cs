@@ -362,12 +362,11 @@ namespace Invoice
                 var container = dataGrid.ItemContainerGenerator.ContainerFromItem(item);
                 if (container is DataGridRow row)
                 {
-
-                    row.IsSelected = true;
-                    VisualTreeHelperExtensions.FindVisualChildByName<CheckBox>(row, "GridRowCheckBox")!.IsChecked = false;
+                    row.IsSelected = false; // 修正: 解除
+                    var cb = VisualTreeHelperExtensions.FindVisualChildByName<CheckBox>(row, "GridRowCheckBox");
+                    if (cb != null) cb.IsChecked = false;
                 }
             }
-
         }
         
         private void ShowAllPayment_Toggled(object sender, RoutedEventArgs e)
@@ -556,42 +555,9 @@ namespace Invoice
             var source = paymentVM.PaymentListViewSource;
             var param = paymentFilterParam;
             var sw = ShowAllPayment.IsOn;
-            //source.Filter += (sender, e) =>
-            //{
-            //    if (e.Item is PaymentClass payment)
-            //    {
-            //        if ((param.PaymentId == null || payment.PaymentId == param.PaymentId) &&
-            //            (param.SlipNumber == null || payment.SlipNumber == param.SlipNumber) &&
-            //            (param.CustomerId == null || payment.CustomerId == param.CustomerId) &&
-            //            (param.InvoiceId == null || payment.InvoiceId == param.InvoiceId) &&
-            //            (param.TransactionTypeId == null || payment.TransactionTypeId == param.TransactionTypeId) &&
-            //            (!sw || (MainWindow.StartOfMonth(param.PaymentDate) <= payment.PaymentDate && payment.PaymentDate <= MainWindow.EndOfMonth(param.PaymentDate))) &&
-            //            (param.PaymentAmount == null || payment.PaymentAmount == param.PaymentAmount) &&
-            //            (param.Subject == null || payment.Subject == param.Subject))
-            //            e.Accepted = true;
-            //        else
-            //            e.Accepted = false;
-            //    }
-
-            //};
-            source.Filter += (sender, e) =>
-            {
-                if (e.Item is PaymentClass payment)
-                {
-                    var conditions = new List<bool>
-                    {
-                        param.PaymentId == null || payment.PaymentId == param.PaymentId,
-                        param.SlipNumber == null || payment.SlipNumber == param.SlipNumber,
-                        param.CustomerId == null || payment.CustomerId == param.CustomerId,
-                        param.InvoiceId == null || payment.InvoiceId == param.InvoiceId,
-                        param.TransactionTypeId == null || payment.TransactionTypeId == param.TransactionTypeId,
-                        !sw || (MainWindow.StartOfMonth(param.PaymentDate) <= payment.PaymentDate && payment.PaymentDate <= MainWindow.EndOfMonth(param.PaymentDate)),
-                        param.PaymentAmount == null || payment.PaymentAmount == param.PaymentAmount,
-                        param.Subject == null || payment.Subject == param.Subject
-                    };
-                        e.Accepted = conditions.All(c => c);
-            }
-            };
+            // フィルタ多重登録防止
+            source.Filter -= PaymentListViewSource_Filter;
+            source.Filter += PaymentListViewSource_Filter;
             if (isFirstLoading)
             {
                 source.SortDescriptions.Clear();
@@ -599,50 +565,55 @@ namespace Invoice
             }
         }
 
+        private void PaymentListViewSource_Filter(object sender, FilterEventArgs e)
+        {
+            if (e.Item is PaymentClass payment)
+            {
+                var p = paymentFilterParam;
+                bool sw = ShowAllPayment.IsOn;
+                var conditions = new List<bool>
+                {
+                    p.PaymentId == null || payment.PaymentId == p.PaymentId,
+                    p.SlipNumber == null || payment.SlipNumber == p.SlipNumber,
+                    p.CustomerId == null || payment.CustomerId == p.CustomerId,
+                    p.InvoiceId == null || payment.InvoiceId == p.InvoiceId,
+                    p.TransactionTypeId == null || payment.TransactionTypeId == p.TransactionTypeId,
+                    !sw || (MainWindow.StartOfMonth(p.PaymentDate) <= payment.PaymentDate && payment.PaymentDate <= MainWindow.EndOfMonth(p.PaymentDate)),
+                    p.PaymentAmount == null || payment.PaymentAmount == p.PaymentAmount,
+                    p.Subject == null || payment.Subject == p.Subject
+                };
+                e.Accepted = conditions.All(c => c);
+            }
+        }
+
         private void InvoiceListForPaymentFilter()
         {
             if (paymentVM == null) return;
             var source = paymentVM.InvoiceListForPayment;
-            var param = filterParameter;
-            var sw = DateFilterSwitch;
-            //source.Filter += (sender, e) =>
-            //{
-            //    if (e.Item is InvoiceClass invoice)
-            //    {
-            //        if ((param.CustomerId == 0 || invoice.CustomerId == param.CustomerId) &&
-            //            (param.InvoiceStatusId == 0 || invoice.InvoiceStatusId == param.InvoiceStatusId) &&
-            //            (param.TransactionTypeId == 0 || invoice.TransactionTypeId == param.TransactionTypeId) &&
-            //            (sw.IsOn == false ||
-            //            (MainWindow.StartOfMonth(param.IssueDate) <= invoice.IssueDate && 
-            //            invoice.IssueDate <= MainWindow.EndOfMonth(param.IssueDate))) &&
-            //            (param.DueDate == null || invoice.DueDate == param.DueDate) &&
-            //            (param.PaymentDate == null || invoice.PaymentDate == param.PaymentDate) &&
-            //            (string.IsNullOrWhiteSpace(param.Subject) || invoice.Subject == param.Subject) &&
-            //            (param.InvoiceId == 0 || invoice.InvoiceId == param.InvoiceId))
-            //            e.Accepted = true;
-            //        else
-            //            e.Accepted = false;
-            //    }
-            //};
-            source.Filter += (sender, e) =>
-            {
-                if (e.Item is InvoiceClass invoice)
-                {
-                    var conditions = new List<bool>
-                    {
-                        param.CustomerId == 0 || invoice.CustomerId == param.CustomerId,
-                        param.InvoiceStatusId == 0 || invoice.InvoiceStatusId == param.InvoiceStatusId,
-                        param.TransactionTypeId == 0 || invoice.TransactionTypeId == param.TransactionTypeId,
-                        !sw.IsOn || (MainWindow.StartOfMonth(param.IssueDate) <= invoice.IssueDate && invoice.IssueDate <= MainWindow.EndOfMonth(param.IssueDate)),
-                        (param.DueDate == null || invoice.DueDate == param.DueDate),
-                        (param.PaymentDate == null || invoice.PaymentDate == param.PaymentDate),
-                        (string.IsNullOrWhiteSpace(param.Subject) || invoice.Subject == param.Subject),
-                        (param.InvoiceId == 0 || invoice.InvoiceId == param.InvoiceId)
-                    };
-                    e.Accepted = conditions.All(c => c);
-                }
-            };
+            // フィルタ多重登録防止
+            source.Filter -= InvoiceListForPayment_Filter;
+            source.Filter += InvoiceListForPayment_Filter;
+        }
 
+        private void InvoiceListForPayment_Filter(object sender, FilterEventArgs e)
+        {
+            if (e.Item is InvoiceClass invoice)
+            {
+                var param = filterParameter;
+                var sw = DateFilterSwitch;
+                var conditions = new List<bool>
+                {
+                    param.CustomerId == 0 || invoice.CustomerId == param.CustomerId,
+                    param.InvoiceStatusId == 0 || invoice.InvoiceStatusId == param.InvoiceStatusId,
+                    param.TransactionTypeId == 0 || invoice.TransactionTypeId == param.TransactionTypeId,
+                    !sw.IsOn || (MainWindow.StartOfMonth(param.IssueDate) <= invoice.IssueDate && invoice.IssueDate <= MainWindow.EndOfMonth(param.IssueDate)),
+                    (param.DueDate == null || invoice.DueDate == param.DueDate),
+                    (param.PaymentDate == null || invoice.PaymentDate == param.PaymentDate),
+                    (string.IsNullOrWhiteSpace(param.Subject) || invoice.Subject == param.Subject),
+                    (param.InvoiceId == 0 || invoice.InvoiceId == param.InvoiceId)
+                };
+                e.Accepted = conditions.All(c => c);
+            }
         }
 
         private void ShowDatailPane()

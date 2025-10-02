@@ -117,7 +117,6 @@ namespace Invoice.Classes
             try
             {
                 var balance = new BalanceClass();
-
                 if (obj is PaymentClass payment)
                 {
                     balance.CustomerId = payment.CustomerId;
@@ -141,10 +140,11 @@ namespace Invoice.Classes
                     balance.TransactionDate = invoice.IssueDate ?? DateTime.Now;
                     balance.TransactionTypeId = invoice.TransactionTypeId ?? 0;
                     balance.TransactionAmount = invoice.InvoiceTotal ?? 0;
-                    // 請求金額が0の場合は追加しない すでに請求書がある場合は削除する
                     if (invoice.InvoiceTotal == 0)
                     {
-                        DeleteBalanceById(new IDs(invoiceId: invoice.InvoiceId, depositId: null), unitOfWork);
+                        // 削除 + 再集計
+                        DeleteBalanceById(new IDs(invoiceId: invoice.InvoiceId, paymentId: null), unitOfWork);
+                        CustomerClass.RecalculateAndPersistBalance(invoice.CustomerId, unitOfWork);
                         return true;
                     }
                 }
@@ -173,6 +173,7 @@ namespace Invoice.Classes
                 return false;
             }
         }
+    
         public static void AddBalance(BalanceClass balance, UnitOfWork unitOfWork)
         {
             string query = @"INSERT INTO T_BALANCE (CUSTOMER_ID, INVOICE_ID, PAYMENT_ID, DEPOSIT_ID, SLIP_NUMBER, DEBIT_OR_CREDIT_ID, TRANSACTION_DATE, TRANSACTION_TYPE_ID, TRANSACTION_AMOUNT) " + "\r\n" + "VALUES (@CustomerId, @InvoiceId, @PaymentId, @DepositId, @SlipNumber, @DebOrCreId, @TransactionDate, @TransactionTypeId, @TransactionAmount)";
@@ -188,12 +189,13 @@ namespace Invoice.Classes
             command.Parameters.AddWithValue("@TransactionAmount", balance.TransactionAmount);
             command.ExecuteNonQuery();
             balance.BalanceId = (int)command.LastInsertedId;
+
+            CustomerClass.RecalculateAndPersistBalance(balance.CustomerId, unitOfWork);
         }
 
         // レコードを更新
         public void UpdateBalance(UnitOfWork unitOfWork)
         {
-
             string query = @"UPDATE T_BALANCE SET CUSTOMER_ID = @CustomerId, INVOICE_ID = @InvoiceId, PAYMENT_ID = @PaymentId, DEPOSIT_ID = @DepositId, DEBIT_OR_CREDIT_ID = @DebOrCreId, SLIP_NUMBER = @SlipNumber, TRANSACTION_DATE = @TransactionDate, TRANSACTION_TYPE_ID = @TransactionTypeId, TRANSACTION_AMOUNT = @TransactionAmount WHERE BALANCE_ID = @BalanceId";
             var command = unitOfWork.CreateCommand(query);
             command.Parameters.AddWithValue("@CustomerId", CustomerId);
@@ -207,6 +209,8 @@ namespace Invoice.Classes
             command.Parameters.AddWithValue("@TransactionAmount", TransactionAmount);
             command.Parameters.AddWithValue("@BalanceId", BalanceId);
             command.ExecuteNonQuery();
+
+            CustomerClass.RecalculateAndPersistBalance(CustomerId, unitOfWork);
         }
 
         public static bool TryUpdateBalance(object? obj, UnitOfWork? unitOfWork = null)
@@ -235,12 +239,13 @@ namespace Invoice.Classes
                 }
                 else if (obj is InvoiceClass invoice)
                 {
-                    var balances = GetBalancesById(new IDs(invoiceId: invoice.InvoiceId, depositId: null), uow);
+                    var balances = GetBalancesById(new IDs(invoiceId: invoice.InvoiceId, paymentId: null), uow);
                     if (balances.Count == 0)
                     {
                         TryAddBalance(invoice, uow);
                         return true;
                     }
+                    balance.BalanceId = balances.FirstOrDefault(b => (b.InvoiceId == invoice.InvoiceId && b.DebOrCreId == 1))!.BalanceId;
                     balance.CustomerId = invoice.CustomerId;
                     balance.InvoiceId = invoice.InvoiceId;
                     balance.PaymentId = null;
@@ -288,10 +293,28 @@ namespace Invoice.Classes
 
         public static void DeleteBalanceById(TypeOfID type, int id, UnitOfWork unitOfWork, [CallerMemberName] string _1 = "", [CallerLineNumber] long _2 = 0)
         {
+            // 対象顧客特定
+            string col = type switch
+            {
+                TypeOfID.Customer => "CUSTOMER_ID",
+                TypeOfID.Invoice => "INVOICE_ID",
+                TypeOfID.Payment => "PAYMENT_ID",
+                TypeOfID.Deposit => "DEPOSIT_ID",
+                _ => throw new ArgumentException("Invalid type")
+            };
+            var getCmd = unitOfWork.CreateCommand($"SELECT DISTINCT CUSTOMER_ID FROM T_BALANCE WHERE {col}=@id");
+            getCmd.Parameters.AddWithValue("@id", id);
+            List<int> cids = [];
+            using (var r = getCmd.ExecuteReader())
+                while (r.Read()) cids.Add(r.GetInt32(0));
+
             string query = QueryBuilder.StringBuilder(command: "DELETE", tableName: "T_BALANCE", type);
             var command = unitOfWork.CreateCommand(query);
             command.Parameters.AddWithValue("@id", id);
             command.ExecuteNonQuery();
+
+            foreach (var cid in cids.Distinct())
+                CustomerClass.RecalculateAndPersistBalance(cid, unitOfWork);
         }
         /// <summary>
         /// DeleteBalanceById
@@ -305,18 +328,30 @@ namespace Invoice.Classes
         /// <exception cref="ArgumentException"></exception>
         public static void DeleteBalanceById(IDs ids, UnitOfWork unitOfWork, [CallerMemberName] string _1 = "", [CallerLineNumber] long _2 = 0)
         {
-            string query = "DELETE FROM T_BALANCE WHERE ";
-            CommandBuilder.Builder(ids, query, unitOfWork).ExecuteNonQuery();
+            // 削除前に該当顧客取得
+            string selectQuery = "SELECT DISTINCT CUSTOMER_ID FROM T_BALANCE WHERE ";
+            var selectCmd = CommandBuilder.Builder(ids, selectQuery, unitOfWork);
+            List<int> cids = [];
+            using (var r = selectCmd.ExecuteReader())
+                while (r.Read()) cids.Add(r.GetInt32(0));
+
+            string deleteQuery = "DELETE FROM T_BALANCE WHERE ";
+            CommandBuilder.Builder(ids, deleteQuery, unitOfWork).ExecuteNonQuery();
+
+            foreach (var cid in cids.Distinct())
+                CustomerClass.RecalculateAndPersistBalance(cid, unitOfWork);
         }
 
         // レコードを削除
         public void DeleteBalance(UnitOfWork unitOfWork)
         {
-
+            var customerId = CustomerId;
             string query = "DELETE FROM T_BALANCE WHERE BALANCE_ID = @BalanceId";
             var command = unitOfWork.CreateCommand(query);
             command.Parameters.AddWithValue("@BalanceId", BalanceId);
             command.ExecuteNonQuery();
+
+            CustomerClass.RecalculateAndPersistBalance(customerId, unitOfWork);
         }
     }
 

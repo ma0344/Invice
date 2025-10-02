@@ -359,7 +359,7 @@
                                          HorizontalAlignment="Left"
                                          Width="100" />
                             </Grid>
-                            <Grid Grid.Column="3">
+                            <!--<Grid Grid.Column="3">
                                 <Grid.RowDefinitions>
                                     <RowDefinition />
                                     <RowDefinition />
@@ -374,7 +374,7 @@
                                          HorizontalAlignment="Left"
                                          HorizontalContentAlignment="Center"
                                          Width="100" />
-                            </Grid>
+                            </Grid>-->
                         </Grid>
                         <Grid x:Name="ReceiptNumbersGrid"
                               Grid.Row="2"
@@ -420,7 +420,7 @@
                                          HorizontalAlignment="Left"
                                          Width="100" />
                             </Grid>
-                            <Grid Grid.Column="3">
+                            <!--<Grid Grid.Column="3">
                                 <Grid.RowDefinitions>
                                     <RowDefinition />
                                     <RowDefinition />
@@ -435,7 +435,7 @@
                                             HorizontalAlignment="Left"
                                             HorizontalContentAlignment="Center"
                                             Width="100" />
-                            </Grid>
+                            </Grid>-->
                         </Grid>
                         <StackPanel x:Name="SlipNumberTabButtonStackPanel"
                                     Grid.Row="3"

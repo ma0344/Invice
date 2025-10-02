@@ -311,12 +311,12 @@ namespace Invoice.ViewModels
                 var item = sender as InvoiceItemClass;
                 if (invoice.TransactionTypeId == 2)
                 {
-                    invoice.PaydByDeposit = invoice.DepositUntilIssueDate - invoice.ItemsTotal >= 0 ? invoice.ItemsTotal : invoice.DepositUntilIssueDate;
-                    DepositAmount = invoice.DepositUntilIssueDate - invoice.PaydByDeposit;
+                    invoice.PaidByDeposit = invoice.DepositUntilIssueDate - invoice.ItemsTotal >= 0 ? invoice.ItemsTotal : invoice.DepositUntilIssueDate;
+                    DepositAmount = invoice.DepositUntilIssueDate - invoice.PaidByDeposit;
                 }
                 else
                 {
-                    invoice.PaydByDeposit = 0;
+                    invoice.PaidByDeposit = 0;
                 }
 
                 UpdateTotalAmount();
@@ -328,7 +328,7 @@ namespace Invoice.ViewModels
         {
             //ItemsTotalAmount = CurrentInvoice.InvoiceItems.Sum(item => item.ItemTotal);
             //if (CurrentInvoice == null) return;
-            //CurrentInvoice.PaydByDeposit = CurrentInvoice.DepositUntilIssueDate - CurrentInvoice.ItemsTotal >= 0 ? CurrentInvoice.ItemsTotal : CurrentInvoice.DepositUntilIssueDate;
+            //CurrentInvoice.PaidByDeposit = CurrentInvoice.DepositUntilIssueDate - CurrentInvoice.ItemsTotal >= 0 ? CurrentInvoice.ItemsTotal : CurrentInvoice.DepositUntilIssueDate;
             UpdateTotalAmountEvent?.Invoke(CurrentInvoice, EventArgs.Empty);
 
         }
@@ -342,13 +342,13 @@ namespace Invoice.ViewModels
                 var item = sender as InvoiceItemClass;
                 if (invoice.TransactionTypeId == 2)
                 {
-                    invoice.PaydByDeposit = invoice.DepositUntilIssueDate - invoice.ItemsTotal >= 0 ? invoice.ItemsTotal : invoice.DepositUntilIssueDate;
-                    DepositAmount = invoice.DepositUntilIssueDate - invoice.PaydByDeposit;
+                    invoice.PaidByDeposit = invoice.DepositUntilIssueDate - invoice.ItemsTotal >= 0 ? invoice.ItemsTotal : invoice.DepositUntilIssueDate;
+                    DepositAmount = invoice.DepositUntilIssueDate - invoice.PaidByDeposit;
 
                 }
                 else
                 {
-                    invoice.PaydByDeposit = 0;
+                    invoice.PaidByDeposit = 0;
                 }
 
                 UpdateTotalAmount();

@@ -14,236 +14,118 @@ using System.Windows;
 
 namespace Invoice.Classes
 {
-
     // T_INVOICE テーブルに対応するクラス
     public class InvoiceClass : INotifyPropertyChanged, ILoggable
     {
         private int _InvoiceId = 0;
         public int InvoiceId
         {
-            get
-            {
-                return _InvoiceId;
-            }
-            set
-            {
-                _InvoiceId = value;
-                OnPropertyChanged(nameof(InvoiceId));
-            }
+            get => _InvoiceId;
+            set { _InvoiceId = value; OnPropertyChanged(nameof(InvoiceId)); }
         }
 
         private int _CustomerId = 0;
         public int CustomerId
         {
-            get
-            {
-                return _CustomerId;
-            }
-            set
-            {
-                _CustomerId = value;
-                OnPropertyChanged(nameof(CustomerId));
-            }
+            get => _CustomerId;
+            set { _CustomerId = value; OnPropertyChanged(nameof(CustomerId)); }
         }
 
         private DateTime? _IssueDate = DateTime.Now;
         public DateTime? IssueDate
         {
-            get
-            {
-                return _IssueDate;
-            }
-            set
-            {
-                _IssueDate = value;
-                OnPropertyChanged(nameof(IssueDate));
-            }
+            get => _IssueDate;
+            set { _IssueDate = value; OnPropertyChanged(nameof(IssueDate)); }
         }
 
         private DateTime? _DueDate = DateTime.Now;
         public DateTime? DueDate
         {
-            get
-            {
-                return _DueDate;
-            }
-            set
-            {
-                _DueDate = value;
-                OnPropertyChanged(nameof(DueDate));
-            }
+            get => _DueDate;
+            set { _DueDate = value; OnPropertyChanged(nameof(DueDate)); }
         }
 
         private string? _Subject = "";
         public string? Subject
         {
-            get
-            {
-                return _Subject;
-            }
-            set
-            {
-                _Subject = value;
-                OnPropertyChanged(nameof(Subject));
-            }
+            get => _Subject;
+            set { _Subject = value; OnPropertyChanged(nameof(Subject)); }
         }
 
         private string? _SlipNumber = "";
         public string? SlipNumber
         {
-            get
-            {
-                return _SlipNumber;
-            }
-            set
-            {
-                _SlipNumber = value;
-                OnPropertyChanged(nameof(SlipNumber));
-            }
+            get => _SlipNumber;
+            set { _SlipNumber = value; OnPropertyChanged(nameof(SlipNumber)); }
         }
 
-        public int? SubTotal
-        {
-            get
-            {
-                return InvoiceItems.Sum(x => x.Quantity * x.UnitPrice);
-            }
-        }
-        public int? Tax
-        {
-            get
-            {
-                return InvoiceItems.Sum(x => x.Tax);
-            }
-        }
-        public int? InvoiceTotal
-        {
-            get
-            {
-                return TransactionTypeId == 1 ? ItemsTotal : ItemsTotal - PaydByDeposit;
-            }
-        }
+        public int? SubTotal => InvoiceItems.Sum(x => x.Quantity * x.UnitPrice);
+        public int? Tax => InvoiceItems.Sum(x => x.Tax);
+        public int? InvoiceTotal => TransactionTypeId == 1 ? ItemsTotal : ItemsTotal - PaidByDeposit;
         public int ItemsTotal
         {
             get
             {
                 var itemsTotal = InvoiceItems.Sum(x => x.Quantity * x.UnitPrice + x.Tax);
-                PaydByDeposit = DepositUntilIssueDate < itemsTotal ? DepositUntilIssueDate : itemsTotal;
+                PaidByDeposit = DepositUntilIssueDate < itemsTotal ? DepositUntilIssueDate : itemsTotal; // 副作用: 後続フェーズで除去予定
                 return itemsTotal;
             }
         }
 
-        private int _PaydByDeposit = 0;
-        public int PaydByDeposit
+        private int _PaidByDeposit = 0;
+        public int PaidByDeposit
         {
-            get
-            {
-                return _PaydByDeposit;
-            }
-            set
-            {
-                _PaydByDeposit = value;
-                //RecalculateTotals();
-                OnPropertyChanged(nameof(PaydByDeposit));
-            }
+            get => _PaidByDeposit;
+            set { _PaidByDeposit = value; OnPropertyChanged(nameof(PaidByDeposit)); }
         }
 
         private string? _Message = "";
         public string? Message
         {
-            get
-            {
-                return _Message;
-            }
-            set
-            {
-                _Message = value;
-                OnPropertyChanged(nameof(Message));
-            }
+            get => _Message;
+            set { _Message = value; OnPropertyChanged(nameof(Message)); }
         }
 
         private int? _TransactionTypeId = 1;
         public int? TransactionTypeId
         {
-            get
-            {
-                return _TransactionTypeId;
-            }
-            set
-            {
-                _TransactionTypeId = value;
-                OnPropertyChanged(nameof(TransactionTypeId));
-            }
+            get => _TransactionTypeId;
+            set { _TransactionTypeId = value; OnPropertyChanged(nameof(TransactionTypeId)); }
         }
 
         private DateTime? _PaymentDate = DateTime.Now;
         public DateTime? PaymentDate
         {
-            get
-            {
-                return _PaymentDate;
-            }
-            set
-            {
-                _PaymentDate = value;
-                OnPropertyChanged(nameof(PaymentDate));
-            }
+            get => _PaymentDate;
+            set { _PaymentDate = value; OnPropertyChanged(nameof(PaymentDate)); }
         }
 
         private int _InvoiceStatusId = 0;
         public int InvoiceStatusId
         {
-            get
-            {
-                return _InvoiceStatusId;
-            }
-            set
-            {
-                _InvoiceStatusId = value;
-                OnPropertyChanged(nameof(InvoiceStatusId));
-            }
+            get => _InvoiceStatusId;
+            set { _InvoiceStatusId = value; OnPropertyChanged(nameof(InvoiceStatusId)); }
         }
 
         private string _CustomerName = "";
         public string CustomerName
         {
-            get
-            {
-                return _CustomerName;
-            }
-            set
-            {
-                _CustomerName = value;
-                OnPropertyChanged(nameof(CustomerName));
-            }
+            get => _CustomerName;
+            set { _CustomerName = value; OnPropertyChanged(nameof(CustomerName)); }
         }
 
         private string _InvoiceStatus = "";
         public string InvoiceStatus
         {
-            get
-            {
-                return _InvoiceStatus;
-            }
-            set
-            {
-                _InvoiceStatus = value;
-                OnPropertyChanged(nameof(InvoiceStatus));
-            }
+            get => _InvoiceStatus;
+            set { _InvoiceStatus = value; OnPropertyChanged(nameof(InvoiceStatus)); }
         }
 
         private string? _IssueDateString = "";
         public string? IssueDateString
         {
-            get
-            {
-                return _IssueDateString;
-            }
-            set
-            {
-                _IssueDateString = value;
-                OnPropertyChanged(nameof(IssueDateString));
-            }
+            get => _IssueDateString;
+            set { _IssueDateString = value; OnPropertyChanged(nameof(IssueDateString)); }
         }
 
         private int _DepositUntilIssueDate = 0;
@@ -253,8 +135,8 @@ namespace Invoice.Classes
             set
             {
                 _DepositUntilIssueDate = value;
-                var afterPaydDeposit = DepositUntilIssueDate - ItemsTotal;// 当該請求額支払後 前受残高
-                PaydByDeposit = afterPaydDeposit <= 0 ? DepositUntilIssueDate : ItemsTotal;// 前受精算額（前受が不足の場合は前受
+                var afterPaidDeposit = DepositUntilIssueDate - ItemsTotal; // 当該請求額支払後 前受残高
+                PaidByDeposit = afterPaidDeposit <= 0 ? DepositUntilIssueDate : ItemsTotal; // 前受精算額
                 OnPropertyChanged(nameof(InvoiceTotal));
                 OnPropertyChanged(nameof(DepositUntilIssueDate));
             }
@@ -267,30 +149,9 @@ namespace Invoice.Classes
             set
             {
                 UpdateCollectionEventHandlers(_InvoiceItems, value, InvoiceItems_CollectionChanged, InvoiceItem_PropertyChanged);
-                //if (_InvoiceItems != null)
-                //{
-                //    // 古いコレクションのイベント購読を解除
-                //    _InvoiceItems.CollectionChanged -= InvoiceItems_CollectionChanged;
-                //    foreach (var item in _InvoiceItems)
-                //    {
-                //        item.PropertyChanged -= InvoiceItem_PropertyChanged;
-                //    }
-                //}
-
                 _InvoiceItems = value;
-
-                //if (_InvoiceItems != null)
-                //{
-                //    // 新しいコレクションのイベントを購読
-                //    _InvoiceItems.CollectionChanged += InvoiceItems_CollectionChanged;
-                //    foreach (var item in _InvoiceItems)
-                //    {
-                //        item.PropertyChanged += InvoiceItem_PropertyChanged;
-                //    }
-                //}
-
                 OnPropertyChanged(nameof(InvoiceItems));
-                RecalculateTotals(); // 再計算
+                RecalculateTotals();
             }
         }
 
@@ -301,7 +162,6 @@ namespace Invoice.Classes
 
         private void InvoiceItems_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
-
             if (e.NewItems != null)
             {
                 foreach (InvoiceItemClass item in e.NewItems)
@@ -310,7 +170,6 @@ namespace Invoice.Classes
                     item.PropertyChanged += InvoiceItem_PropertyChanged;
                 }
             }
-
             if (e.OldItems != null)
             {
                 foreach (InvoiceItemClass item in e.OldItems)
@@ -318,12 +177,11 @@ namespace Invoice.Classes
                     item.PropertyChanged -= InvoiceItem_PropertyChanged;
                 }
             }
-
-            RecalculateTotals(); // 再計算
+            RecalculateTotals();
         }
+
         private void InvoiceItem_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
-
             if (e.PropertyName == nameof(InvoiceItemClass.ItemId) ||
                 e.PropertyName == nameof(InvoiceItemClass.ItemName) ||
                 e.PropertyName == nameof(InvoiceItemClass.ItemTotal) ||
@@ -332,23 +190,20 @@ namespace Invoice.Classes
                 e.PropertyName == nameof(InvoiceItemClass.Quantity) ||
                 e.PropertyName == nameof(InvoiceItemClass.UnitPrice))
             {
-                RecalculateTotals(); // 再計算
+                RecalculateTotals();
                 OnPropertyChanged(nameof(InvoiceItems));
             }
         }
 
         public void RecalculateTotals()
         {
-            NotifyPropertiesChanged(nameof(DepositUntilIssueDate), nameof(InvoiceItems), nameof(Tax), nameof(PaydByDeposit), nameof(ItemsTotal), nameof(InvoiceTotal));
+            NotifyPropertiesChanged(nameof(DepositUntilIssueDate), nameof(InvoiceItems), nameof(Tax), nameof(PaidByDeposit), nameof(ItemsTotal), nameof(InvoiceTotal));
         }
-
 
         private void NotifyPropertiesChanged(params string[] propertyNames)
         {
             foreach (var propertyName in propertyNames)
-            {
                 OnPropertyChanged(propertyName);
-            }
         }
 
         public static List<InvoiceClass> GetAllInvoice()
@@ -360,11 +215,10 @@ namespace Invoice.Classes
             using var command = new MySqlCommand("SELECT * FROM T_INVOICE", connection);
             using var reader = command.ExecuteReader();
 
-            CultureInfo cultureInfo = new("ja-JP");
-            cultureInfo.DateTimeFormat.Calendar = new JapaneseCalendar();
-            cultureInfo.DateTimeFormat.ShortDatePattern = "ggy年M月d日";
-            Thread.CurrentThread.CurrentCulture = cultureInfo;
-            Thread.CurrentThread.CurrentUICulture = cultureInfo;
+            // ローカル Culture (日本語 + 和暦) を使用して文字列を生成（スレッド全体へは適用しない）
+            CultureInfo localCulture = new("ja-JP");
+            localCulture.DateTimeFormat.Calendar = new JapaneseCalendar();
+            localCulture.DateTimeFormat.ShortDatePattern = "ggy年M月d日";
 
             while (reader.Read())
             {
@@ -376,13 +230,13 @@ namespace Invoice.Classes
                     DueDate = reader.IsDBNull("DUE_DATE") ? null : reader.GetDateTime("DUE_DATE"),
                     Subject = reader.IsDBNull("SUBJECT") ? null : reader.GetString("SUBJECT"),
                     SlipNumber = reader.IsDBNull("SLIP_NUMBER") ? null : reader.GetString("SLIP_NUMBER"),
-                    PaydByDeposit = reader.GetInt32("PAYD_BY_DEPOSIT"),
+                    PaidByDeposit = reader.GetInt32("PAID_BY_DEPOSIT"),
                     Message = reader.IsDBNull("MESSAGE") ? null : reader.GetString("MESSAGE"),
                     TransactionTypeId = reader.IsDBNull("TRANSACTION_TYPE_ID") ? null : reader.GetInt32("TRANSACTION_TYPE_ID"),
                     PaymentDate = reader.IsDBNull("PAYMENT_DATE") ? null : reader.GetDateTime("PAYMENT_DATE"),
                     InvoiceStatusId = reader.GetInt32("INVOICE_STATUS_ID"),
                 };
-                invoice.IssueDateString = invoice.IssueDate?.ToShortDateString() ?? null;
+                invoice.IssueDateString = invoice.IssueDate?.ToString("ggy年M月d日", localCulture);
                 invoices.Add(invoice);
             }
             return invoices;
@@ -402,25 +256,21 @@ namespace Invoice.Classes
                     DepositClass.TryAddDeposit(this, uow);
                 }
                 else return false;
-
                 return true;
             }, unitOfWork);
         }
 
         public void AddInvoice(UnitOfWork unitOfWork)
         {
-
-            string query = @"INSERT INTO T_INVOICE (CUSTOMER_ID, ISSUE_DATE, DUE_DATE, SUBJECT, SLIP_NUMBER, ITEMS_TOTAL, SUBTOTAL, TAX, PAYD_BY_DEPOSIT, TOTAL, MESSAGE, TRANSACTION_TYPE_ID, PAYMENT_DATE, INVOICE_STATUS_ID) " + "\r\n" + "VALUES (@CustomerId, @IssueDate, @DueDate, @Subject, @SlipNumber, @ItemsTotal, @Subtotal, @Tax, @PaydByDeposit, @InvoiceTotal, @Message, @TransactionTypeId, @PaymentDate, @InvoiceStatusId)";
-
+            string query = @"INSERT INTO T_INVOICE (CUSTOMER_ID, ISSUE_DATE, DUE_DATE, SUBJECT, SLIP_NUMBER, ITEMS_TOTAL, SUBTOTAL, TAX, PAID_BY_DEPOSIT, TOTAL, MESSAGE, TRANSACTION_TYPE_ID, PAYMENT_DATE, INVOICE_STATUS_ID) " + "\r\n" + "VALUES (@CustomerId, @IssueDate, @DueDate, @Subject, @SlipNumber, @ItemsTotal, @Subtotal, @Tax, @PaidByDeposit, @InvoiceTotal, @Message, @TransactionTypeId, @PaymentDate, @InvoiceStatusId)";
             var command = unitOfWork.CreateCommand(query);
-            AddParamatersToCommand(command);
+            AddParametersToCommand(command);
             command.Parameters.AddWithValue("@TransactionTypeId", TransactionTypeId);
             command.ExecuteNonQuery();
             InvoiceId = (int)command.LastInsertedId;
-
         }
 
-        private void AddParamatersToCommand(TrackedCommand command)
+        private void AddParametersToCommand(TrackedCommand command)
         {
             command.Parameters.AddWithValue("@CustomerId", CustomerId);
             command.Parameters.AddWithValue("@IssueDate", IssueDate);
@@ -430,7 +280,7 @@ namespace Invoice.Classes
             command.Parameters.AddWithValue("@ItemsTotal", ItemsTotal);
             command.Parameters.AddWithValue("@Subtotal", SubTotal);
             command.Parameters.AddWithValue("@Tax", Tax);
-            command.Parameters.AddWithValue("@PaydByDeposit", PaydByDeposit);
+            command.Parameters.AddWithValue("@PaidByDeposit", PaidByDeposit);
             command.Parameters.AddWithValue("@InvoiceTotal", InvoiceTotal);
             command.Parameters.AddWithValue("@Message", Message);
             command.Parameters.AddWithValue("@PaymentDate", PaymentDate);
@@ -439,60 +289,49 @@ namespace Invoice.Classes
 
         public bool TryUpdateInvoice(UnitOfWork? unitOfWork = null)
         {
-
             var res = UnitOfWork.ExecuteWithTransaction(uow =>
             {
                 UpdateInvoice(uow);
-                // 請求額に関わらず、請求情報は必ず存在する。
                 InvoiceItemClass.UpdateInvoiceItems(InvoiceId, InvoiceItems, uow);
-                if (ItemsTotal - PaydByDeposit <= 0) // *A
-                {   /// ItemsTotal - PaydByDeposit <= 0 は 0円請求書
-                    /// *A UpdateInvoiceにて、請求額が0円に更新された＝全額を前受金で処理するための更新であるため、
-                    ///    請求情報はInvoiceTotalが0円、PaydByDepositが1円以上のものとなり
-                    /// *B InvoiceClass経由のT_BALANCEは不要となる。
-                    /// *C 売掛請求と前受清算が同時に存在する（＝更新前の請求情報が「前受残高不足の請求書」）更新の場合は、
-                    ///    前受情報を更新・追加（TryUpdateDeposit()内で行われる）し、
-                    ///    DepositClass内において、T_BALANCEも追加、もしくは更新を行う。
-                    /// 更新前の請求情報が「売掛のみの請求書」を更新する場合、
-                    /// 前受情報とDepositClass経由のT_BALANCEは存在しない＝ doposit == null ため何もしない *F
-                    BalanceClass.DeleteBalanceById(new IDs(invoiceId: InvoiceId, depositId: null), uow); // *B
-                    DepositClass.TryUpdateDeposit(this, uow); // *D
-                    // *F
+                if (ItemsTotal - PaidByDeposit <= 0)
+                {
+                    BalanceClass.DeleteBalanceById(new IDs(invoiceId: InvoiceId, paymentId: null), uow);
+                    DepositClass.TryUpdateDeposit(this, uow);
                 }
-                else //
-                {/// ItemsTotal - PaydByDeposit > 0 は 請求書
-                 /// 請求額が1円以上に更新された請求書のパターンは
-                 /// 売掛のみ　　　(PaydByDeposit == 0) *f
-                 /// 売掛と前受金　(PaydByDeposit > 0) *i
-                 /// いずれの場合も必ずInvoiceClass経由のT_BALANCEが必要
-                    // T_DEPOSITのレコードはPaydByDepositの値により(*y)、削除、追加、更新(TryUpdateDeposit()内で行われる)のいずれかを行う必要がある。
-                    if (PaydByDeposit >= 0) // *y
-                        DepositClass.TryUpdateDeposit(this, uow); // *h
+                else
+                {
+                    if (PaidByDeposit >= 0)
+                        DepositClass.TryUpdateDeposit(this, uow);
                     else
                         MessageBox.Show("前受金の更新に失敗しました。");
                 }
                 return true;
             }, unitOfWork);
-
             if (!res) return false;
 
-            var balance = BalanceClass.GetBalancesById(new IDs(invoiceId: InvoiceId, depositId: null), new UnitOfWork());
-            if (balance.Count <= 1) // *x
+            res = UnitOfWork.ExecuteWithTransaction(uow =>
             {
-                BalanceClass.TryUpdateBalance(this);
-                return true;
-            }
-            else
-                MessageBox.Show("請求情報が重複しています。");
-            return false;
+                var balances = BalanceClass.GetBalancesById(new IDs(invoiceId: InvoiceId, paymentId: null), new UnitOfWork());
+                if (balances.Count > 1)
+                {
+                    MessageBox.Show("請求情報が重複しています。");
+                    return false;
+                }
+                else
+                {
+                    BalanceClass.TryUpdateBalance(this, uow);
+                    return true;
+                }
+            }, unitOfWork);
+            if (!res) return false;
+            return true;
         }
-
 
         public void UpdateInvoice(UnitOfWork unitOfWork)
         {
-            string query = @"UPDATE T_INVOICE SET CUSTOMER_ID = @CustomerId, ISSUE_DATE = @IssueDate, DUE_DATE = @DueDate, SUBJECT = @Subject, SLIP_NUMBER = @SlipNumber, ITEMS_TOTAL = @ItemsTotal, SUBTOTAL = @Subtotal, TAX = @Tax, PAYD_BY_DEPOSIT = @PaydByDeposit, TOTAL = @InvoiceTotal, MESSAGE = @Message, TRANSACTION_TYPE_ID = @TransactionTypeId, PAYMENT_DATE = @PaymentDate, INVOICE_STATUS_ID = @InvoiceStatusId WHERE INVOICE_ID = @InvoiceId";
+            string query = @"UPDATE T_INVOICE SET CUSTOMER_ID = @CustomerId, ISSUE_DATE = @IssueDate, DUE_DATE = @DueDate, SUBJECT = @Subject, SLIP_NUMBER = @SlipNumber, ITEMS_TOTAL = @ItemsTotal, SUBTOTAL = @Subtotal, TAX = @Tax, PAID_BY_DEPOSIT = @PaidByDeposit, TOTAL = @InvoiceTotal, MESSAGE = @Message, TRANSACTION_TYPE_ID = @TransactionTypeId, PAYMENT_DATE = @PaymentDate, INVOICE_STATUS_ID = @InvoiceStatusId WHERE INVOICE_ID = @InvoiceId";
             var command = unitOfWork.CreateCommand(query);
-            AddParamatersToCommand(command);
+            AddParametersToCommand(command);
             command.Parameters.AddWithValue("@TransactionTypeId", InvoiceTotal > 0 ? 1 : 2);
             command.Parameters.AddWithValue("@InvoiceId", InvoiceId);
             command.ExecuteNonQuery();
@@ -500,7 +339,6 @@ namespace Invoice.Classes
 
         public void UpdateInvoiceStatus(int statusId, UnitOfWork unitOfWork)
         {
-
             string query = "UPDATE T_INVOICE SET INVOICE_STATUS_ID = @StatusId WHERE INVOICE_ID = @InvoiceId";
             var command = unitOfWork.CreateCommand(query);
             command.Parameters.AddWithValue("@StatusId", statusId);
@@ -517,17 +355,14 @@ namespace Invoice.Classes
                 var command = uow.CreateCommand(query);
                 command.Parameters.AddWithValue("@InvoiceId", id);
                 command.ExecuteNonQuery();
-
                 DepositClass.DeleteDepositById(TypeOfID.Invoice, id, uow);
                 BalanceClass.DeleteBalanceById(TypeOfID.Invoice, id, uow);
                 return true;
             }, unitOfWork);
-
         }
 
         public InvoiceClass DeepClone()
         {
-
             var newInvoice = new InvoiceClass
             {
                 InvoiceId = InvoiceId,
@@ -536,7 +371,7 @@ namespace Invoice.Classes
                 DueDate = DueDate,
                 Subject = Subject,
                 SlipNumber = SlipNumber,
-                PaydByDeposit = PaydByDeposit,
+                PaidByDeposit = PaidByDeposit,
                 Message = Message,
                 TransactionTypeId = TransactionTypeId,
                 PaymentDate = PaymentDate,
@@ -544,14 +379,11 @@ namespace Invoice.Classes
                 CustomerName = CustomerName,
                 InvoiceStatus = InvoiceStatus,
                 IssueDateString = IssueDateString,
-                // 必要に応じて他のプロパティもコピー
             };
-            //var items = InvoiceItemClass.GetInvoiceItemsByInvoiceId(InvoiceId);
             newInvoice.InvoiceItems = [];
-
             var items = InvoiceItems.OfType<InvoiceItemClass>().Select(i => i.DeepClone()).ToList();
             items.ForEach(i => newInvoice.InvoiceItems.Add(i));
-
+            newInvoice.RecalculateTotals(); // 追加: クローン後合計再計算
             return newInvoice;
         }
 
@@ -561,29 +393,17 @@ namespace Invoice.Classes
             {
                 oldCollection.CollectionChanged -= collectionChangedHandler;
                 foreach (var item in oldCollection)
-                {
                     item.PropertyChanged -= propertyChangedHandler;
-                }
             }
-
             if (newCollection != null)
             {
                 newCollection.CollectionChanged += collectionChangedHandler;
                 foreach (var item in newCollection)
-                {
                     item.PropertyChanged += propertyChangedHandler;
-                }
             }
         }
 
-
         public event PropertyChangedEventHandler? PropertyChanged;
-
-        protected void OnPropertyChanged([CallerMemberName] string propertyName = "")
-        {
-
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-
-        }
+        protected void OnPropertyChanged([CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 }

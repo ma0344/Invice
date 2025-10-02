@@ -413,7 +413,7 @@ namespace Invoice
             var slipNumber = slipNumberInfo.GetSlipNumber(invoice.IssueDate);
             var numberString = slipNumber.InvoiceNumber;
             invoice.SlipNumber = numberString;
-            invoice.PaydByDeposit = vm.CurrentInvoice.PaydByDeposit;
+            invoice.PaidByDeposit = vm.CurrentInvoice.PaidByDeposit;
             SetInvoiceStatus(invoice);
             if (invoice.TryAddInvoice() == true) slipNumber.InclimentInvoiceLatest();
 
@@ -455,14 +455,14 @@ namespace Invoice
                 invoice.InvoiceStatus = "入金済";
                 invoice.InvoiceStatusId = 3;
                 invoice.PaymentDate = invoice.IssueDate;
-                invoice.PaydByDeposit = vm.CurrentInvoice.PaydByDeposit;
+                invoice.PaidByDeposit = vm.CurrentInvoice.PaidByDeposit;
             }
             else
             {
                 invoice.InvoiceStatus = "請求済";
                 invoice.InvoiceStatusId = 2;
                 invoice.PaymentDate = null;
-                invoice.PaydByDeposit = 0;
+                invoice.PaidByDeposit = 0;
             }
 
         }
@@ -776,19 +776,19 @@ namespace Invoice
                     var creditTotal = customerBalanceList.Where(b => b.DebOrCreId == 2).Sum(b => b.TransactionAmount);
                     var depositUntilIssueDate = creditTotal - debitTotal;// 前受残高
                     customerBalanceList.ForEach(bal => Debug.WriteLine($"{bal.InvoiceId} : {bal.TransactionDate} : {bal.DebOrCreId} : {bal.TransactionAmount}"));
-                    var afterPaydDeposit = depositUntilIssueDate - invoice.ItemsTotal;// 当該請求額支払後 前受残高
+                    var afterPaidDeposit = depositUntilIssueDate - invoice.ItemsTotal;// 当該請求額支払後 前受残高
                     var vallist = customerBalanceList.Where(b => b.TransactionTypeId == 1);
-                    var paydByDeposit = afterPaydDeposit <= 0 ? depositUntilIssueDate : invoice.ItemsTotal;// 前受精算額（前受が不足の場合は前受残高）
-                    // var invoiceTotal = invoice.ItemsTotal - paydByDeposit;// 当該請求書による請求額
+                    var paidByDeposit = afterPaidDeposit <= 0 ? depositUntilIssueDate : invoice.ItemsTotal;// 前受精算額（前受が不足の場合は前受残高）
+                    // var invoiceTotal = invoice.ItemsTotal - paidByDeposit;// 当該請求書による請求額
                     vm.CurrentInvoice.DepositUntilIssueDate = depositUntilIssueDate;
-                    vm.CurrentInvoice.PaydByDeposit = paydByDeposit;
+                    vm.CurrentInvoice.PaidByDeposit = paidByDeposit;
                     var total = vm.CurrentInvoice.InvoiceTotal;
                     InvoiceAmountGrid.Visibility = Visibility.Visible;
                     DepositAmountGrid.Visibility = Visibility.Visible;
                 }
                 else
                 {
-                    vm.CurrentInvoice.PaydByDeposit = 0;
+                    vm.CurrentInvoice.PaidByDeposit = 0;
                     vm.CurrentInvoice.DepositUntilIssueDate = 0;
                     var total = vm.CurrentInvoice.InvoiceTotal;
                     InvoiceAmountGrid.Visibility = Visibility.Collapsed;

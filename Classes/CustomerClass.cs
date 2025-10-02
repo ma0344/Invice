@@ -119,6 +119,24 @@ namespace Invoice.Classes
             command.Parameters.Add("@visible", MySqlDbType.Bit).Value = true;
             command.ExecuteNonQuery();
         }
+
+        // 追加: 残高再計算 & 反映（T_BALANCEをソースオブトゥルースとする）
+        public static void RecalculateAndPersistBalance(int customerId, UnitOfWork uow)
+        {
+            // T_BALANCE が無い場合 0
+            var select = uow.CreateCommand(
+                @"SELECT COALESCE(SUM(CASE WHEN DEBIT_OR_CREDIT_ID = 1 THEN TRANSACTION_AMOUNT WHEN DEBIT_OR_CREDIT_ID = 2 THEN -TRANSACTION_AMOUNT ELSE 0 END),0) FROM T_BALANCE WHERE CUSTOMER_ID = @cid");
+            select.Parameters.AddWithValue("@cid", customerId);
+            var result = select.ExecuteScalar();
+            int newBalance = 0;
+            if (result != null && result != DBNull.Value) newBalance = Convert.ToInt32(result);
+
+            var update = uow.CreateCommand("UPDATE T_CUSTOMER SET BALANCE=@bal WHERE CUSTOMER_ID=@cid");
+            update.Parameters.AddWithValue("@bal", newBalance);
+            update.Parameters.AddWithValue("@cid", customerId);
+            update.ExecuteNonQuery();
+        }
+
     }
 
 }
