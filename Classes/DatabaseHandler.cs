@@ -270,7 +270,7 @@ namespace Invoice.Classes
             command.ExecuteNonQuery();
         }
 
-        public string getTaxTypeName(int taxTypeId)
+        public string GetTaxTypeName(int taxTypeId)
         {
 
             return GetTaxes().FirstOrDefault(t => t.TaxTypeId == taxTypeId)?.TaxTypeName ?? "";

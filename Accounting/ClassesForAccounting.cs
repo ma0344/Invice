@@ -99,10 +99,10 @@ namespace Invoice.Accounting
         {
             return
             [
-                [521,1, Rent ],
-                    [521,2, FoodExp],
-                    [521,3, Utilities],
-                    [525,1, DailyExp]
+                [Constants.AccountCodes.ServiceFees, Constants.ItemSubCodes.Rent, Rent],
+                [Constants.AccountCodes.ServiceFees, Constants.ItemSubCodes.FoodExpense, FoodExp],
+                [Constants.AccountCodes.ServiceFees, Constants.ItemSubCodes.Utilities, Utilities],
+                [Constants.AccountCodes.DailyExpenses, Constants.ItemSubCodes.Rent, DailyExp]
             ];
         }
     }
@@ -273,10 +273,10 @@ namespace Invoice.Accounting
 
             return itemName switch
             {
-                string name when name.Contains("家賃") => 521,
-                string name when name.Contains('食') => 521,
-                string name when name.Contains("日用品") => 525,
-                string name when name.Contains("水道") => 521,
+                string name when name.Contains("家賃") => Constants.AccountCodes.ServiceFees,
+                string name when name.Contains('食') => Constants.AccountCodes.ServiceFees,
+                string name when name.Contains("日用品") => Constants.AccountCodes.DailyExpenses,
+                string name when name.Contains("水道") => Constants.AccountCodes.ServiceFees,
                 _ => 0 // デフォルト値
             };
         }
@@ -286,10 +286,10 @@ namespace Invoice.Accounting
 
             return itemName switch
             {
-                string name when name.Contains("家賃") => 1,
-                string name when name.Contains('食') => 2,
-                string name when name.Contains("日用品") => 1,
-                string name when name.Contains("水道") => 3,
+                string name when name.Contains("家賃") => Constants.ItemSubCodes.Rent,
+                string name when name.Contains('食') => Constants.ItemSubCodes.FoodExpense,
+                string name when name.Contains("日用品") => Constants.ItemSubCodes.Rent,
+                string name when name.Contains("水道") => Constants.ItemSubCodes.Utilities,
                 _ => 0 // デフォルト値
             };
 

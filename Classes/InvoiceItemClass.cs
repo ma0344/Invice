@@ -125,7 +125,7 @@ namespace Invoice.Classes
                         Quantity = 1;
                         Unit = _selectedItem.Unit;
                         TaxTypeId = _selectedItem.TaxTypeId;
-                        TaxTypeName = new TaxTypeClass().getTaxTypeName(TaxTypeId);
+                        TaxTypeName = new TaxTypeClass().GetTaxTypeName(TaxTypeId);
                     }
                 }
             }
@@ -156,7 +156,7 @@ namespace Invoice.Classes
             Quantity = 1;
             Unit = item.Unit;
             TaxTypeId = item.TaxTypeId;
-            TaxTypeName = new TaxTypeClass().getTaxTypeName(TaxTypeId);
+            TaxTypeName = new TaxTypeClass().GetTaxTypeName(TaxTypeId);
             ReTotal();
         }
 
