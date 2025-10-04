@@ -38,7 +38,7 @@ namespace Invoice.Classes
     {
         private readonly MySqlConnection _connection;
         private readonly MySqlTransaction _transaction;
-        private readonly List<string> _executedPalams = new();
+        private readonly List<string> _executedParams = new();
         private readonly List<string> _executedCommands = new(); // 実行されたコマンドを記録
 
         public UnitOfWork()
@@ -54,9 +54,9 @@ namespace Invoice.Classes
             var command = _connection.CreateCommand();
             Debug.WriteLine(callerName);
             command.Transaction = _transaction;
-            command.CommandText = commandText != "" ? commandText : string.Empty;
+            command.CommandText = commandText;
             // コマンドの実行時に記録するためのイベントを設定
-            return new TrackedCommand(command, _executedCommands, _executedPalams);
+            return new TrackedCommand(command, _executedCommands, _executedParams);
         }
 
         public void Commit()
@@ -64,7 +64,7 @@ namespace Invoice.Classes
             // コミット前に実行されたコマンドをログに出力
             Debug.WriteLine("---------------------------------");
             Debug.WriteLine("以下のコマンドがコミットされます:");
-            _executedPalams.ForEach(cmd => Debug.WriteLine($"{cmd}\r\n"));
+            _executedParams.ForEach(cmd => Debug.WriteLine($"{cmd}\r\n"));
             Debug.WriteLine("---------------------------------");
             _transaction.Commit();
         }
@@ -105,13 +105,13 @@ namespace Invoice.Classes
             }
             catch (Exception e)
             {
-                // エラー発生時にロールバックF
+                // エラー発生時にロールバック
                 if (unitOfWork == null)
                 {
                     uow.Rollback();
                 }
 
-                MessageBox.Show($"エラーが発生しました: {e.Message}\r\nスタックトレース\r\n{e.StackTrace.ToString()}");
+                MessageBox.Show($"エラーが発生しました: {e.Message}\r\nスタックトレース\r\n{e.StackTrace}");
                 return false;
             }
             finally
@@ -131,19 +131,19 @@ namespace Invoice.Classes
     {
         private readonly MySqlCommand _innerCommand;
         private readonly List<string> _executedCommands;
-        private readonly List<string> _executedPalams;
+        private readonly List<string> _executedParams;
 
-        public TrackedCommand(MySqlCommand innerCommand, List<string> executedCommands, List<string> executedPalams)
+        public TrackedCommand(MySqlCommand innerCommand, List<string> executedCommands, List<string> executedParams)
         {
             _innerCommand = innerCommand;
             _executedCommands = executedCommands;
-            _executedPalams = executedPalams;
+            _executedParams = executedParams;
         }
 
         public void AddParameter(string parameterName, object value)
         {
             _innerCommand.Parameters.AddWithValue(parameterName, value);
-            _executedPalams.Add(_innerCommand.Parameters.ToString() ?? "");
+            _executedParams.Add(_innerCommand.Parameters.ToString() ?? "");
         }
 
         public int ExecuteNonQuery()
@@ -155,7 +155,7 @@ namespace Invoice.Classes
                 cmdText = cmdText.Replace(parameter.ParameterName.ToString(), string.IsNullOrWhiteSpace(value) ? "null" : value);
             }
             _executedCommands.Add(_innerCommand.CommandText);
-            _executedPalams.Add(cmdText);
+            _executedParams.Add(cmdText);
             
             return _innerCommand.ExecuteNonQuery();
         }
@@ -169,7 +169,7 @@ namespace Invoice.Classes
                 cmdText = cmdText.Replace(parameter.ParameterName.ToString(), string.IsNullOrWhiteSpace(value) ? "null" : value);
             }
             _executedCommands.Add(_innerCommand.CommandText);
-            _executedPalams.Add(cmdText);
+            _executedParams.Add(cmdText);
             return _innerCommand.ExecuteReader();
         }
 
