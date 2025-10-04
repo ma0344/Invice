@@ -5,6 +5,7 @@ using Invoice.Pages;
 using Invoice.PdfGenerators;
 using Invoice.ViewModels;
 using Invoice.ViewModels.Invoice.ViewModels;
+//using MigraDoc.DocumentObjectModel;
 using ModernWpf;
 using ModernWpf.Controls;
 using System;
@@ -268,6 +269,11 @@ namespace Invoice
             if (CustomerNameComboBox.SelectedIndex <= 0)
             {
                 MessageBox.Show("宛先を選択してください");
+                return;
+            }
+            if (PaymentAmountTextBox.Text == "\\0-" || string.IsNullOrEmpty(PaymentAmountTextBox.Text))
+            {
+                MessageBox.Show("入金額を入力してください");
                 return;
             }
             if (CustomerNameComboBox.SelectedItem is CustomerClass customer)
@@ -695,9 +701,18 @@ namespace Invoice
                 return false;
             }, null);
 
-            if(result==true) 
-                if(payment.TryUpdatePayment()!=true)
+            if (result == true)
+            {
+                if (payment.TryUpdatePayment() != true)
+                {
                     throw new Exception("入金記録の登録に失敗しました");
+                }
+            }
+            else
+            {
+                throw new Exception("入金記録の登録に失敗しました");
+            }
+
         }
 
         public void UpdatePayment(PaymentClass payment)

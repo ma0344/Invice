@@ -96,7 +96,7 @@ namespace Invoice.Classes
                 bool result = action(uow);
 
                 // 呼び出し元がトランザクションを管理していない場合、コミット
-                if (unitOfWork == null)
+                if (unitOfWork == null && result)
                 {
                     uow.Commit();
                 }

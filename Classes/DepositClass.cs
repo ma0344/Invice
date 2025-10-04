@@ -5,6 +5,7 @@ using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace Invoice.Classes
 {
@@ -107,16 +108,23 @@ namespace Invoice.Classes
             }
             return UnitOfWork.ExecuteWithTransaction(uow =>
             {
-                // 前受額が0でない場合は、T_BALANCEに入金情報を追加する
-                if (deposit.DepositAmount > 0)
-                    if (AddDeposit(uow, deposit) == 0)
+                if (deposit.DepositAmount > 0) // 前受額が1以上の場合は以下の処理
+                {
+                    if (AddDeposit(uow, deposit) == 0) //追加した前受データのDepositIDが0か？（正しく追加されているかの判定？）
+                    {
+                        MessageBox.Show("TryAddDeposit内で、T_DEPOSITに追加しようとしたデータのIDが0でした");
+                        return false; //適切に追加されていなければTryAddDepositをFalseで終了
+                    }
+                    // 前受額が0でないなく、AddDepositが適切に終了していれば以下の処理
+                    if (BalanceClass.TryAddBalance(deposit, uow) == false)
                         return false;
-                if (BalanceClass.TryAddBalance(deposit, uow) == false)
-                    return false;
 
-                if (obj is PaymentClass payment)
-                    payment.DepositId = deposit.DepositId;
-                return true;
+                    if (obj is PaymentClass payment)
+                        payment.DepositId = deposit.DepositId;
+                    return true;
+                }
+                MessageBox.Show("前受額が0です");
+                return false;
             }, unitOfWork);
         }
 

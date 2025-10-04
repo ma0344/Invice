@@ -512,6 +512,7 @@ namespace Invoice
                 var tempDate = issueDate.AddMonths(1);
                 vm.CurrentInvoice.DueDate = new DateTime(year: tempDate.Year, month: tempDate.Month, 15);
                 InvoiceDueDate.SelectedDate = vm.CurrentInvoice.DueDate;
+                DepositLabelController(sender, e);
             }
 
         }
@@ -760,28 +761,28 @@ namespace Invoice
             var customerList = _customerVM.CustomerClassList;
             var invoice = vm.CurrentInvoice;
 
-            if (comboBox.SelectedItem is TransactionTypeClass selectedItem && selectedItem != null )
+            if (comboBox.SelectedItem is TransactionTypeClass selectedItem && selectedItem != null)
             {
                 if (selectedItem.TransactionName == "前受金")
                 {
                     var customer = customerList.FirstOrDefault(c => c.CustomerId == invoice.CustomerId);
                     var customerBalanceList = balanceList
-                        .Where(
-                        b => b.CustomerId == customer!.CustomerId
-                          && b.TransactionDate <= invoice.IssueDate
-                          && b.InvoiceId != invoice.InvoiceId
-                          )
+                        .Where(b => b.CustomerId == customer!.CustomerId
+                                 && b.TransactionDate <= invoice.IssueDate
+                                 && b.InvoiceId != invoice.InvoiceId)
                         .ToList();
                     var debitTotal = customerBalanceList.Where(b => b.DebOrCreId == 1).Sum(b => b.TransactionAmount);
                     var creditTotal = customerBalanceList.Where(b => b.DebOrCreId == 2).Sum(b => b.TransactionAmount);
-                    var depositUntilIssueDate = creditTotal - debitTotal;// 前受残高
-                    customerBalanceList.ForEach(bal => Debug.WriteLine($"{bal.InvoiceId} : {bal.TransactionDate} : {bal.DebOrCreId} : {bal.TransactionAmount}"));
-                    var afterPaidDeposit = depositUntilIssueDate - invoice.ItemsTotal;// 当該請求額支払後 前受残高
-                    var vallist = customerBalanceList.Where(b => b.TransactionTypeId == 1);
-                    var paidByDeposit = afterPaidDeposit <= 0 ? depositUntilIssueDate : invoice.ItemsTotal;// 前受精算額（前受が不足の場合は前受残高）
-                    // var invoiceTotal = invoice.ItemsTotal - paidByDeposit;// 当該請求書による請求額
+                    var depositUntilIssueDate = creditTotal - debitTotal; // 前受残高（対象請求前）
+                    var afterPaidDeposit = depositUntilIssueDate - invoice.ItemsTotal; // 当該請求額支払後 前受残高
+                    var paidByDeposit = afterPaidDeposit <= 0 ? depositUntilIssueDate : invoice.ItemsTotal; // 前受精算額
+
                     vm.CurrentInvoice.DepositUntilIssueDate = depositUntilIssueDate;
                     vm.CurrentInvoice.PaidByDeposit = paidByDeposit;
+
+                    // 表示用の残高（当該請求適用後の残高を表示する仕様に合わせる）
+                    vm.DepositAmount = depositUntilIssueDate - paidByDeposit;
+
                     var total = vm.CurrentInvoice.InvoiceTotal;
                     InvoiceAmountGrid.Visibility = Visibility.Visible;
                     DepositAmountGrid.Visibility = Visibility.Visible;
@@ -790,6 +791,7 @@ namespace Invoice
                 {
                     vm.CurrentInvoice.PaidByDeposit = 0;
                     vm.CurrentInvoice.DepositUntilIssueDate = 0;
+                    vm.DepositAmount = 0; // リセット
                     var total = vm.CurrentInvoice.InvoiceTotal;
                     InvoiceAmountGrid.Visibility = Visibility.Collapsed;
                     DepositAmountGrid.Visibility = Visibility.Collapsed;
