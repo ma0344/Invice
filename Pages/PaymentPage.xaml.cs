@@ -5,7 +5,6 @@ using Invoice.Pages;
 using Invoice.PdfGenerators;
 using Invoice.ViewModels;
 using Invoice.ViewModels.Invoice.ViewModels;
-//using MigraDoc.DocumentObjectModel;
 using ModernWpf;
 using ModernWpf.Controls;
 using System;
@@ -226,7 +225,7 @@ namespace Invoice
                 var unitOfWork = new UnitOfWork();
                 var result = UnitOfWork.ExecuteWithTransaction(uow =>
                 {
-                    if (payment.TransactionTypeId == 2) DepositClass.DeleteDepositById(new IDs(paymentId:payment.PaymentId), uow);
+                    if (payment.TransactionTypeId == TransactionTypeIdsProvider.DepositId) DepositClass.DeleteDepositById(new IDs(paymentId:payment.PaymentId), uow);
                     payment?.TryDeletePayment(uow);
                     return true;
                 }, null);
@@ -689,7 +688,7 @@ namespace Invoice
                     // 伝票番号の最終値を更新
                     slipNumber.InclimentReceiptLatest();
                     // 入金目的が売掛金の場合
-                    if (payment.TransactionTypeId == 1 && invoice != null)
+                    if (payment.TransactionTypeId == TransactionTypeIdsProvider.BalanceId && invoice != null)
                     {
                         // 請求書の状態を「入金済」に更新
                         invoice.InvoiceStatus = "入金済";
@@ -701,18 +700,9 @@ namespace Invoice
                 return false;
             }, null);
 
-            if (result == true)
-            {
-                if (payment.TryUpdatePayment() != true)
-                {
+            if(result==true) 
+                if(payment.TryUpdatePayment()!=true)
                     throw new Exception("入金記録の登録に失敗しました");
-                }
-            }
-            else
-            {
-                throw new Exception("入金記録の登録に失敗しました");
-            }
-
         }
 
         public void UpdatePayment(PaymentClass payment)
@@ -721,14 +711,14 @@ namespace Invoice
             var result = UnitOfWork.ExecuteWithTransaction(uow =>
             {
                 var invoice = invoiceVM.InvoiceClassList.FirstOrDefault(i => i.InvoiceId == payment.InvoiceId);
-                if(invoice != null && payment.TransactionTypeId == 1)
+                if(invoice != null && payment.TransactionTypeId == TransactionTypeIdsProvider.BalanceId)
                 {
                     invoice.InvoiceStatus = "入金済";
                     invoice.InvoiceStatusId = 3;
                     invoice.PaymentDate = payment.PaymentDate;
                     ((InvoiceClass)InvoiceListDataGrid.SelectedItem).UpdateInvoiceStatus(3, uow);
                 }
-                else if (invoice != null && payment.TransactionTypeId == 2)
+                else if (invoice != null && payment.TransactionTypeId == TransactionTypeIdsProvider.DepositId)
                 {
                     invoice.InvoiceStatus = "請求済";
                     invoice.InvoiceStatusId = 2;
@@ -738,9 +728,9 @@ namespace Invoice
 
                 var previd = prevTransactionTypeId;
                 var oldPayment = CurrentPayment;
-                if (prevTransactionTypeId == 2)
+                if (prevTransactionTypeId == TransactionTypeIdsProvider.DepositId)
                 {//更新前が前受金の入金情報
-                    if (payment.TransactionTypeId == 2)
+                    if (payment.TransactionTypeId == TransactionTypeIdsProvider.DepositId)
                     {//更新後が前受金の入金情報
                         // 前受金→前受金
                         DepositClass.TryUpdateDeposit(payment, uow);
@@ -766,7 +756,7 @@ namespace Invoice
                 }
                 else
                 {//更新前が売掛金の入金情報
-                    if (payment.TransactionTypeId == 2)
+                    if (payment.TransactionTypeId == TransactionTypeIdsProvider.DepositId)
                     {
                         // 売掛金→前受金
                         BalanceClass.DeleteBalanceById(new IDs(paymentId : payment.PaymentId), uow);

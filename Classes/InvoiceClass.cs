@@ -61,7 +61,7 @@ namespace Invoice.Classes
 
         public int? SubTotal => InvoiceItems.Sum(x => x.Quantity * x.UnitPrice);
         public int? Tax => InvoiceItems.Sum(x => x.Tax);
-        public int? InvoiceTotal => TransactionTypeId == 1 ? ItemsTotal : ItemsTotal - PaidByDeposit;
+        public int? InvoiceTotal => TransactionTypeId == TransactionTypeIdsProvider.BalanceId ? ItemsTotal : ItemsTotal - PaidByDeposit;
         public int ItemsTotal
         {
             get
@@ -248,9 +248,9 @@ namespace Invoice.Classes
             {
                 AddInvoice(uow);
                 InvoiceItemClass.AddInvoiceItems(InvoiceItems, InvoiceId, uow);
-                if (TransactionTypeId == 1)
+                if (TransactionTypeId == TransactionTypeIdsProvider.BalanceId)
                     BalanceClass.TryAddBalance(this, uow);
-                else if (TransactionTypeId == 2)
+                else if (TransactionTypeId == TransactionTypeIdsProvider.DepositId)
                 {
                     PaymentDate = IssueDate;
                     DepositClass.TryAddDeposit(this, uow);
@@ -332,7 +332,7 @@ namespace Invoice.Classes
             string query = @"UPDATE T_INVOICE SET CUSTOMER_ID = @CustomerId, ISSUE_DATE = @IssueDate, DUE_DATE = @DueDate, SUBJECT = @Subject, SLIP_NUMBER = @SlipNumber, ITEMS_TOTAL = @ItemsTotal, SUBTOTAL = @Subtotal, TAX = @Tax, PAID_BY_DEPOSIT = @PaidByDeposit, TOTAL = @InvoiceTotal, MESSAGE = @Message, TRANSACTION_TYPE_ID = @TransactionTypeId, PAYMENT_DATE = @PaymentDate, INVOICE_STATUS_ID = @InvoiceStatusId WHERE INVOICE_ID = @InvoiceId";
             var command = unitOfWork.CreateCommand(query);
             AddParametersToCommand(command);
-            command.Parameters.AddWithValue("@TransactionTypeId", InvoiceTotal > 0 ? 1 : 2);
+            command.Parameters.AddWithValue("@TransactionTypeId", InvoiceTotal > 0 ? TransactionTypeIdsProvider.BalanceId : TransactionTypeIdsProvider.DepositId);
             command.Parameters.AddWithValue("@InvoiceId", InvoiceId);
             command.ExecuteNonQuery();
         }

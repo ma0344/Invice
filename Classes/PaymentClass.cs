@@ -234,12 +234,11 @@ namespace Invoice.Classes
             return UnitOfWork.ExecuteWithTransaction(uow =>
             {
                 AddPayment(uow);
-                if (TransactionTypeId == Constants.TransactionTypes.Balance)
+                if (TransactionTypeId == TransactionTypeIdsProvider.BalanceId)
                     BalanceClass.TryAddBalance(this, uow);
-                else if (TransactionTypeId == Constants.TransactionTypes.Deposit)
+                else if (TransactionTypeId == TransactionTypeIdsProvider.DepositId)
                 {
                     return DepositClass.TryAddDeposit(this, uow);
-                    //TryUpdatePayment(uow);
                 }
                 else return false;
                 return true;
@@ -269,9 +268,9 @@ namespace Invoice.Classes
             return UnitOfWork.ExecuteWithTransaction(uow =>
             {
                 UpdatePayment(uow);
-                if (TransactionTypeId == Constants.TransactionTypes.Balance)
+                if (TransactionTypeId == TransactionTypeIdsProvider.BalanceId)
                     BalanceClass.TryUpdateBalance(this, uow);
-                else if (TransactionTypeId == Constants.TransactionTypes.Deposit)
+                else if (TransactionTypeId == TransactionTypeIdsProvider.DepositId)
                 {
                     DepositClass.TryUpdateDeposit(this, uow);
                 }
