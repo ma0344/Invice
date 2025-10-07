@@ -277,13 +277,10 @@ namespace Invoice
             {
                 isEditing = true;
                 vm.CurrentInvoice = selectedInvoice.DeepClone();
-                prevTransactionTypeId = vm.CurrentInvoice.TransactionTypeId ?? 1;
+                prevTransactionTypeId = vm.CurrentInvoice.TransactionTypeId ?? TransactionTypeIdsProvider.BalanceId;
                 vm.SaveButtonText = "更新";
                 vm.PaneTitle = "請求書編集";
-                if (vm.CurrentInvoice.TransactionTypeId == 2)
-                {
-                    TransactionTypeComboBox.SelectedIndex = 1;
-                }
+                // SelectedValuePath=TransactionTypeId を使っているため、Index でなく ID 指定に任せる
                 ShowDatailPane();
             }
         }
@@ -378,9 +375,8 @@ namespace Invoice
         {
             var invoice = vm.CurrentInvoice;
 
-            
             var statusInfo = StatusComboBox.SelectedItem as InvoiceStatusClass;
-            invoice.InvoiceStatusId = statusInfo?.InvoiceStatusId ?? 1;
+            invoice.InvoiceStatusId = statusInfo?.InvoiceStatusId ?? InvoiceStatusIdsProvider.DraftId;
             invoice.InvoiceStatus = statusInfo?.InvoiceStatus ?? "作成中";
 
             try
@@ -424,10 +420,10 @@ namespace Invoice
             var ret = UnitOfWork.ExecuteWithTransaction(uow =>
             {
                 SetInvoiceStatus(invoice);
-                if (prevTransactionTypeId == 2)
+                if (prevTransactionTypeId == TransactionTypeIdsProvider.DepositId)
                 { //更新前が前受清算の請求情報
                     //前受金→前受金
-                    if (invoice.TransactionTypeId == 2)
+                    if (invoice.TransactionTypeId == TransactionTypeIdsProvider.DepositId)
                         return DepositClass.TryUpdateDeposit(invoice, uow);
                         //前受金→売掛金
                     else 
@@ -436,7 +432,7 @@ namespace Invoice
                 else
                 { //更新前が売掛金の請求情報
                     //売掛金→前受金
-                    if (invoice.TransactionTypeId == 2)
+                    if (invoice.TransactionTypeId == TransactionTypeIdsProvider.DepositId)
                         return DepositClass.TryAddDeposit(invoice, uow);
                     //売掛金→売掛金
                     else
@@ -450,17 +446,17 @@ namespace Invoice
 
         private void SetInvoiceStatus(InvoiceClass invoice)
         {
-            if (invoice.TransactionTypeId == 2 && invoice.InvoiceTotal == 0)
+            if (invoice.TransactionTypeId == TransactionTypeIdsProvider.DepositId && invoice.InvoiceTotal == 0)
             {
                 invoice.InvoiceStatus = "入金済";
-                invoice.InvoiceStatusId = 3;
+                invoice.InvoiceStatusId = InvoiceStatusIdsProvider.DepositedId;
                 invoice.PaymentDate = invoice.IssueDate;
                 invoice.PaidByDeposit = vm.CurrentInvoice.PaidByDeposit;
             }
             else
             {
                 invoice.InvoiceStatus = "請求済";
-                invoice.InvoiceStatusId = 2;
+                invoice.InvoiceStatusId = InvoiceStatusIdsProvider.BilledId;
                 invoice.PaymentDate = null;
                 invoice.PaidByDeposit = 0;
             }
@@ -510,7 +506,11 @@ namespace Invoice
                 var issueDate = (DateTime)datePicker.SelectedDate;
                 vm.CurrentInvoice.IssueDateString = issueDate.ToShortDateString();
                 var tempDate = issueDate.AddMonths(1);
-                vm.CurrentInvoice.DueDate = new DateTime(year: tempDate.Year, month: tempDate.Month, 15);
+                var dueDay = AppSettingsProvider.InvoiceDueDay;
+                var lastDay = DateTime.DaysInMonth(tempDate.Year, tempDate.Month);
+                if (dueDay < 1) dueDay = 1;
+                if (dueDay > lastDay) dueDay = lastDay;
+                vm.CurrentInvoice.DueDate = new DateTime(year: tempDate.Year, month: tempDate.Month, day: dueDay);
                 InvoiceDueDate.SelectedDate = vm.CurrentInvoice.DueDate;
                 DepositLabelController(sender, e);
             }
@@ -608,7 +608,6 @@ namespace Invoice
         private void CopyInvoiceButton_Click(object sender, RoutedEventArgs e)
         {
             var dataGrid = InvoiceListDataGrid;
-            //var selectedItems = dataGrid.SelectedItems.Cast<InvoiceClass>().Reverse() ;
             var selectedInvoices = GetSelectedItemsInDisplayOrder(dataGrid);
             addFromCopy = true;
             foreach (InvoiceClass invoice in selectedInvoices)
@@ -617,11 +616,16 @@ namespace Invoice
                 var tempNewIssueDate = invoice.IssueDate?.AddMonths(2) ?? DateTime.Now;
                 newInvoice.InvoiceId = 0;
                 newInvoice.IssueDate = new DateTime(tempNewIssueDate.Year, tempNewIssueDate.Month, 1).AddDays(-1);
-                newInvoice.SlipNumber ="";
-                newInvoice.InvoiceStatusId = 1;
+                newInvoice.SlipNumber = "";
+                newInvoice.InvoiceStatusId = InvoiceStatusIdsProvider.DraftId;
                 newInvoice.InvoiceStatus = "作成中";
                 newInvoice.IssueDateString = newInvoice.IssueDate?.ToShortDateString();
-                newInvoice.DueDate = newInvoice.IssueDate?.AddDays(16);
+                var next = newInvoice.IssueDate?.AddMonths(1) ?? DateTime.Now.AddMonths(1);
+                var dueDay = AppSettingsProvider.InvoiceDueDay;
+                var lastDay = DateTime.DaysInMonth(next.Year, next.Month);
+                if (dueDay < 1) dueDay = 1;
+                if (dueDay > lastDay) dueDay = lastDay;
+                newInvoice.DueDate = new DateTime(next.Year, next.Month, dueDay);
                 newInvoice.Subject = newInvoice.IssueDate?.ToString("利用料 ggy年M月分");
                 vm.CurrentInvoice = newInvoice.DeepClone();
                 AddNewInvoice(vm.CurrentInvoice);
@@ -763,7 +767,7 @@ namespace Invoice
 
             if (comboBox.SelectedItem is TransactionTypeClass selectedItem && selectedItem != null )
             {
-                if (selectedItem.TransactionName == "前受金")
+                if (selectedItem.TransactionTypeId == TransactionTypeIdsProvider.DepositId)
                 {
                     var customer = customerList.FirstOrDefault(c => c.CustomerId == invoice.CustomerId);
                     var customerBalanceList = balanceList
@@ -773,18 +777,17 @@ namespace Invoice
                           && b.InvoiceId != invoice.InvoiceId
                           )
                         .ToList();
-                    var debitTotal = customerBalanceList.Where(b => b.DebOrCreId == 1).Sum(b => b.TransactionAmount);
-                    var creditTotal = customerBalanceList.Where(b => b.DebOrCreId == 2).Sum(b => b.TransactionAmount);
+                    var debitTotal = customerBalanceList.Where(b => b.DebOrCreId == DebitOrCreditIds.Debit).Sum(b => b.TransactionAmount);
+                    var creditTotal = customerBalanceList.Where(b => b.DebOrCreId == DebitOrCreditIds.Credit).Sum(b => b.TransactionAmount);
                     var depositUntilIssueDate = creditTotal - debitTotal;// 前受残高
                     customerBalanceList.ForEach(bal => Debug.WriteLine($"{bal.InvoiceId} : {bal.TransactionDate} : {bal.DebOrCreId} : {bal.TransactionAmount}"));
                     var afterPaidDeposit = depositUntilIssueDate - invoice.ItemsTotal;// 当該請求額支払後 前受残高
-                    var vallist = customerBalanceList.Where(b => b.TransactionTypeId == 1);
                     var paidByDeposit = afterPaidDeposit <= 0 ? depositUntilIssueDate : invoice.ItemsTotal;// 前受精算額（前受が不足の場合は前受残高）
-                    // var invoiceTotal = invoice.ItemsTotal - paidByDeposit;// 当該請求書による請求額
+
                     vm.CurrentInvoice.DepositUntilIssueDate = depositUntilIssueDate;
                     vm.CurrentInvoice.PaidByDeposit = paidByDeposit;
 
-                    // 表示用の残高（当該請求適用後の残高を表示する仕様に合わせる）
+                    // 表示用: 当該請求に充当後の前受残高
                     vm.DepositAmount = depositUntilIssueDate - paidByDeposit;
 
                     var total = vm.CurrentInvoice.InvoiceTotal;
@@ -795,6 +798,7 @@ namespace Invoice
                 {
                     vm.CurrentInvoice.PaidByDeposit = 0;
                     vm.CurrentInvoice.DepositUntilIssueDate = 0;
+                    vm.DepositAmount = 0; // リセット
                     var total = vm.CurrentInvoice.InvoiceTotal;
                     InvoiceAmountGrid.Visibility = Visibility.Collapsed;
                     DepositAmountGrid.Visibility = Visibility.Collapsed;

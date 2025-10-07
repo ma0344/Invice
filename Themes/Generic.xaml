@@ -28,6 +28,8 @@
                     <Grid Background="{TemplateBinding Background}">
                         <ui:NumberBox TextAlignment="{Binding TextAlignment, RelativeSource={RelativeSource TemplatedParent}}"
                                       Text="{TemplateBinding Text}"
+                                      BorderBrush="{Binding BorderBrush, RelativeSource={RelativeSource TemplatedParent}}"
+                                      BorderThickness="{Binding BorderThickness, RelativeSource={RelativeSource TemplatedParent}}"
                                       Minimum="{Binding Minimum, RelativeSource={RelativeSource TemplatedParent}}"
                                       Maximum="{Binding Maximum, RelativeSource={RelativeSource TemplatedParent}}"
                                       SpinButtonPlacementMode="{Binding SpinButtonPlacementMode, RelativeSource={RelativeSource TemplatedParent}}"

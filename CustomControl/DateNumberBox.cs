@@ -16,8 +16,8 @@ namespace Invoice.CustomControl
     {
         // フィールド
         private TextBlock? _overlayTextBlock;
-        private Popup _popup;
-        private CustomCalendar _calendar;
+        private Popup? _popup;
+        private CustomCalendar? _calendar;
         private static Func<DateTime> GetMinDate = () => DateTime.MinValue;
         private static Func<double, DateTime> GetMonth = (double value) => GetMinDate().AddMonths((int)value);
         public event PropertyChangedEventHandler? PropertyChanged;
@@ -27,7 +27,7 @@ namespace Invoice.CustomControl
         public CultureInfo cultureInfo = new("ja-JP");
         public event DateSelectedEventHandler? DateSelected;
         public delegate void DateSelectedEventHandler(object sender, CalendarDateChangedEventArgs e);
-        private CalendarDateChangedEventArgs calendarDateChangedEventArgs;
+        private CalendarDateChangedEventArgs? calendarDateChangedEventArgs;
 
         // コンストラクタ
         static DateNumberBox()
@@ -51,7 +51,7 @@ namespace Invoice.CustomControl
             get => (DateTime)GetValue(SelectedDateProperty);
             set
             {
-                SetValue(SelectedDateProperty, GetAdjustedDate(value,ReturnDate ?? 1));
+                SetValue(SelectedDateProperty, GetAdjustedDate(value, ReturnDate ?? 1));
                 OnPropertyChanged(nameof(SelectedDate));
                 OnPropertyChanged(nameof(DateText));
                 if (_calendar != null)
@@ -81,7 +81,11 @@ namespace Invoice.CustomControl
 
         public string DateText
         {
-            get => _calendar.DisplayDate.ToString("ggy年M月", cultureInfo);
+            get
+            {
+                var date = _calendar?.DisplayDate ?? SelectedDate;
+                return date.ToString("ggy年M月", cultureInfo);
+            }
         }
 
         public bool PopupIsOpen
@@ -123,7 +127,7 @@ namespace Invoice.CustomControl
             DependencyProperty.Register(
                 nameof(ReturnDate),
                 typeof(int?),
-                typeof(CustomCalendar),
+                typeof(DateNumberBox),
                 new PropertyMetadata(1, null));
 
 
@@ -144,7 +148,7 @@ namespace Invoice.CustomControl
         protected virtual void OnSelectedMonthChanged(DateTime newDate)
         {
             // ここで SelectedDate が変更されたときの処理を実装
-            if (_isUpdating) 
+            if (_isUpdating)
             {
                 return;
             }
@@ -204,26 +208,48 @@ namespace Invoice.CustomControl
 
         private void DateNumberBox_Loaded(object sender, RoutedEventArgs e)
         {
+            // デザイナーでは実行しない
+            if (DesignerProperties.GetIsInDesignMode(this))
+            {
+                _initializing = false;
+                return;
+            }
+
             InitializeCalendar();
             InitializePopup();
 
             var textBox = this.FindDescendantByName("InputBox") as TextBox;
-            textBox.Foreground = new SolidColorBrush(Colors.Transparent);
-            textBox.IsHitTestVisible = false;
-            var grid = textBox.Parent as Grid;
-            if (grid != null)
+            if (textBox != null)
             {
-                InitializeOverlayTextBlock(grid);
-                UpdateOverlayTextColor();
+                textBox.Foreground = new SolidColorBrush(Colors.Transparent);
+                textBox.IsHitTestVisible = false;
+                var grid = textBox.Parent as Grid;
+                if (grid != null)
+                {
+                    InitializeOverlayTextBlock(grid);
+                    UpdateOverlayTextColor();
+                }
             }
+
             var up = this.FindDescendantByName("UpSpinButton") as RepeatButton;
-            var upContent = RotateStreamGeometry(((StreamGeometry)up.Content),-90);
-            up.Content = upContent;
+            if (up?.Content is StreamGeometry upGeom)
+            {
+                var upContent = RotateStreamGeometry(upGeom, -90);
+                up.Content = upContent;
+            }
             var down = this.FindDescendantByName("DownSpinButton") as RepeatButton;
-            var downContent = RotateStreamGeometry(((StreamGeometry)down.Content), -90);
-            down.Content = downContent;
-            _calendar.MonthSelected += _calendar_MonthSelected;
-            if (_isFirstLoad)
+            if (down?.Content is StreamGeometry downGeom)
+            {
+                var downContent = RotateStreamGeometry(downGeom, -90);
+                down.Content = downContent;
+            }
+
+            if (_calendar != null)
+            {
+                _calendar.MonthSelected -= _calendar_MonthSelected;
+                _calendar.MonthSelected += _calendar_MonthSelected;
+            }
+            if (_isFirstLoad && _popup != null)
             {
                 _popup.Visibility = Visibility.Hidden;
                 PopupIsOpen = true;
@@ -235,8 +261,11 @@ namespace Invoice.CustomControl
             {
                 PopupIsOpen = false;
             }
-                _initializing = false;
-            _overlayTextBlock.Text = DateText;
+            _initializing = false;
+            if (_overlayTextBlock != null)
+            {
+                _overlayTextBlock.Text = DateText;
+            }
 
         }
 

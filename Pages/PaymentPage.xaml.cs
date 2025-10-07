@@ -692,8 +692,8 @@ namespace Invoice
                     {
                         // 請求書の状態を「入金済」に更新
                         invoice.InvoiceStatus = "入金済";
-                        invoice.InvoiceStatusId = settingsVM.InvoiceStatusClassList.FirstOrDefault(list => list.InvoiceStatus == "入金済")!.InvoiceStatusId;
-                        ((InvoiceClass)InvoiceListDataGrid.SelectedItem).UpdateInvoiceStatus(3, uow);
+                        invoice.InvoiceStatusId = InvoiceStatusIdsProvider.DepositedId;
+                        ((InvoiceClass)InvoiceListDataGrid.SelectedItem).UpdateInvoiceStatus(InvoiceStatusIdsProvider.DepositedId, uow);
                     }
                     return true;
                 }
@@ -714,16 +714,16 @@ namespace Invoice
                 if(invoice != null && payment.TransactionTypeId == TransactionTypeIdsProvider.BalanceId)
                 {
                     invoice.InvoiceStatus = "入金済";
-                    invoice.InvoiceStatusId = 3;
+                    invoice.InvoiceStatusId = InvoiceStatusIdsProvider.DepositedId;
                     invoice.PaymentDate = payment.PaymentDate;
-                    ((InvoiceClass)InvoiceListDataGrid.SelectedItem).UpdateInvoiceStatus(3, uow);
+                    ((InvoiceClass)InvoiceListDataGrid.SelectedItem).UpdateInvoiceStatus(InvoiceStatusIdsProvider.DepositedId, uow);
                 }
                 else if (invoice != null && payment.TransactionTypeId == TransactionTypeIdsProvider.DepositId)
                 {
                     invoice.InvoiceStatus = "請求済";
-                    invoice.InvoiceStatusId = 2;
+                    invoice.InvoiceStatusId = InvoiceStatusIdsProvider.BilledId;
                     invoice.PaymentDate = DateTime.Now;
-                    ((InvoiceClass)InvoiceListDataGrid.SelectedItem).UpdateInvoiceStatus(2, uow);
+                    ((InvoiceClass)InvoiceListDataGrid.SelectedItem).UpdateInvoiceStatus(InvoiceStatusIdsProvider.BilledId, uow);
                 }
 
                 var previd = prevTransactionTypeId;

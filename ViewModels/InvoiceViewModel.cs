@@ -46,13 +46,24 @@ namespace Invoice.ViewModels
             }
             //InvoiceClassList.CollectionChanged += InvoiceList_CollectionChanged;
             CurrentInvoice = new InvoiceClass();
-            CurrentInvoice.PropertyChanged += CurrentInvoice_PropertyChanged;
-            CurrentInvoice.InvoiceItems.CollectionChanged += InvoiceItems_CollectionChanged;
+            // イベント購読は setter 内で行う
         }
 
 
         private void CurrentInvoice_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
+            if (sender is InvoiceClass inv)
+            {
+                if (e.PropertyName == nameof(InvoiceClass.PaidByDeposit) ||
+                    e.PropertyName == nameof(InvoiceClass.DepositUntilIssueDate) ||
+                    e.PropertyName == nameof(InvoiceClass.InvoiceItems) ||
+                    e.PropertyName == nameof(InvoiceClass.TransactionTypeId) ||
+                    e.PropertyName == nameof(InvoiceClass.Tax))
+                {
+                    ItemsTotalAmount = inv.ItemsTotal;
+                    DepositAmount = inv.DepositUntilIssueDate - inv.PaidByDeposit;
+                }
+            }
         }
 
         private bool _DepositFromInvoicePage = false;
@@ -201,8 +212,39 @@ namespace Invoice.ViewModels
             get { return _CurrentInvoice; }
             set 
             {
-                _CurrentInvoice = value;
-                OnPropertyChanged(nameof(CurrentInvoice));
+                if (_CurrentInvoice != value)
+                {
+                    // 旧購読解除
+                    if (_CurrentInvoice != null)
+                    {
+                        _CurrentInvoice.PropertyChanged -= CurrentInvoice_PropertyChanged;
+                        if (_CurrentInvoice.InvoiceItems != null)
+                        {
+                            _CurrentInvoice.InvoiceItems.CollectionChanged -= InvoiceItems_CollectionChanged;
+                            foreach (var it in _CurrentInvoice.InvoiceItems)
+                                it.PropertyChanged -= InvoiceItem_PropertyChanged;
+                        }
+                    }
+
+                    _CurrentInvoice = value;
+                    OnPropertyChanged(nameof(CurrentInvoice));
+
+                    // 新購読登録
+                    if (_CurrentInvoice != null)
+                    {
+                        _CurrentInvoice.PropertyChanged += CurrentInvoice_PropertyChanged;
+                        if (_CurrentInvoice.InvoiceItems != null)
+                        {
+                            _CurrentInvoice.InvoiceItems.CollectionChanged += InvoiceItems_CollectionChanged;
+                            foreach (var it in _CurrentInvoice.InvoiceItems)
+                                it.PropertyChanged += InvoiceItem_PropertyChanged;
+                        }
+
+                        // 初期反映
+                        ItemsTotalAmount = _CurrentInvoice.ItemsTotal;
+                        DepositAmount = _CurrentInvoice.DepositUntilIssueDate - _CurrentInvoice.PaidByDeposit;
+                    }
+                }
             }
         }
 
@@ -304,51 +346,41 @@ namespace Invoice.ViewModels
 
         private void InvoiceItem_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(InvoiceItemClass.ItemTotal) && CurrentInvoice is InvoiceClass invoice)
+            if (CurrentInvoice is InvoiceClass invoice)
             {
-                ItemsTotalAmount = CurrentInvoice.InvoiceItems.Sum(item => item.ItemTotal);
-
-                var item = sender as InvoiceItemClass;
-                if (invoice.TransactionTypeId == 2)
+                if (e.PropertyName == nameof(InvoiceItemClass.ItemTotal) ||
+                    e.PropertyName == nameof(InvoiceItemClass.UnitPrice) ||
+                    e.PropertyName == nameof(InvoiceItemClass.Quantity) ||
+                    e.PropertyName == nameof(InvoiceItemClass.Tax))
                 {
-                    invoice.PaidByDeposit = invoice.DepositUntilIssueDate - invoice.ItemsTotal >= 0 ? invoice.ItemsTotal : invoice.DepositUntilIssueDate;
+                    // InvoiceClass 側で再計算済みの値をそのまま反映
+                    ItemsTotalAmount = invoice.ItemsTotal;
                     DepositAmount = invoice.DepositUntilIssueDate - invoice.PaidByDeposit;
+                    UpdateTotalAmount();
                 }
-                else
-                {
-                    invoice.PaidByDeposit = 0;
-                }
-
-                UpdateTotalAmount();
             }
             //UpdateTotalAmount();
         }
 
         private void UpdateTotalAmount()
         {
-            //ItemsTotalAmount = CurrentInvoice.InvoiceItems.Sum(item => item.ItemTotal);
-            //if (CurrentInvoice == null) return;
-            //CurrentInvoice.PaidByDeposit = CurrentInvoice.DepositUntilIssueDate - CurrentInvoice.ItemsTotal >= 0 ? CurrentInvoice.ItemsTotal : CurrentInvoice.DepositUntilIssueDate;
+            // UI更新用のイベント
             UpdateTotalAmountEvent?.Invoke(CurrentInvoice, EventArgs.Empty);
-
         }
 
         private void Invoice_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
             if (e.PropertyName == nameof(InvoiceClass.InvoiceItems) && CurrentInvoice is InvoiceClass invoice)
             {
-                ItemsTotalAmount = CurrentInvoice.InvoiceItems.Sum(item => item.ItemTotal);
+                ItemsTotalAmount = CurrentInvoice.ItemsTotal;
 
-                var item = sender as InvoiceItemClass;
-                if (invoice.TransactionTypeId == 2)
+                if (invoice.TransactionTypeId == TransactionTypeIdsProvider.DepositId)
                 {
-                    invoice.PaidByDeposit = invoice.DepositUntilIssueDate - invoice.ItemsTotal >= 0 ? invoice.ItemsTotal : invoice.DepositUntilIssueDate;
                     DepositAmount = invoice.DepositUntilIssueDate - invoice.PaidByDeposit;
-
                 }
                 else
                 {
-                    invoice.PaidByDeposit = 0;
+                    DepositAmount = 0;
                 }
 
                 UpdateTotalAmount();
@@ -363,5 +395,4 @@ namespace Invoice.ViewModels
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
-
 }

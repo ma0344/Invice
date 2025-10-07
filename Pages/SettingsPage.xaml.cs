@@ -23,6 +23,7 @@ using Invoice.Converters;
 using MigraDoc.DocumentObjectModel;
 using Invoice.Classes;
 using Invoice.Pages;
+using Invoice.CustomControl;
 
 namespace Invoice
 {
@@ -30,6 +31,7 @@ namespace Invoice
     {
         private bool isEditing = false;
         private SettingsViewModel vm;
+        private DateTime _selectedSlipTerm = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
         public SettingsPage(MainWindowViewModel mainWindowViewModel)
         {
             InitializeComponent();
@@ -93,6 +95,12 @@ namespace Invoice
             this.TaxListDataGrid.Loaded += DataGrid_Loaded;
             this.TransactionMethodListDataGrid.Loaded += DataGrid_Loaded;
             vm.slipNumbers = new();
+            // initialize slip term selector and load slip info for selected month
+            if (SlipNumberDateBox != null)
+            {
+                SlipNumberDateBox.SelectedDate = _selectedSlipTerm;
+            }
+            LoadSlipNumberInfoFor(_selectedSlipTerm);
         }
 
         private void Label_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
@@ -280,6 +288,7 @@ namespace Invoice
         private void ApplySlipNumberButton_Click(object sender, RoutedEventArgs e)
         {
             vm.SlipNumberInfo.UpdateSlipNumberInfo();
+            vm.slipNumbers.SlipnumberInfoReload();
         }
 
         private void ApplyTransactionTitleButton_Click(object sender, RoutedEventArgs e)
@@ -475,5 +484,45 @@ namespace Invoice
 
         }
 
+        private void ApplyAppSettingsButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var dict = new Dictionary<string, string?>
+                {
+                    ["Invoice.DueDay"] = InvoiceDueDayTextBox.Text,
+                    ["Accounting.DebitAccountCode.Balance"] = AccDebitBalanceTextBox.Text,
+                    ["Accounting.DebitAccountCode.Deposit"] = AccDebitDepositTextBox.Text,
+                    ["Accounting.DepartmentCode"] = DepartmentCodeTextBox.Text,
+                    ["Accounting.TaxHandlingCode"] = TaxHandlingCodeTextBox.Text,
+                    ["Accounting.TaxRate"] = TaxRateTextBox2.Text,
+                    ["Items.Special.InsuranceAdjustmentCode"] = SpecialItemCodeTextBox.Text,
+                    ["Items.Special.InsuranceAdjustmentName"] = SpecialItemNameTextBox.Text,
+                };
+                AppSettingsRepository.UpsertBulk(dict);
+                AppSettingsProvider.Reload();
+                MessageBox.Show("アプリ設定を保存しました。", "完了", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"{GetType().Name}.{System.Reflection.MethodBase.GetCurrentMethod()!.Name} : {ex.Message}");
+            }
+        }
+
+        private void SlipNumberDateBox_DateSelected(object sender, CalendarDateChangedEventArgs e)
+        {
+            if (e.AddedDate is DateTime date && date > DateTime.MinValue)
+            {
+                _selectedSlipTerm = new DateTime(date.Year, date.Month, 1);
+                LoadSlipNumberInfoFor(_selectedSlipTerm);
+            }
+        }
+
+        private void LoadSlipNumberInfoFor(DateTime term)
+        {
+            // Get or create per-month slip number info
+            var info = vm.slipNumbers.GetSlipNumber(term);
+            vm.SlipNumberInfo = info;
+        }
     }
 }

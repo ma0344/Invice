@@ -23,7 +23,7 @@ namespace Invoice
     /// </summary>
     public partial class MainWindow : Window
     {
-        public Page DashBoardPage { get; set; }
+        public Page AccountingPage { get; set; }
         public Page InvoicePage { get; set; }
         public Page CustomerPage { get; set; }
         public Page Payment { get; set; }
@@ -40,9 +40,14 @@ namespace Invoice
         {
             InitializeComponent();
 
+            // Domain notifications from non-UI layers
+            DomainEvents.ErrorRaised += OnDomainError;
+            DomainEvents.InfoRaised += OnDomainInfo;
+            DomainEvents.ClipboardCopyRequested += OnClipboardCopyRequested;
+
             MainWindowViewModel = new MainWindowViewModel();
             this.DataContext = MainWindowViewModel;
-            DashBoardPage = new DashBoard();
+            AccountingPage = new AccountingPage();
             InvoicePage = new InvoicePage(MainWindowViewModel);
             CustomerPage = new CustomerPage(MainWindowViewModel);
             Payment = new PaymentPage(MainWindowViewModel);
@@ -56,6 +61,47 @@ namespace Invoice
             ThemeManager.Current.ApplicationTheme = ApplicationTheme.Light;
             TaxList = TaxTypeClass.GetTaxes();
 
+        }
+
+        private void OnDomainError(DomainError error)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                MessageBox.Show(
+                    owner: this,
+                    messageBoxText: error.Exception == null ? error.Message : $"{error.Message}\r\n詳細: {error.Exception.Message}",
+                    caption: "エラー",
+                    button: MessageBoxButton.OK,
+                    icon: MessageBoxImage.Error);
+            });
+        }
+
+        private void OnDomainInfo(DomainInfo info)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                MessageBox.Show(
+                    owner: this,
+                    messageBoxText: info.Message,
+                    caption: "情報",
+                    button: MessageBoxButton.OK,
+                    icon: MessageBoxImage.Information);
+            });
+        }
+
+        private void OnClipboardCopyRequested(string text)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                try
+                {
+                    Clipboard.SetText(text);
+                }
+                catch
+                {
+                    // ignore clipboard errors
+                }
+            });
         }
 
         private void MainFrame_Navigated(object sender, NavigationEventArgs e)
@@ -87,8 +133,8 @@ namespace Invoice
 
             switch (pageName)
             {
-                case "DashBoardLabel":
-                    MainFrame.Navigate(DashBoardPage);
+                case "AccountingLabel":
+                    MainFrame.Navigate(AccountingPage);
 
                     break;
                 case "CustomerLabel":

@@ -6,7 +6,9 @@
       xmlns:local="clr-namespace:Invoice"
       xmlns:vm="clr-namespace:Invoice.ViewModels"
       xmlns:conv="clr-namespace:Invoice.Converters"
+      xmlns:cls="clr-namespace:Invoice.Classes"
       xmlns:ui="http://schemas.modernwpf.com/2019"
+      xmlns:cc="clr-namespace:Invoice.CustomControl"
       mc:Ignorable="d"
       d:Background="White"
       d:DesignHeight="600"
@@ -183,14 +185,14 @@
                                Content="税項目設定"
                                FontSize="24px"
                                FontWeight="Bold"
-                               Margin="0,20,0,10"/>
+                               Margin="0,20,0,10" />
                         <DataGrid x:Name="TaxListDataGrid"
                                   ItemsSource="{Binding SettingsVM.TaxTypeClassList}"
                                   CanUserAddRows="True"
                                   AddingNewItem="TaxListDataGrid_AddingNewItem"
                                   InitializingNewItem="TaxListDataGrid_InitializingNewItem"
                                   Grid.Row="1"
-                                                                     Width="300"
+                                  Width="300"
                                   Style="{StaticResource DefaultDataGrid}"
                                   PreparingCellForEdit="TaxListDataGrid_PreparingCellForEdit">
                             <DataGrid.Resources>
@@ -213,7 +215,8 @@
                                                     Width="134"
                                                     Binding="{Binding TaxTypeName,Mode=TwoWay}">
                                     <DataGridTextColumn.CellStyle>
-                                        <Style TargetType="DataGridCell" BasedOn="{StaticResource CustomDataGridCellStyle}">
+                                        <Style TargetType="DataGridCell"
+                                               BasedOn="{StaticResource CustomDataGridCellStyle}">
                                             <Setter Property="HorizontalAlignment"
                                                     Value="Center" />
                                         </Style>
@@ -232,20 +235,20 @@
                                     </DataGridTextColumn.CellStyle>
                                 </DataGridTextColumn>
 
-                                
+
 
                                 <DataGridTemplateColumn Header="税率"
                                                         Width="134">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
-                                            <TextBox x:Name="TaxRateTextBox" HorizontalAlignment="Center"
+                                            <TextBox x:Name="TaxRateTextBox"
+                                                     HorizontalAlignment="Center"
                                                      Style="{StaticResource DataGridTextBoxStyle}"
                                                      VerticalAlignment="Center"
                                                      InputMethod.InputScope="Number"
                                                      InputMethod.IsInputMethodEnabled="False"
                                                      GotKeyboardFocus="TaxRateTextBox_GotKeyboardFocus"
-                                                     Text="{Binding TaxRate,StringFormat={}{0:P1},Mode=TwoWay,UpdateSourceTrigger=LostFocus}" 
-                                                     />
+                                                     Text="{Binding TaxRate,StringFormat={}{0:P1},Mode=TwoWay,UpdateSourceTrigger=LostFocus}" />
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
@@ -255,25 +258,25 @@
 
                         <StackPanel x:Name="TaxTabButtonStackPanel"
                                     Grid.Row="2"
-                                        Orientation="Horizontal"
-                                        HorizontalAlignment="Right">
-                                <Button x:Name="ApplyTaxButton"
-                                        Content="変更適用"
-                                        Width="130"
-                                        Height="30"
-                                        Margin="5,10"
-                                        Click="ApplyTaxButton_Click" />
-                                <Button x:Name="DeleteTaxButton"
-                                        Content="項目削除"
-                                        Width="130"
-                                        Height="30"
-                                        Margin="5,10"
-                                        Click="DeleteTaxButton_Click" />
+                                    Orientation="Horizontal"
+                                    HorizontalAlignment="Right">
+                            <Button x:Name="ApplyTaxButton"
+                                    Content="変更適用"
+                                    Width="130"
+                                    Height="30"
+                                    Margin="5,10"
+                                    Click="ApplyTaxButton_Click" />
+                            <Button x:Name="DeleteTaxButton"
+                                    Content="項目削除"
+                                    Width="130"
+                                    Height="30"
+                                    Margin="5,10"
+                                    Click="DeleteTaxButton_Click" />
                         </StackPanel>
 
                     </Grid>
                 </TabItem>
-                
+
                 <TabItem x:Name="SlipNumberSettingsTab">
                     <TabItem.Header>
                         <Grid Width="100"
@@ -302,8 +305,9 @@
                             </Style>
 
                         </Grid.Resources>
-                        
+
                         <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
@@ -314,8 +318,50 @@
                                FontSize="24px"
                                FontWeight="Bold"
                                Margin="0,20,0,10" />
+
+                        <!-- Target month selector -->
+                        <Grid Grid.Row="1"
+                              Margin="0,0,0,13">
+                            <Grid.Resources>
+                                <Style TargetType="TextBox"
+                                       BasedOn="{StaticResource DefaultTextBoxStyle}">
+                                </Style>
+                            </Grid.Resources>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Label Grid.Column="0"
+                                   Content="対象年月"
+                                   FontSize="16"
+                                   VerticalAlignment="Center"
+                                   Height="Auto" />
+                            <cc:DateNumberBox x:Name="SlipNumberDateBox"
+                                              Grid.Column="1"
+                                              BorderBrush="Black"
+                                              BorderThickness="1"
+                                              Padding="-1,-1,-1,-1"
+                                              TextAlignment="Center"
+                                              SpinButtonPlacementMode="Inline"
+                                              VerticalAlignment="Bottom"
+                                              FontSize="18"
+                                              FontWeight="Bold"
+                                              Tag="0"
+                                              FontFamily="{StaticResource ContentControlThemeFontFamily}"
+                                              IsEnabled="True"
+                                              DateSelected="SlipNumberDateBox_DateSelected"
+                                              Width="210"
+                                              Foreground="Black"
+                                              InputMethod.PreferredImeState="Off"
+                                              HorizontalContentAlignment="Center"
+                                              VerticalContentAlignment="Center"
+                                              LargeChange="-12"
+                                              SmallChange="-1"
+                                              />
+                        </Grid>
+
                         <Grid x:Name="InvoiceNumbersGrid"
-                              Grid.Row="1"
+                              Grid.Row="2"
                               Margin="0,0,0,13">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition />
@@ -340,7 +386,6 @@
                                            Height="20" />
                                 <TextBox x:Name="InvoicePrefix"
                                          HorizontalAlignment="Left"
-                                         
                                          Grid.Row="1"
                                          Text="{Binding SettingsVM.SlipNumberInfo.InvoicePrefix, Mode=TwoWay}"
                                          Width="100" />
@@ -359,25 +404,9 @@
                                          HorizontalAlignment="Left"
                                          Width="100" />
                             </Grid>
-                            <!--<Grid Grid.Column="3">
-                                <Grid.RowDefinitions>
-                                    <RowDefinition />
-                                    <RowDefinition />
-                                </Grid.RowDefinitions>
-                                <TextBlock Grid.Row="0"
-                                           Text="サフィックス"
-                                           Height="20" />
-                                <TextBox x:Name="InvoiceSuffix"
-                                         Grid.Row="1"
-                                         BorderThickness="0"
-                                         Text="{Binding SettingsVM.SlipNumberInfo.InvoiceSuffix, Mode=TwoWay}"
-                                         HorizontalAlignment="Left"
-                                         HorizontalContentAlignment="Center"
-                                         Width="100" />
-                            </Grid>-->
                         </Grid>
                         <Grid x:Name="ReceiptNumbersGrid"
-                              Grid.Row="2"
+                              Grid.Row="3"
                               Margin="0,0,0,13">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition />
@@ -386,25 +415,25 @@
                                 <ColumnDefinition />
                             </Grid.ColumnDefinitions>
                             <Label Grid.Column="0"
-                                    Content="領収書番号"
-                                    FontSize="20"
-                                    VerticalAlignment="Center"
-                                    VerticalContentAlignment="Center"
-                                    FontWeight="Bold"
-                                    Height="40" />
+                                   Content="領収書番号"
+                                   FontSize="20"
+                                   VerticalAlignment="Center"
+                                   VerticalContentAlignment="Center"
+                                   FontWeight="Bold"
+                                   Height="40" />
                             <Grid Grid.Column="1">
                                 <Grid.RowDefinitions>
                                     <RowDefinition />
                                     <RowDefinition />
                                 </Grid.RowDefinitions>
                                 <TextBlock Grid.Row="0"
-                                            Text="プレフィックス"
-                                            Height="20" />
+                                           Text="プレフィックス"
+                                           Height="20" />
                                 <TextBox x:Name="ReceiptPrefix"
-                                            HorizontalAlignment="Left"
-                                            Grid.Row="1"
-                                            Text="{Binding SettingsVM.SlipNumberInfo.ReceiptPrefix, Mode=TwoWay}"
-                                            Width="100" />
+                                         HorizontalAlignment="Left"
+                                         Grid.Row="1"
+                                         Text="{Binding SettingsVM.SlipNumberInfo.ReceiptPrefix, Mode=TwoWay}"
+                                         Width="100" />
                             </Grid>
                             <Grid Grid.Column="2">
                                 <Grid.RowDefinitions>
@@ -412,33 +441,17 @@
                                     <RowDefinition />
                                 </Grid.RowDefinitions>
                                 <TextBlock Grid.Row="0"
-                                            Height="20"
-                                            Text="最終番号" />
+                                           Height="20"
+                                           Text="最終番号" />
                                 <TextBox x:Name="ReceiptNumber"
                                          Grid.Row="1"
                                          Text="{Binding SettingsVM.SlipNumberInfo.ReceiptLatest, Mode=TwoWay}"
                                          HorizontalAlignment="Left"
                                          Width="100" />
                             </Grid>
-                            <!--<Grid Grid.Column="3">
-                                <Grid.RowDefinitions>
-                                    <RowDefinition />
-                                    <RowDefinition />
-                                </Grid.RowDefinitions>
-                                <TextBlock Grid.Row="0"
-                                            Text="サフィックス"
-                                            Height="20" />
-                                <TextBox x:Name="ReceiptSuffix"
-                                         Grid.Row="1"
-                                            BorderThickness="0"
-                                         Text="{Binding SettingsVM.SlipNumberInfo.ReceiptSuffix, Mode=TwoWay}"
-                                            HorizontalAlignment="Left"
-                                            HorizontalContentAlignment="Center"
-                                            Width="100" />
-                            </Grid>-->
                         </Grid>
                         <StackPanel x:Name="SlipNumberTabButtonStackPanel"
-                                    Grid.Row="3"
+                                    Grid.Row="4"
                                     Orientation="Horizontal"
                                     HorizontalAlignment="Right">
                             <Button x:Name="ApplySlipNumberButton"
@@ -652,7 +665,7 @@
                         </Grid>
                     </Grid>
                 </TabItem>
-                
+
                 <TabItem x:Name="TransactionTitleTab">
                     <TabItem.Header>
                         <Grid Width="100"
@@ -729,6 +742,120 @@
                     </Grid>
                 </TabItem>
 
+                <TabItem x:Name="AppSettingsTab">
+                    <TabItem.Header>
+                        <Grid Width="120"
+                              Height="30"
+                              VerticalAlignment="Stretch">
+                            <TextBlock VerticalAlignment="Center"
+                                       Text="アプリ設定" />
+                        </Grid>
+                    </TabItem.Header>
+
+                    <Grid Width="700"
+                          x:Name="AppSettingsGrid">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <Label Grid.Row="0"
+                               Content="アプリ設定 (DB)"
+                               FontSize="24"
+                               FontWeight="Bold"
+                               Margin="0,20,0,10" />
+
+                        <StackPanel Grid.Row="1"
+                                    Margin="0,10,0,0">
+                            <StackPanel Orientation="Horizontal"
+                                        Margin="0,5">
+                                <TextBlock Text="請求期限日 (Invoice.DueDay)"
+                                           Width="220"
+                                           VerticalAlignment="Center" />
+                                <TextBox x:Name="InvoiceDueDayTextBox"
+                                         Width="120"
+                                         Text="{Binding Source={x:Static cls:AppSettingsProvider.InvoiceDueDay}, Mode=OneWay}" />
+                            </StackPanel>
+
+                            <StackPanel Orientation="Horizontal"
+                                        Margin="0,5">
+                                <TextBlock Text="借方科目コード(売掛)"
+                                           Width="220"
+                                           VerticalAlignment="Center" />
+                                <TextBox x:Name="AccDebitBalanceTextBox"
+                                         Width="120"
+                                         Text="{Binding Source={x:Static cls:AppSettingsProvider.AccountingDebitAccountCodeBalance}, Mode=OneWay}" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal"
+                                        Margin="0,5">
+                                <TextBlock Text="借方科目コード(前受)"
+                                           Width="220"
+                                           VerticalAlignment="Center" />
+                                <TextBox x:Name="AccDebitDepositTextBox"
+                                         Width="120"
+                                         Text="{Binding Source={x:Static cls:AppSettingsProvider.AccountingDebitAccountCodeDeposit}, Mode=OneWay}" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal"
+                                        Margin="0,5">
+                                <TextBlock Text="部門コード"
+                                           Width="220"
+                                           VerticalAlignment="Center" />
+                                <TextBox x:Name="DepartmentCodeTextBox"
+                                         Width="120"
+                                         Text="{Binding Source={x:Static cls:AppSettingsProvider.AccountingDepartmentCode}, Mode=OneWay}" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal"
+                                        Margin="0,5">
+                                <TextBlock Text="税処理コード"
+                                           Width="220"
+                                           VerticalAlignment="Center" />
+                                <TextBox x:Name="TaxHandlingCodeTextBox"
+                                         Width="120"
+                                         Text="{Binding Source={x:Static cls:AppSettingsProvider.AccountingTaxHandlingCode}, Mode=OneWay}" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal"
+                                        Margin="0,5">
+                                <TextBlock Text="税率(%)"
+                                           Width="220"
+                                           VerticalAlignment="Center" />
+                                <TextBox x:Name="TaxRateTextBox2"
+                                         Width="120"
+                                         Text="{Binding Source={x:Static cls:AppSettingsProvider.AccountingTaxRate}, Mode=OneWay}" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal"
+                                        Margin="0,5">
+                                <TextBlock Text="特例品目コード"
+                                           Width="220"
+                                           VerticalAlignment="Center" />
+                                <TextBox x:Name="SpecialItemCodeTextBox"
+                                         Width="200"
+                                         Text="{Binding Source={x:Static cls:AppSettingsProvider.SpecialItemCode}, Mode=OneWay}" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal"
+                                        Margin="0,5">
+                                <TextBlock Text="特例品目名称"
+                                           Width="220"
+                                           VerticalAlignment="Center" />
+                                <TextBox x:Name="SpecialItemNameTextBox"
+                                         Width="300"
+                                         Text="{Binding Source={x:Static cls:AppSettingsProvider.SpecialItemName}, Mode=OneWay}" />
+                            </StackPanel>
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="2"
+                                    Orientation="Horizontal"
+                                    HorizontalAlignment="Right">
+                            <Button x:Name="ApplyAppSettingsButton"
+                                    Content="DBへ保存"
+                                    Width="130"
+                                    Height="30"
+                                    Margin="5,10"
+                                    Click="ApplyAppSettingsButton_Click" />
+                        </StackPanel>
+                    </Grid>
+                </TabItem>
+
             </TabControl>
         </Grid>
 
@@ -750,9 +877,9 @@
 
             <Grid Margin="20">
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
                 <Grid.Resources>
                     <Style TargetType="StackPanel">
@@ -788,7 +915,7 @@
                         <ColumnDefinition />
                         <ColumnDefinition />
                     </Grid.ColumnDefinitions>
-                    <Label Grid.Column ="0"
+                    <Label Grid.Column="0"
                            Content="{Binding SettingsVM.PaneTitle}"
                            FontSize="20"
                            FontWeight="Bold"
@@ -827,7 +954,7 @@
                         <TextBlock Grid.Row="0"
                                    Text="税種" />
                         <ComboBox x:Name="TaxTypeIdTextBox"
-                                 Grid.Row="1"
+                                  Grid.Row="1"
                                   ItemsSource="{Binding SettingsVM.TaxTypeClassList}"
                                   DisplayMemberPath="TaxTypeName"
                                   SelectedValuePath="TaxTypeId"
@@ -851,7 +978,8 @@
                             <RowDefinition />
                             <RowDefinition />
                         </Grid.RowDefinitions>
-                        <TextBlock Grid.Row="0" Text="コード" />
+                        <TextBlock Grid.Row="0"
+                                   Text="コード" />
                         <TextBox x:Name="ItemCodeTextBox"
                                  Grid.Row="1"
                                  Text="{Binding SettingsVM.SelectedItem.ItemCode, Mode=TwoWay}"
@@ -863,7 +991,8 @@
                             <RowDefinition />
                             <RowDefinition />
                         </Grid.RowDefinitions>
-                        <TextBlock Grid.Row="0" Text="単位" />
+                        <TextBlock Grid.Row="0"
+                                   Text="単位" />
                         <TextBox x:Name="UnitTextBox"
                                  Grid.Row="1"
                                  Text="{Binding SettingsVM.SelectedItem.Unit, Mode=TwoWay}"

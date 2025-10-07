@@ -64,7 +64,7 @@
                 <Label x:Name="PaymentLabel"
                        Foreground="#CC000000"
                        MouseLeftButtonUp="Label_MouseLeftButtonUp">入金管理</Label>
-                <Label x:Name="DashBoardLabel"
+                <Label x:Name="AccountingLabel"
                        Foreground="#CC000000"
                        MouseLeftButtonUp="Label_MouseLeftButtonUp">仕訳出力</Label>
                 <Label x:Name="CustomerLabel"

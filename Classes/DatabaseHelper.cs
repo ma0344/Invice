@@ -111,7 +111,8 @@ namespace Invoice.Classes
                     uow.Rollback();
                 }
 
-                MessageBox.Show($"エラーが発生しました: {e.Message}\r\nスタックトレース\r\n{e.StackTrace}");
+                // UIとの分離: ドメインイベントで通知
+                DomainEvents.RaiseError($"エラーが発生しました: {e.Message}", e);
                 return false;
             }
             finally

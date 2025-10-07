@@ -170,7 +170,7 @@ namespace Invoice.Accounting
                     outputFileName += reqData.ProcessDate.ToString("利用料請求仕訳 yyyy年 MM月 請求分") + ".csv";
                     if (CreateCsvFile(reqData, selectedInvoices) == string.Empty)
                     {
-                        MessageBox.Show("指定された日付のデータがありませんでした");
+                        DomainEvents.RaiseError("指定された日付のデータがありませんでした");
                     }
                     else
                     {
@@ -181,7 +181,7 @@ namespace Invoice.Accounting
                     string previewString = PreviewCsv(reqData, selectedInvoices);
                     if (previewString == "false")
                     {
-                        MessageBox.Show("指定された日付のデータがありませんでした");
+                        DomainEvents.RaiseError("指定された日付のデータがありませんでした");
                     }
                     else
                     {
@@ -226,9 +226,9 @@ namespace Invoice.Accounting
                         SlipNumber: reqData.VoucherNumber,
                         LineNum: rowCounter,
                         IssueDateString: reqData.VoucherDateString,
-                        DebitAccCode: invoice.TransactionTypeId == 1 ? 134 : 310,
+                        DebitAccCode: invoice.TransactionTypeId == TransactionTypeIdsProvider.BalanceId ? AppSettingsProvider.AccountingDebitAccountCodeBalance : AppSettingsProvider.AccountingDebitAccountCodeDeposit,
                         DebitSubCode: invoice.CustomerId,
-                        DebitDeptCode: 211,
+                        DebitDeptCode: AppSettingsProvider.AccountingDepartmentCode,
                         DebitAmount: invoice.ItemsTotal,
                         Description: $"利用料 {invoice.CustomerName}",
                         AuxMemo: invoice.IssueDate!.Value.ToString("ggy年M月")
@@ -237,14 +237,16 @@ namespace Invoice.Accounting
                     var accountingDic = convertedLineData.AccountingDic;
                     foreach (var item in invoice.InvoiceItems)
                     {
-                        if (item.ItemCode == "99" || item.ItemName == "特定障害者特別給付として国保連請求済み") continue;
+                        var specialCode = AppSettingsProvider.SpecialItemCode;
+                        var specialName = AppSettingsProvider.SpecialItemName;
+                        if (item.ItemCode == specialCode || item.ItemName == specialName) continue;
                         rowCounter++;
                         var creditCode = GetAccountCode(item.ItemName);
                         var creditSubCode = GetItemSubCode(item.ItemName);
 
-                        if (item.ItemName.Contains("家賃") && invoice.InvoiceItems.Any(i => (i.ItemCode == "99" || i.ItemName == "特定障害者特別給付として国保連請求済み")))
+                        if (item.ItemName.Contains("家賃") && invoice.InvoiceItems.Any(i => (i.ItemCode == specialCode || i.ItemName == specialName)))
                         {
-                            item.UnitPrice = item.UnitPrice * item.Quantity + invoice.InvoiceItems.First(i => (i.ItemCode == "99" || i.ItemName == "特定障害者特別給付として国保連請求済み")).ItemTotal;
+                            item.UnitPrice = item.UnitPrice * item.Quantity + invoice.InvoiceItems.First(i => (i.ItemCode == specialCode || i.ItemName == specialName)).ItemTotal;
                             item.Quantity = 1;
                         }
                         convertedLineData = new AccountingDataBaseClass
@@ -254,7 +256,7 @@ namespace Invoice.Accounting
                             IssueDateString: reqData.VoucherDateString,
                             CreditAccCode: creditCode,
                             CreditSubCode: creditSubCode,
-                            CreditDeptCode: 211,
+                            CreditDeptCode: AppSettingsProvider.AccountingDepartmentCode,
                             CreditAmount: item.ItemTotal,
                             Description: $"{item.ItemName}" + (item.Quantity > 1 ? $" × {item.Quantity}"
                             : ""),
@@ -343,13 +345,15 @@ namespace Invoice.Accounting
                 message = "利用料請求仕訳のCSVファイルを出力しました。\r\n";
                 message += "\r\n\t\t仕訳行数 ： " + rowCounter + " 行";
 
-                Clipboard.SetText(outputFileName);
-                message += "\r\n\r\nファイルパスをクリップボードにコピーしました。\r\n";
-                MessageBox.Show(message, "処理終了");
+                // クリップボード操作は UI 層へ依頼
+                DomainEvents.RaiseClipboardCopy(outputPath);
+                message += "\r\rファイルパスをクリップボードにコピーしました。\r\n";
+                // 成功メッセージは UI へ通知
+                DomainEvents.RaiseInfo(message);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"{GetType().Name}.{MethodBase.GetCurrentMethod()!.Name} : {ex.Message}");
+                DomainEvents.RaiseError($"{GetType().Name}.{MethodBase.GetCurrentMethod()!.Name} : {ex.Message}", ex);
             }
         }
 
@@ -417,27 +421,27 @@ namespace Invoice.Accounting
             LineNumber = LineNum;
             VoucherDate = IssueDateString;
             DebitAccountCode = DebitAccCode;
-            DebitAccountName = DebitAccCode == 0 ? "" : AccountingDic[DebitAccCode.ToString()];
+            DebitAccountName = DebitAccCode == 0 ? "" : AccountingDic.ContainsKey(DebitAccCode.ToString()) ? AccountingDic[DebitAccCode.ToString()] : "";
             this.DebitSubCode = DebitSubCode;
-            DebitSubName = DebitSubCode == 0 ? "" : AccountingDic[DebitAccCode.ToString() + "." + DebitSubCode.ToString()];
+            DebitSubName = DebitSubCode == 0 ? "" : AccountingDic.ContainsKey(DebitAccCode.ToString() + "." + DebitSubCode.ToString()) ? AccountingDic[DebitAccCode.ToString() + "." + DebitSubCode.ToString()] : "";
             DebitDepartmentCode = DebitDeptCode;
-            DebitDepartmentName = DebitDeptCode == 0 ? "" : DepartmentDic[DebitDeptCode.ToString()];
+            DebitDepartmentName = DebitDeptCode == 0 ? "" : DepartmentDic.ContainsKey(DebitDeptCode.ToString()) ? DepartmentDic[DebitDeptCode.ToString()] : "";
             DebitTaxDivisionCode = 0;
             DebitBusinessCategoryCode = 0;
-            DebitTaxHandlingCode = 3;
-            DebitTaxRate = 10;
+            DebitTaxHandlingCode = AppSettingsProvider.AccountingTaxHandlingCode;
+            DebitTaxRate = AppSettingsProvider.AccountingTaxRate;
             this.DebitAmount = DebitAmount;
             DebitTax = 0;
             CreditAccountCode = CreditAccCode;
-            CreditAccountName = CreditAccCode == 0 ? "" : AccountingDic[CreditAccCode.ToString()];
+            CreditAccountName = CreditAccCode == 0 ? "" : AccountingDic.ContainsKey(CreditAccCode.ToString()) ? AccountingDic[CreditAccCode.ToString()] : "";
             this.CreditSubCode = CreditSubCode;
-            CreditSubName = CreditSubCode == 0 ? "" : AccountingDic[CreditAccCode.ToString() + "." + CreditSubCode.ToString()];
+            CreditSubName = CreditSubCode == 0 ? "" : AccountingDic.ContainsKey(CreditAccCode.ToString() + "." + CreditSubCode.ToString()) ? AccountingDic[CreditAccCode.ToString() + "." + CreditSubCode.ToString()] : "";
             CreditDepartmentCode = CreditDeptCode;
-            CreditDepartmentName = CreditDeptCode == 0 ? "" : DepartmentDic[CreditDeptCode.ToString()];
+            CreditDepartmentName = CreditDeptCode == 0 ? "" : DepartmentDic.ContainsKey(CreditDeptCode.ToString()) ? DepartmentDic[CreditDeptCode.ToString()] : "";
             CreditTaxDivisionCode = 0;
             CreditBusinessCategoryCode = 0;
-            CreditTaxHandlingCode = 3;
-            CreditTaxRate = 10;
+            CreditTaxHandlingCode = AppSettingsProvider.AccountingTaxHandlingCode;
+            CreditTaxRate = AppSettingsProvider.AccountingTaxRate;
             this.CreditAmount = CreditAmount;
             CreditTax = 0;
             TransactionDescription = Description;

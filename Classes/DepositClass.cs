@@ -110,9 +110,9 @@ namespace Invoice.Classes
             {
                 if (deposit.DepositAmount > 0) // 前受額が1以上の場合は以下の処理
                 {
-                    if (AddDeposit(uow, deposit) == 0) //追加した前受データのDepositIDが0か？（正しく追加されているかの判定？）
+                    if (AddDeposit(uow, deposit) == 0) // 追加失敗
                     {
-                        MessageBox.Show("TryAddDeposit内で、T_DEPOSITに追加しようとしたデータのIDが0でした");
+                        DomainEvents.RaiseError("前受金の登録に失敗しました (ID=0)。");
                         return false; //適切に追加されていなければTryAddDepositをFalseで終了
                     }
                     // 前受額が0でないなく、AddDepositが適切に終了していれば以下の処理
@@ -123,7 +123,8 @@ namespace Invoice.Classes
                         payment.DepositId = deposit.DepositId;
                     return true;
                 }
-                MessageBox.Show("前受額が0です");
+                // 0以下は不正: UI層へ通知
+                DomainEvents.RaiseError("前受額が0です");
                 return false;
             }, unitOfWork);
         }

@@ -28,14 +28,14 @@ namespace Invoice.Classes
         public DateTime SlipTerm
         {
             get { return _SlipTerm; }
-            set { _SlipTerm = value; }
+            set { _SlipTerm = new DateTime(value.Year, value.Month, 1); }
         }
         private string _InvoicePrefix = "I";
         public string InvoicePrefix { get => _InvoicePrefix; set => _InvoicePrefix = value; }
 
         public string InvoiceNumber
         {
-            get => $"{InvoicePrefix}{_SlipTerm.ToString("yyMM_")}{InvoiceLatest:0000}";
+            get => $"{InvoicePrefix}{_SlipTerm:yyMM_}{InvoiceLatest:0000}";
         }
 
         private string _ReceiptPrefix = "R";
@@ -43,7 +43,7 @@ namespace Invoice.Classes
 
         public string ReceiptNumber
         {
-            get => $"{ReceiptPrefix}{_SlipTerm.ToString("yyMM_")}{ReceiptLatest:0000}";
+            get => $"{ReceiptPrefix}{_SlipTerm:yyMM_}{ReceiptLatest:0000}";
         }
 
         private int _InvoiceLatest = 1;
@@ -54,6 +54,7 @@ namespace Invoice.Classes
             {
                 _InvoiceLatest = value;
                 OnPropertyChanged(nameof(InvoiceLatest));
+                OnPropertyChanged(nameof(InvoiceNumber));
             }
         }
 
@@ -65,18 +66,20 @@ namespace Invoice.Classes
             {
                 _ReceiptLatest = value;
                 OnPropertyChanged(nameof(ReceiptLatest));
+                OnPropertyChanged(nameof(ReceiptNumber));
             }
         }
 
 
         public static SlipNumberClass GetSlipNumberByMonth(DateTime date)
         {
+            var term = new DateTime(date.Year, date.Month, 1);
             var info = new SlipNumberClass();
             string connectionString = ConnectionInfo.Builder.ConnectionString;
             using var connection = new MySqlConnection(connectionString);
             connection.Open();
             using var command = new MySqlCommand("SELECT * FROM T_SLIP_NUMBER_INFO WHERE SLIP_TERM = @SlipTerm", connection);
-            command.Parameters.AddWithValue("@SlipTerm", date);
+            command.Parameters.AddWithValue("@SlipTerm", term);
             using var reader = command.ExecuteReader();
             if (reader.Read())
             {
@@ -93,10 +96,10 @@ namespace Invoice.Classes
 
         public static SlipNumberClass AddSlipNumberByMonth(DateTime slipTerm)
         {
-            string datePrefix = slipTerm.ToString("yyMM_");
+            var term = new DateTime(slipTerm.Year, slipTerm.Month, 1);
             var slipNumberClass = new SlipNumberClass()
             {
-                SlipTerm = new DateTime(slipTerm.Year, slipTerm.Month, 1)
+                SlipTerm = term
             };
 
             string connectionString = ConnectionInfo.Builder.ConnectionString;
@@ -169,12 +172,11 @@ namespace Invoice.Classes
         }
         public static ObservableCollection<SlipNumberClass> GetSlipNumbers()
         {
-            var slipNumbers = new List<SlipNumberClass>();
             ObservableCollection<SlipNumberClass> slipNumberClasses = new ObservableCollection<SlipNumberClass>();
             string connectionString = ConnectionInfo.Builder.ConnectionString;
             using var connection = new MySqlConnection(connectionString);
             connection.Open();
-            using var command = new MySqlCommand("SELECT * FROM T_SLIP_NUMBER_INFO", connection);
+            using var command = new MySqlCommand("SELECT * FROM T_SLIP_NUMBER_INFO ORDER BY SLIP_TERM ASC", connection);
             using var reader = command.ExecuteReader();
             while (reader.Read())
             {

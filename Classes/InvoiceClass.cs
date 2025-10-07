@@ -66,9 +66,8 @@ namespace Invoice.Classes
         {
             get
             {
-                var itemsTotal = InvoiceItems.Sum(x => x.Quantity * x.UnitPrice + x.Tax);
-                PaidByDeposit = DepositUntilIssueDate < itemsTotal ? DepositUntilIssueDate : itemsTotal; // 副作用: 後続フェーズで除去予定
-                return itemsTotal;
+                // 合計の算出のみ。副作用は発生させない
+                return InvoiceItems.Sum(x => x.Quantity * x.UnitPrice + x.Tax);
             }
         }
 
@@ -76,7 +75,7 @@ namespace Invoice.Classes
         public int PaidByDeposit
         {
             get => _PaidByDeposit;
-            set { _PaidByDeposit = value; OnPropertyChanged(nameof(PaidByDeposit)); }
+            set { _PaidByDeposit = value; OnPropertyChanged(nameof(PaidByDeposit)); OnPropertyChanged(nameof(InvoiceTotal)); }
         }
 
         private string? _Message = "";
@@ -90,7 +89,7 @@ namespace Invoice.Classes
         public int? TransactionTypeId
         {
             get => _TransactionTypeId;
-            set { _TransactionTypeId = value; OnPropertyChanged(nameof(TransactionTypeId)); }
+            set { _TransactionTypeId = value; OnPropertyChanged(nameof(TransactionTypeId)); UpdatePaidByDeposit(); }
         }
 
         private DateTime? _PaymentDate = DateTime.Now;
@@ -135,10 +134,9 @@ namespace Invoice.Classes
             set
             {
                 _DepositUntilIssueDate = value;
-                var afterPaidDeposit = DepositUntilIssueDate - ItemsTotal; // 当該請求額支払後 前受残高
-                PaidByDeposit = afterPaidDeposit <= 0 ? DepositUntilIssueDate : ItemsTotal; // 前受精算額
-                OnPropertyChanged(nameof(InvoiceTotal));
+                UpdatePaidByDeposit();
                 OnPropertyChanged(nameof(DepositUntilIssueDate));
+                OnPropertyChanged(nameof(InvoiceTotal));
             }
         }
 
@@ -197,7 +195,25 @@ namespace Invoice.Classes
 
         public void RecalculateTotals()
         {
-            NotifyPropertiesChanged(nameof(DepositUntilIssueDate), nameof(InvoiceItems), nameof(Tax), nameof(PaidByDeposit), nameof(ItemsTotal), nameof(InvoiceTotal));
+            UpdatePaidByDeposit();
+            NotifyPropertiesChanged(nameof(InvoiceItems), nameof(Tax), nameof(ItemsTotal), nameof(InvoiceTotal));
+        }
+
+        private void UpdatePaidByDeposit()
+        {
+            if (TransactionTypeId == TransactionTypeIdsProvider.DepositId)
+            {
+                var itemsTotal = ItemsTotal;
+                var deposit = DepositUntilIssueDate;
+                var newPaid = Math.Min(deposit, itemsTotal);
+                if (PaidByDeposit != newPaid)
+                    PaidByDeposit = newPaid;
+            }
+            else
+            {
+                if (PaidByDeposit != 0)
+                    PaidByDeposit = 0;
+            }
         }
 
         private void NotifyPropertiesChanged(params string[] propertyNames)
@@ -303,7 +319,7 @@ namespace Invoice.Classes
                     if (PaidByDeposit >= 0)
                         DepositClass.TryUpdateDeposit(this, uow);
                     else
-                        MessageBox.Show("前受金の更新に失敗しました。");
+                        System.Diagnostics.Debug.WriteLine("前受金の更新に失敗しました。");
                 }
                 return true;
             }, unitOfWork);
@@ -314,7 +330,7 @@ namespace Invoice.Classes
                 var balances = BalanceClass.GetBalancesById(new IDs(invoiceId: InvoiceId, paymentId: null), new UnitOfWork());
                 if (balances.Count > 1)
                 {
-                    MessageBox.Show("請求情報が重複しています。");
+                    System.Diagnostics.Debug.WriteLine("請求情報が重複しています。");
                     return false;
                 }
                 else
@@ -383,7 +399,7 @@ namespace Invoice.Classes
             newInvoice.InvoiceItems = [];
             var items = InvoiceItems.OfType<InvoiceItemClass>().Select(i => i.DeepClone()).ToList();
             items.ForEach(i => newInvoice.InvoiceItems.Add(i));
-            newInvoice.RecalculateTotals(); // 追加: クローン後合計再計算
+            newInvoice.RecalculateTotals(); // 合計再計算
             return newInvoice;
         }
 

@@ -26,8 +26,8 @@ namespace Invoice.Classes
         public string CustomerName { get; set; } = string.Empty;
         public string TransactionTypeName { get; set; } = string.Empty;
         public string DateString => TransactionDate.ToShortDateString();
-        public decimal? DebitAmount => DebOrCreId == 1 ? TransactionAmount : null;
-        public decimal? CreditAmount => DebOrCreId == 2 ? TransactionAmount : null;
+        public decimal? DebitAmount => DebOrCreId == DebitOrCreditIds.Debit ? TransactionAmount : null;
+        public decimal? CreditAmount => DebOrCreId == DebitOrCreditIds.Credit ? TransactionAmount : null;
 
         // データベースから全てのレコードを取得
         public static List<BalanceClass> GetAllBalances()
@@ -123,7 +123,7 @@ namespace Invoice.Classes
                     balance.InvoiceId = payment.InvoiceId;
                     balance.PaymentId = payment.PaymentId;
                     balance.DepositId = payment.DepositId;
-                    balance.DebOrCreId = 2;
+                    balance.DebOrCreId = DebitOrCreditIds.Credit;
                     balance.SlipNumber = payment.SlipNumber;
                     balance.TransactionDate = payment.PaymentDate;
                     balance.TransactionTypeId = payment.TransactionTypeId;
@@ -135,7 +135,7 @@ namespace Invoice.Classes
                     balance.InvoiceId = invoice.InvoiceId;
                     balance.PaymentId = null;
                     balance.DepositId = null;
-                    balance.DebOrCreId = 1;
+                    balance.DebOrCreId = DebitOrCreditIds.Debit;
                     balance.SlipNumber = invoice.SlipNumber ?? "";
                     balance.TransactionDate = invoice.IssueDate ?? DateTime.Now;
                     balance.TransactionTypeId = invoice.TransactionTypeId ?? 0;
@@ -157,7 +157,7 @@ namespace Invoice.Classes
                     balance.DebOrCreId = deposit.DebOrCreId;
                     balance.SlipNumber = deposit.SlipNumber;
                     balance.TransactionDate = deposit.DepositDate;
-                    balance.TransactionTypeId = 2;
+                    balance.TransactionTypeId = TransactionTypeIdsProvider.DepositId;
                     balance.TransactionAmount = deposit.DepositAmount;
                 }
                 else
@@ -169,7 +169,7 @@ namespace Invoice.Classes
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"{nameof(BalanceClass)}.{MethodBase.GetCurrentMethod()!.Name} : {ex.Message}");
+                DomainEvents.RaiseError($"{nameof(BalanceClass)}.{MethodBase.GetCurrentMethod()!.Name} : {ex.Message}", ex);
                 return false;
             }
         }
@@ -231,7 +231,7 @@ namespace Invoice.Classes
                     balance.InvoiceId = payment.InvoiceId;
                     balance.PaymentId = payment.PaymentId;
                     balance.DepositId = payment.DepositId;
-                    balance.DebOrCreId = 2;
+                    balance.DebOrCreId = DebitOrCreditIds.Credit;
                     balance.SlipNumber = payment.SlipNumber;
                     balance.TransactionDate = payment.PaymentDate;
                     balance.TransactionTypeId = payment.TransactionTypeId;
@@ -245,15 +245,15 @@ namespace Invoice.Classes
                         TryAddBalance(invoice, uow);
                         return true;
                     }
-                    balance.BalanceId = balances.FirstOrDefault(b => (b.InvoiceId == invoice.InvoiceId && b.DebOrCreId == 1))!.BalanceId;
+                    balance.BalanceId = balances.FirstOrDefault(b => (b.InvoiceId == invoice.InvoiceId && b.DebOrCreId == DebitOrCreditIds.Debit))!.BalanceId;
                     balance.CustomerId = invoice.CustomerId;
                     balance.InvoiceId = invoice.InvoiceId;
                     balance.PaymentId = null;
                     balance.DepositId = null;
-                    balance.DebOrCreId = 1;
+                    balance.DebOrCreId = DebitOrCreditIds.Debit;
                     balance.SlipNumber = invoice.SlipNumber ?? "";
                     balance.TransactionDate = invoice.IssueDate ?? DateTime.Now;
-                    balance.TransactionTypeId = 1;
+                    balance.TransactionTypeId = TransactionTypeIdsProvider.BalanceId;
                     balance.TransactionAmount = invoice.InvoiceTotal ?? 0;
                 }
                 else if (obj is DepositClass deposit)
@@ -271,7 +271,7 @@ namespace Invoice.Classes
                     balance.DebOrCreId = deposit.DebOrCreId;
                     balance.SlipNumber = deposit.SlipNumber;
                     balance.TransactionDate = deposit.DepositDate;
-                    balance.TransactionTypeId = 2;
+                    balance.TransactionTypeId = TransactionTypeIdsProvider.DepositId;
                     balance.TransactionAmount = deposit.DepositAmount;
                 }
                 else

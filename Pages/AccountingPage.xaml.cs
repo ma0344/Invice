@@ -29,9 +29,9 @@ using System.Windows.Shapes;
 namespace Invoice
 {
     /// <summary>
-    /// DashBoard.xaml の相互作用ロジック
+    /// AccountingPage.xaml の相互作用ロジック
     /// </summary>
-    public partial class DashBoard : System.Windows.Controls.Page
+    public partial class AccountingPage : System.Windows.Controls.Page
     {
         private InvoiceFiterParam filterParam = new();
         private AccountingDataClass accounting = new();
@@ -41,7 +41,7 @@ namespace Invoice
         private bool DebugSwitch = false;
         public CollectionViewSource InvoiceViewSource { get; set; }
         private MainWindow mainWindow;
-        public DashBoard()
+        public AccountingPage()
         {
             InitializeComponent();
             mainWindow = (MainWindow)Application.Current.MainWindow;
@@ -52,7 +52,7 @@ namespace Invoice
             InvoiceViewSource = new();
             InvoiceViewSource.Source = InvoiceVM.InvoiceClassList;
             this.DataContext = this;
-            this.Loaded += DashBoard_Loaded;
+            this.Loaded += AccountingPage_Loaded;
         }
         private void InvoiceFilter(InvoiceFiterParam param)
         {
@@ -88,7 +88,7 @@ namespace Invoice
                 return DateTime.MinValue;
         }
 
-        private void DashBoard_Loaded(object sender, RoutedEventArgs e)
+        private void AccountingPage_Loaded(object sender, RoutedEventArgs e)
         {
             InvoiceFilter(filterParam);
             isFirstLoading = false;
@@ -248,17 +248,17 @@ namespace Invoice
         {
             var pane = AccountingCsvPreviewPane;
 
-            if (DashBoardContentsGrid.ActualHeight < pane.Height)
+            if (AccountingContentsGrid.ActualHeight < pane.Height)
             {
                 var mainWindow = Application.Current.MainWindow as MainWindow;
-                mainWindow.Height += pane.Height - DashBoardContentsGrid.ActualHeight;
+                mainWindow.Height += pane.Height - AccountingContentsGrid.ActualHeight;
             }
             else
             {
-                pane.Height = DashBoardContentsGrid.ActualHeight;
+                pane.Height = AccountingContentsGrid.ActualHeight;
             }
 
-            DashBoardContentsGrid.IsEnabled = false;
+            AccountingContentsGrid.IsEnabled = false;
             var renderTransform = PaneTransform;
             var slideUpAnimation = new DoubleAnimation
             {
@@ -281,7 +281,7 @@ namespace Invoice
                 EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
             };
             renderTransform.BeginAnimation(System.Windows.Media.TranslateTransform.YProperty, slideDownAnimation);
-            DashBoardContentsGrid.IsEnabled = true;
+            AccountingContentsGrid.IsEnabled = true;
         }
 
     }
