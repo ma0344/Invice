@@ -156,12 +156,6 @@ namespace Invoice
             {
                 viewSource.Source = vm.InvoiceClassList;
                 InvoiceFilter(filterParam);
-                if (isInitializing)
-                {
-                    var arrow = FilterExpander.FindDescendantByName("arrow");
-                    if (arrow != null && arrow.Parent is Grid grid)
-                        grid.HorizontalAlignment = HorizontalAlignment.Right;
-                }
                 isFirstLoading = false;
             }
         }
@@ -303,8 +297,8 @@ namespace Invoice
             {
                 var result = UnitOfWork.ExecuteWithTransaction(uow =>
                 {
-                    var payment = _pVM.PaymentClassList.FirstOrDefault(payment => payment.InvoiceId == invoiceId);
-                    if (payment != null)
+                    var linkedPaymentCount = PaymentClass.GetPaymentIdsByInvoiceId(invoiceId, uow).Count;
+                    if (linkedPaymentCount > 0)
                     {
                         var a = MessageBox.Show(
                                                 owner: mainWindow,
@@ -834,6 +828,9 @@ namespace Invoice
             }
         }
 
+        private void DataGridRow_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
 
+        }
     }
 }

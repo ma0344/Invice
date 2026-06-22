@@ -135,10 +135,10 @@ namespace Invoice
         {
             var checkBox = sender as CheckBox;
             var InvoiceItem = checkBox.FindAscendant<DataGridRow>();
-            if (InvoiceItem != null)
-            {
-                InvoiceItem.IsSelected = checkBox.IsChecked == false;
-            }
+            //if (InvoiceItem != null)
+            //{
+            //    InvoiceItem.IsSelected = checkBox.IsChecked == false;
+            //}
             e.Handled = true;
         }
 

@@ -78,5 +78,16 @@ namespace Invoice.Pages
 
             return null;
         }
+        public static T? FindAncestor<T>(DependencyObject? current) where T : DependencyObject
+        {
+            while (current != null)
+            {
+                if (current is T target)
+                    return target;
+                current = VisualTreeHelper.GetParent(current);
+            }
+            return null;
+        }
+
     }
 }

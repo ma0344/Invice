@@ -12,7 +12,7 @@
       mc:Ignorable="d"
       d:Background="White"
       d:DesignHeight="600"
-      d:DesignWidth="800"
+      d:DesignWidth="996"
       FontFamily="Biz UDGothic"
       Title="Settings"
       Tag="設定">
@@ -854,6 +854,37 @@
                                     Click="ApplyAppSettingsButton_Click" />
                         </StackPanel>
                     </Grid>
+                </TabItem>
+                <TabItem>
+                    <TabItem.Header>
+                        <Grid Width="120"
+                              Height="30"
+                              VerticalAlignment="Stretch">
+                            <TextBlock VerticalAlignment="Center"
+                                       Text="バージョン情報" />
+
+                        </Grid>
+                    </TabItem.Header>
+                    <DataGrid CanUserAddRows="False"
+                              CanUserResizeColumns="False"
+                              AutoGenerateColumns="False"
+                              VerticalAlignment="Stretch"
+                              VerticalScrollBarVisibility="Auto"
+                              SelectionUnit="FullRow"
+                              ItemsSource="{Binding InvoiceVM.InvoiceCollectionViewSource.View}"
+                              AlternatingRowBackground="#0C000000"
+                              CanUserSortColumns="True"
+                              ColumnHeaderHeight="28"
+                              CanUserDeleteRows="False"
+                              PreviewMouseRightButtonUp="InvoiceListDataGrid_PreviewMouseRightButtonUp"
+                              PreviewMouseLeftButtonDown="InvoiceListDataGrid_PreviewMouseLeftButtonDown"
+                              ContextMenuOpening="InvoiceListDataGrid_ContextMenuOpening"
+                              ContextMenuClosing="InvoiceListDataGrid_ContextMenuClosing"
+                              ColumnHeaderStyle="{StaticResource CustomDataGridColumnHeaderStyle}"
+                              RowHeaderWidth="0">
+                        
+                    </DataGrid>
+
                 </TabItem>
 
             </TabControl>

@@ -1,72 +1,147 @@
-﻿<Page
-    x:Class="Invoice.InvoicePage"
-    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:local="clr-namespace:Invoice"
-    xmlns:ui="http://schemas.modernwpf.com/2019"
-    xmlns:customControl="clr-namespace:Invoice.CustomControl"
-    mc:Ignorable="d"
-    d:Background="White"
-    d:DesignHeight="700"
-    d:DesignWidth="1000"
-    FontFamily="Biz UDGothic"
+﻿<Page x:Class="Invoice.InvoicePage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+      xmlns:local="clr-namespace:Invoice"
+      xmlns:ui="http://schemas.modernwpf.com/2019"
+      xmlns:customControl="clr-namespace:Invoice.CustomControl"
+      mc:Ignorable="d"
+      d:Background="White"
+      d:DesignHeight="700"
+      d:DesignWidth="1000"
+      FontFamily="Biz UDGothic"
       Title="Invoice"
       Tag="請求書管理">
     <Page.Resources>
-        <CollectionViewSource Source="{Binding InvoiceVM.CustomerCollectionViewSource}" 
-                              x:Key="CustomerList"/>
+        <CollectionViewSource Source="{Binding InvoiceVM.CustomerCollectionViewSource}"
+                              x:Key="CustomerList" />
         <CollectionViewSource Source="{Binding InvoiceVM.CustomerCollectionViewSource}"
                               x:Key="FilterCustomerList" />
         <CollectionViewSource Source="{Binding SettingsVM.TransactionTypeClassList}"
                               x:Key="TransactionTypeWithoutPlaceHolder" />
-        <CollectionViewSource Source="{Binding SettingsVM.ItemClassList}" 
-                              x:Key="ItemClassList"/>
+        <CollectionViewSource Source="{Binding SettingsVM.ItemClassList}"
+                              x:Key="ItemClassList" />
         <CollectionViewSource Source="{Binding SettingsVM.TaxTypeClassList}"
                               x:Key="TaxTypeListWithoutPlaceHolder" />
-
-
     </Page.Resources>
-    <Grid >
-        <Grid
-            x:Name="InvoicePageContentsGrid"
-            Margin="10">
+    <Grid>
+        <Grid x:Name="InvoicePageContentsGrid"
+              Margin="10">
             <Grid.RowDefinitions>
-                <RowDefinition
-                    Height="Auto" />
-                <RowDefinition
-                    Height="Auto" />
-                <RowDefinition
-                    Height="*" />
-                <RowDefinition
-                    Height="50" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="50" />
             </Grid.RowDefinitions>
+            <Grid Grid.Row="0"
+                  HorizontalAlignment="Stretch"
+                  VerticalAlignment="Top"
+                  Margin="60,0,120,0">
+                <Label Content="請求書一覧"
+                       FontSize="24"
+                       FontWeight="Bold"
+                       Margin="0,20" />
+            </Grid>
             <Expander x:Name="FilterExpander"
+                      Style="{StaticResource ExpanderAlignRightStyle}"
                       Grid.Row="1"
                       Header="フィルター"
-                      Margin="0,-30,0,0"
-                      >
-                    <StackPanel x:Name="FilterExpanderStackPanel" 
-                                Grid.Column="1"
-                                Margin="0,5"
-                                HorizontalAlignment="Right"
-                                Orientation="Horizontal">
-                        <ComboBox x:Name="FilterNameComboBox" 
-                                  Margin="10,0"
-                                  Width="150"
-                                  ItemsSource="{Binding Source={StaticResource FilterCustomerList}}"
-                                  DisplayMemberPath="CustomerName"
-                                  SelectedValuePath="CustomerId"
-                                  InputMethod.PreferredImeState="Off"
-                                  FontSize="20"
-                                  BorderThickness="0"
-                                  Background="#0C000000"
-                                  HorizontalAlignment="Right"
-                                  VerticalAlignment="Top"
-                                  SelectionChanged="FilterValue_Changed"/>
+                      HorizontalAlignment="Right"
+                      Margin="0,-30,0,0">
+                <StackPanel x:Name="FilterExpanderStackPanel"
+                            Margin="0,5"
+                            HorizontalAlignment="Right"
+                            Orientation="Horizontal">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0"
+                                   Text="表示期間"
+                                       VerticalAlignment="Center"
+                                       FontWeight="Bold" />
+                        <Grid Grid.Row="1"
+                              Margin="0,5,0,0"
+                              HorizontalAlignment="Right"
+                              VerticalAlignment="Center">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <ui:ToggleSwitch Grid.Column="1"
+                                             x:Name="ShowAllInvoice"
+                                             Toggled="ShowAllInvoice_Toggled"
+                                             Margin="0,0,0,0"
+                                             Width="100"
+                                             OnContent="指定期間"
+                                             OffContent="全期間"
+                                             FontWeight="Bold" />
+                            <customControl:DateNumberBox x:Name="DateBox"
+                                                         Grid.Column="2"
+                                                         Grid.Row="0"
+                                                         Padding="0,0,0,0"
+                                                         TextAlignment="Center"
+                                                         SpinButtonPlacementMode="Inline"
+                                                         VerticalAlignment="Center"
+                                                         FontSize="18"
+                                                         FontWeight="Bold"
+                                                         Tag="0"
+                                                         FontFamily="{StaticResource ContentControlThemeFontFamily}"
+                                                         IsEnabled="{Binding ElementName=ShowAllInvoice,Path=IsOn}"
+                                                         DateSelected="DateBox_DateSelected"
+                                                         Width="210"
+                                                         Foreground="Black"
+                                                         InputMethod.PreferredImeState="Off"
+                                                         HorizontalContentAlignment="Center"
+                                                         VerticalContentAlignment="Center"
+                                                         LargeChange="-12"
+                                                         SmallChange="-1" />
+
+                        </Grid>
+                    </Grid>
+
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                            <TextBlock Grid.Row="0" 
+                                Text="氏名フィルタ"
+                                       VerticalAlignment="Center"
+                                       Margin="10,0,0,0"
+                                       FontWeight="Bold" />
+                            <ComboBox x:Name="FilterNameComboBox"
+                                          Grid.Row="1"
+                                          Margin="10,5,10,10"
+                                      Width="150"
+                                      ItemsSource="{Binding Source={StaticResource FilterCustomerList}}"
+                                      DisplayMemberPath="CustomerName"
+                                      SelectedValuePath="CustomerId"
+                                      InputMethod.PreferredImeState="Off"
+                                      FontSize="20"
+                                      BorderThickness="0"
+                                      Background="#0C000000"
+                                      HorizontalAlignment="Right"
+                                      VerticalAlignment="Center"
+                                      SelectionChanged="FilterValue_Changed" />
+                    </Grid>
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0"
+                                   Text="ステータスフィルタ"
+                                   Margin="10,0,0,0"
+                                   VerticalAlignment="Center"
+                                   FontWeight="Bold" />
+                        
                         <ComboBox x:Name="FilterStatusComboBox"
-                                  Margin="10,0"
+                                  Grid.Row="1"
+                                  Margin="10,5,0,10"
                                   Width="150"
                                   ItemsSource="{Binding InvoiceVM.InvoiceStatusClassList}"
                                   DisplayMemberPath="InvoiceStatus"
@@ -75,67 +150,15 @@
                                   BorderThickness="0"
                                   Background="#0C000000"
                                   HorizontalAlignment="Right"
-                                  VerticalAlignment="Top"
+                                  VerticalAlignment="Center"
                                   SelectionChanged="FilterValue_Changed" />
+                    </Grid>
 
                 </StackPanel>
             </Expander>
 
-            <Grid
-                Grid.Row="0"
-                HorizontalAlignment="Stretch"
-                VerticalAlignment="Top"
-                Margin="60,0,120,0">
-                <Label
-                    Content="請求書一覧"
-                    FontSize="24"
-                    FontWeight="Bold"
-                    Margin="0,20" />
-                <Grid
-                    HorizontalAlignment="Right"
-                    VerticalAlignment="Center">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <ui:ToggleSwitch
-                        Grid.Column="1"
-                        x:Name="ShowAllInvoice"
-                        Toggled="ShowAllInvoice_Toggled"
-                        Margin="0,0,0,0"
-                        Width="120"
-                        OnContent="指定期間"
-                        OffContent="全期間"
-                        Header="表示期間"
-                        FontWeight="Bold"
-                        />
-                    <customControl:DateNumberBox x:Name="DateBox"
-                                                 Grid.Column="2"
-                                                 Grid.Row="0"
-                                                 Padding="0,0,0,0"
-                                                 TextAlignment="Center"
-                                                 SpinButtonPlacementMode="Inline"
-                                                 VerticalAlignment="Center"
-                                                 FontSize="18"
-                                                 FontWeight="Bold"
-                                                 Tag="0"
-                                                 FontFamily="{StaticResource ContentControlThemeFontFamily}"
-                                                 IsEnabled="{Binding ElementName=ShowAllInvoice,Path=IsOn}"
-                                                 DateSelected="DateBox_DateSelected"
-                                                 Width="210"
-                                                 Foreground="Black"
-                                                 InputMethod.PreferredImeState="Off"
-                                                 HorizontalContentAlignment="Center"
-                                                 VerticalContentAlignment="Center"
-                                                 LargeChange="-12"
-                                                 SmallChange="-1" />
 
-                </Grid>
-
-            </Grid>
-
-            <DataGrid x:Name="InvoiceListDataGrid" 
+            <DataGrid x:Name="InvoiceListDataGrid"
                       Grid.Row="2"
                       MouseDoubleClick="InvoiceListDataGrid_MouseDoubleClick"
                       CanUserAddRows="False"
@@ -149,6 +172,7 @@
                       CanUserSortColumns="True"
                       ColumnHeaderHeight="28"
                       CanUserDeleteRows="False"
+                      
                       PreviewMouseRightButtonUp="InvoiceListDataGrid_PreviewMouseRightButtonUp"
                       PreviewMouseLeftButtonDown="InvoiceListDataGrid_PreviewMouseLeftButtonDown"
                       ContextMenuOpening="InvoiceListDataGrid_ContextMenuOpening"
@@ -159,38 +183,45 @@
                     <ContextMenu>
                         <MenuItem x:Name="ContextMenuStatusChange"
                                   Header="ステータス変更">
-                            <MenuItem Header="作成中" 
+                            <MenuItem Header="作成中"
                                       x:Name="ContextMenuStatusDraft"
-                                      Click="ContextMenuStatusChanged"/>
+                                      Click="ContextMenuStatusChanged" />
                             <MenuItem Header="請求済"
                                       x:Name="ContextMenuStatusCharged"
-                                      Click="ContextMenuStatusChanged"/>
+                                      Click="ContextMenuStatusChanged" />
                             <MenuItem Header="入金済"
                                       x:Name="ContextMenuStatusDeposited"
-                                      Click="ContextMenuStatusChanged"/>
+                                      Click="ContextMenuStatusChanged" />
                             <MenuItem Header="前受済"
                                       x:Name="ContextMenuStatusPrepaid"
-                                      Click="ContextMenuStatusChanged"/>
+                                      Click="ContextMenuStatusChanged" />
                         </MenuItem>
                         <MenuItem x:Name="ContextMenuDelete"
                                   Header="削除"
-                                  Click="DeleteInvoiceButton_Click"/>
+                                  Click="DeleteInvoiceButton_Click" />
                         <MenuItem x:Name="ContextMenuDeposit"
-                                  Header="入金処理" 
-                                  Click="ContextMenuDeposit_Click"/>
+                                  Header="入金処理"
+                                  Click="ContextMenuDeposit_Click" />
                         <MenuItem x:Name="ContextMenuCreatePDF"
-                                  Header="PDF作成" 
-                                  Click="CreateInvoiceButton_Click"/>
+                                  Header="PDF作成"
+                                  Click="CreateInvoiceButton_Click" />
                         <MenuItem x:Name="ContextMenuCopyToNextMonth"
                                   Header="次月へコピー"
-                                  Click="CopyInvoiceButton_Click"/>
+                                  Click="CopyInvoiceButton_Click" />
 
 
                     </ContextMenu>
                 </DataGrid.ContextMenu>
+                <DataGrid.ItemContainerStyle>
+                    <Style TargetType="DataGridRow">
+                        <EventSetter Event="PreviewMouseLeftButtonDown"
+                                     Handler="DataGridRow_PreviewMouseLeftButtonDown" />
+                    </Style>
+                </DataGrid.ItemContainerStyle>
+
                 <DataGrid.Columns>
                     <DataGridTemplateColumn Width="30">
-                    <DataGridTemplateColumn.Header>
+                        <DataGridTemplateColumn.Header>
                             <CheckBox x:Name="SelectAllCheckBox"
                                       Width="20"
                                       Checked="SelectAllCheckBox_Checked"
@@ -199,14 +230,13 @@
                                       HorizontalContentAlignment="Center">
                             </CheckBox>
                         </DataGridTemplateColumn.Header>
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                                <CheckBox
-                                    x:Name="GridRowCheckBox"
-                                    IsChecked="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected, Mode=TwoWay}"
-                                    Style="{StaticResource RowCheckBoxStyle}"
-                                    PreviewMouseLeftButtonDown="InvoiceCheckBox_PreviewMouseLeftButtonDown"
-                                    Width="20">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <CheckBox x:Name="GridRowCheckBox"
+                                          IsChecked="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected, Mode=TwoWay}"
+                                          Style="{StaticResource RowCheckBoxStyle}"
+                                          PreviewMouseLeftButtonDown="InvoiceCheckBox_PreviewMouseLeftButtonDown"
+                                          Width="20">
                                     <CheckBox.Resources>
                                         <Style TargetType="Grid">
                                             <Setter Property="Width"
@@ -220,17 +250,17 @@
                                     </CheckBox.Resources>
                                 </CheckBox>
                             </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
 
-                </DataGridTemplateColumn>
+                    </DataGridTemplateColumn>
                     <DataGridTextColumn Header="№"
                                         Width="70*"
                                         CanUserSort="True"
                                         FontSize="16"
                                         IsReadOnly="True"
                                         CellStyle="{StaticResource DataGridSlipNumberCellStyle}"
-                                        Binding="{Binding SlipNumber}" 
-                                        />
+                                        Binding="{Binding SlipNumber}"
+                                        ElementStyle="{StaticResource DataGridTextCenterElementStyle}"/>
                     <DataGridTextColumn Header="ID"
                                         Width="25*"
                                         FontSize="16"
@@ -245,40 +275,45 @@
                                         IsReadOnly="True"
                                         CellStyle="{StaticResource DataGridNameCellStyle}"
                                         Binding="{Binding CustomerName}"
-                                        />
+                                        ElementStyle="{StaticResource DataGridTextCenterElementStyle}"/>
 
                     <DataGridTextColumn Header="件名"
                                         Width="200*"
+                                        FontSize="16" 
                                         IsReadOnly="True"
-                                        Binding="{Binding Subject}"
-                                        FontSize="16" />
+                                        CellStyle="{StaticResource DataGridSubjectCellStyle}"
+                                        Binding="{Binding Subject}"/>
 
                     <DataGridTextColumn Header="請求金額"
                                         Width="100*"
                                         FontSize="20"
+                                        IsReadOnly="True"
                                         CellStyle="{StaticResource DataGridAmountCellStyle}"
-                                        Binding="{Binding InvoiceTotal,StringFormat={}{0:N0},Mode=OneWay}" />
+                                        Binding="{Binding InvoiceTotal,StringFormat={}\\{0:N0}-,Mode=OneWay}"
+                                        ElementStyle="{StaticResource DataGridTextRightElementStyle}"/>
 
                     <DataGridTextColumn Header="発行日"
                                         Width="130*"
                                         FontSize="16"
                                         IsReadOnly="True"
                                         CellStyle="{StaticResource DataGridDateCellStyle}"
-                                        Binding="{Binding IssueDateString}"/>
+                                        Binding="{Binding IssueDateString}"
+                                        SortMemberPath="IssueDate"
+                                        ElementStyle="{StaticResource DataGridTextCenterElementStyle}" />
                     <DataGridTextColumn Header="ステータス"
                                         Width="100*"
                                         FontSize="16"
                                         IsReadOnly="True"
                                         CellStyle="{StaticResource Cellstyle_HorizontalAlignCenter}"
-                                        Binding="{Binding InvoiceStatus}" />
+                                        Binding="{Binding InvoiceStatus}"
+                                        ElementStyle="{StaticResource DataGridTextCenterElementStyle}" />
                 </DataGrid.Columns>
 
             </DataGrid>
-            <StackPanel
-                Grid.Row="3"
-                Margin="0,0,0,0"
-                HorizontalAlignment="Center"
-                Orientation="Horizontal">
+            <StackPanel Grid.Row="3"
+                        Margin="0,0,0,0"
+                        HorizontalAlignment="Center"
+                        Orientation="Horizontal">
                 <StackPanel.Resources>
                     <Style TargetType="Button"
                            BasedOn="{StaticResource DefaultButtonStyle}">
@@ -311,80 +346,63 @@
 
             </StackPanel>
         </Grid>
-        <Border
-            x:Name="InvoiceDetailPane"
-            Grid.Row="1"
-            Background="White"
-            Height="500"
-            Padding="0"
-            VerticalAlignment="Bottom"
-            RenderTransformOrigin="0.5,1">
+        <Border x:Name="InvoiceDetailPane"
+                Grid.Row="1"
+                Background="White"
+                Height="500"
+                Padding="0"
+                VerticalAlignment="Bottom"
+                RenderTransformOrigin="0.5,1">
             <Border.RenderTransform>
-                <TranslateTransform
-                    x:Name="PaneTransform"
-                    Y="{Binding RelativeSource={RelativeSource AncestorType=Border},Path=Height}" />
+                <TranslateTransform x:Name="PaneTransform"
+                                    Y="{Binding RelativeSource={RelativeSource AncestorType=Border},Path=Height}" />
             </Border.RenderTransform>
-            <Grid
-                Margin="10,5,10,10">
+            <Grid Margin="10,5,10,10">
                 <Grid.RowDefinitions>
-                    <RowDefinition
-                        Height="Auto" />
-                    <RowDefinition
-                        Height="Auto" />
-                    <RowDefinition
-                        Height="50" />
-                    <RowDefinition
-                        Height="*" />
-                    <RowDefinition
-                        Height="50" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="50" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="50" />
                 </Grid.RowDefinitions>
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition
-                            Width="Auto" />
-                        <ColumnDefinition
-                            Width="Auto" />
-                        <ColumnDefinition
-                            Width="Auto" />
-                        <ColumnDefinition
-                            Width="Auto" />
-                        <ColumnDefinition 
-                            Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <Label
-                        Grid.Column="0"
-                        d:Content="新規請求書作成"
-                        Content="{Binding InvoiceVM.PaneTitle}"
-                        FontSize="24"
-                        Height="43"
-                        FontWeight="Bold"
-                        Margin="0,0,25,0" />
-                    <Grid
-                        Grid.Column="1">
+                    <Label Grid.Column="0"
+                           d:Content="新規請求書作成"
+                           Content="{Binding InvoiceVM.PaneTitle}"
+                           FontSize="24"
+                           Height="43"
+                           FontWeight="Bold"
+                           Margin="0,0,25,0" />
+                    <Grid Grid.Column="1">
                         <Grid.RowDefinitions>
                             <RowDefinition />
                             <RowDefinition />
                         </Grid.RowDefinitions>
 
-                        <TextBlock
-                            Grid.Row="0"
-                            Text="請求日"
-                            Margin="0,2" />
-                        <DatePicker
-                            Grid.Row="1"
-                            x:Name="InvoiceIssueDate"
-                            BorderThickness="0"
-                            Background="#0C000000"
-                            FontSize="17"
-                            SelectedDateFormat="Short"
-                            Padding="0"
-                            d:SelectedDate="2025/1/31"
-                            HorizontalContentAlignment="Center"
-                            InputMethod.IsInputMethodEnabled="False"
-                            SelectedDateChanged="InvoiceIssueDate_SelectedDateChanged"
-                            SelectedDate="{Binding InvoiceVM.CurrentInvoice.IssueDate,Mode=TwoWay}"
-                            Width="180"
-                            Height="38"
+                        <TextBlock Grid.Row="0"
+                                   Text="請求日"
+                                   Margin="0,2" />
+                        <DatePicker Grid.Row="1"
+                                    x:Name="InvoiceIssueDate"
+                                    BorderThickness="0"
+                                    Background="#0C000000"
+                                    FontSize="17"
+                                    SelectedDateFormat="Short"
+                                    Padding="0"
+                                    d:SelectedDate="2025/1/31"
+                                    HorizontalContentAlignment="Center"
+                                    InputMethod.IsInputMethodEnabled="False"
+                                    SelectedDateChanged="InvoiceIssueDate_SelectedDateChanged"
+                                    SelectedDate="{Binding InvoiceVM.CurrentInvoice.IssueDate,Mode=TwoWay}"
+                                    Width="180"
+                                    Height="38"
                                     InputMethod.PreferredImeState="Off"
                                     Margin="0,0,20,0">
                             <DatePicker.Resources>
@@ -396,17 +414,15 @@
 
                         </DatePicker>
                     </Grid>
-                    <Grid
-                        Grid.Column="2">
+                    <Grid Grid.Column="2">
                         <Grid.RowDefinitions>
                             <RowDefinition />
                             <RowDefinition />
                         </Grid.RowDefinitions>
 
-                        <TextBlock
-                            Grid.Row="0"
-                            Text="期限日"
-                            Margin="0,2" />
+                        <TextBlock Grid.Row="0"
+                                   Text="期限日"
+                                   Margin="0,2" />
                         <DatePicker Grid.Row="1"
                                     x:Name="InvoiceDueDate"
                                     BorderThickness="0"
@@ -429,19 +445,17 @@
                         </DatePicker>
                     </Grid>
 
-                    <Grid
-                        Grid.Column="3"
-                        Margin="0,0,0,0"
-                        HorizontalAlignment="Stretch">
+                    <Grid Grid.Column="3"
+                          Margin="0,0,0,0"
+                          HorizontalAlignment="Stretch">
                         <Grid.RowDefinitions>
                             <RowDefinition />
                             <RowDefinition />
                         </Grid.RowDefinitions>
-                        <TextBlock
-                            Grid.Row="0"
-                            Margin="0,2"
-                            Background="Transparent"
-                            Text="決済方法" />
+                        <TextBlock Grid.Row="0"
+                                   Margin="0,2"
+                                   Background="Transparent"
+                                   Text="決済方法" />
                         <ComboBox x:Name="TransactionTypeComboBox"
                                   ItemsSource="{Binding Source={StaticResource TransactionTypeWithoutPlaceHolder}}"
                                   DisplayMemberPath="TransactionName"
@@ -463,7 +477,7 @@
                           HorizontalAlignment="Stretch">
                         <Grid.RowDefinitions>
                             <RowDefinition />
-                            <RowDefinition Height="{Binding ElementName=TransactionTypeComboBox, Path=ActualHeight}"/>
+                            <RowDefinition Height="{Binding ElementName=TransactionTypeComboBox, Path=ActualHeight}" />
                         </Grid.RowDefinitions>
                         <TextBlock Grid.Row="0"
                                    Margin="0,2"
@@ -475,8 +489,7 @@
                                 Height="38.6"
                                 BorderThickness="0"
                                 Background="#0C000000"
-                                Padding="0,0,5,0"
-                                >
+                                Padding="0,0,5,0">
                             <Label x:Name="DepositAmountLabel"
                                    FontSize="20"
                                    Background="Transparent"
@@ -484,7 +497,6 @@
                                    VerticalContentAlignment="Center"
                                    HorizontalAlignment="Right"
                                    VerticalAlignment="Center"
-
                                    Width="160">
                                 <Label.Content>
                                     <TextBlock Text="{Binding InvoiceVM.DepositAmount, UpdateSourceTrigger=PropertyChanged,StringFormat=￥{0:N0}‐}" />
@@ -495,62 +507,52 @@
 
 
                 </Grid>
-                <Grid
-                    Margin="0,5,0,0"
-                    HorizontalAlignment="Stretch"
-                    Grid.Row="1">
+                <Grid Margin="0,5,0,0"
+                      HorizontalAlignment="Stretch"
+                      Grid.Row="1">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition
-                            Width="Auto" />
-                        <ColumnDefinition
-                            Width="Auto" />
-                        <ColumnDefinition
-                            Width="Auto" />
-                        <ColumnDefinition
-                            Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <Grid
-                        HorizontalAlignment="Left"
-                        VerticalAlignment="Bottom"
-                        Grid.Column="0"
-                        Margin="0,0,0,0">
+                    <Grid HorizontalAlignment="Left"
+                          VerticalAlignment="Bottom"
+                          Grid.Column="0"
+                          Margin="0,0,0,0">
                         <Grid.RowDefinitions>
                             <RowDefinition />
                             <RowDefinition />
                         </Grid.RowDefinitions>
-                        <TextBlock
-                            Grid.Row="0"
-                            Text="宛先"
-                            Margin="0,0,0,2" />
-                        <ComboBox
-                            x:Name="InvoiceName"
-                            Grid.Row="1"
-                            ItemsSource="{Binding Source={StaticResource CustomerList}}"
-                            DisplayMemberPath="CustomerName"
-                            SelectedValuePath="CustomerId"
-                            SelectedValue="{Binding InvoiceVM.CurrentInvoice.CustomerId,Mode=TwoWay}"
-                            SelectionChanged="InvoiceName_SelectionChanged"
-                            InputMethod.PreferredImeState="Off"
-                            Margin="0,0,25,0"
-                            Width="168"
-                            FontSize="20"
-                            BorderThickness="0"
-                            Background="#0C000000"
-                            HorizontalAlignment="Right"
-                            VerticalAlignment="Top" />
+                        <TextBlock Grid.Row="0"
+                                   Text="宛先"
+                                   Margin="0,0,0,2" />
+                        <ComboBox x:Name="InvoiceName"
+                                  Grid.Row="1"
+                                  ItemsSource="{Binding Source={StaticResource CustomerList}}"
+                                  DisplayMemberPath="CustomerName"
+                                  SelectedValuePath="CustomerId"
+                                  SelectedValue="{Binding InvoiceVM.CurrentInvoice.CustomerId,Mode=TwoWay}"
+                                  SelectionChanged="InvoiceName_SelectionChanged"
+                                  InputMethod.PreferredImeState="Off"
+                                  Margin="0,0,25,0"
+                                  Width="168"
+                                  FontSize="20"
+                                  BorderThickness="0"
+                                  Background="#0C000000"
+                                  HorizontalAlignment="Right"
+                                  VerticalAlignment="Top" />
                     </Grid>
-                    <Grid
-                        HorizontalAlignment="Right"
-                        VerticalAlignment="Bottom"
-                        Grid.Column="1">
+                    <Grid HorizontalAlignment="Right"
+                          VerticalAlignment="Bottom"
+                          Grid.Column="1">
                         <Grid.RowDefinitions>
                             <RowDefinition />
                             <RowDefinition />
                         </Grid.RowDefinitions>
-                        <TextBlock
-                            Grid.Row="0"
-                            Text="件名"
-                            Margin="0,0,0,2" />
+                        <TextBlock Grid.Row="0"
+                                   Text="件名"
+                                   Margin="0,0,0,2" />
                         <TextBox x:Name="InvoiceSubject"
                                  Margin="0,0,15,0"
                                  Grid.Row="1"
@@ -595,37 +597,33 @@
                                    Width="160" />
                     </Grid>
                     <Grid x:Name="InvoiceAmountGrid"
-                        Grid.Column="3"
-                        Width="160"
-                        Margin="0,0,15,0">
+                          Grid.Column="3"
+                          Width="160"
+                          Margin="0,0,15,0">
                         <Grid.RowDefinitions>
                             <RowDefinition />
-                            <RowDefinition
-                                Height="{Binding ElementName=InvoiceName,Path=ActualHeight}" />
+                            <RowDefinition Height="{Binding ElementName=InvoiceName,Path=ActualHeight}" />
                         </Grid.RowDefinitions>
 
-                        <TextBlock
-                            Grid.Row="0"
-                            FontWeight="Bold"
-                            Text="請求項目合計額" />
-                        <Rectangle
-                            Grid.Row="1"
-                            RadiusX="2"
-                            RadiusY="2"
-                            Fill="#0C000000"
-                            Margin="0,0,0,0" />
-                        <TextBlock
-                            Grid.Row="1"
-                            x:Name="InvoiceAmmountTextBlock"
-                            Background="Transparent"
-                            d:Text="￥6,7000"
-                            FontSize="25"
-                            Padding="0,0,5,0"
-                            TextAlignment="Right"
-                            VerticalAlignment="Center"
-                            FontWeight="Bold"
-                            Text="{Binding InvoiceVM.CurrentInvoice.ItemsTotal,Mode=OneWay,StringFormat=￥{0:N0}‐}"
-                            Width="160" />
+                        <TextBlock Grid.Row="0"
+                                   FontWeight="Bold"
+                                   Text="請求項目合計額" />
+                        <Rectangle Grid.Row="1"
+                                   RadiusX="2"
+                                   RadiusY="2"
+                                   Fill="#0C000000"
+                                   Margin="0,0,0,0" />
+                        <TextBlock Grid.Row="1"
+                                   x:Name="InvoiceAmmountTextBlock"
+                                   Background="Transparent"
+                                   d:Text="￥6,7000"
+                                   FontSize="25"
+                                   Padding="0,0,5,0"
+                                   TextAlignment="Right"
+                                   VerticalAlignment="Center"
+                                   FontWeight="Bold"
+                                   Text="{Binding InvoiceVM.CurrentInvoice.ItemsTotal,Mode=OneWay,StringFormat=￥{0:N0}‐}"
+                                   Width="160" />
                     </Grid>
 
                 </Grid>
@@ -633,13 +631,11 @@
                       Grid.Row="2"
                       Margin="0,3,0,0">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition 
-                            Width="Auto"/>
-                        <ColumnDefinition
-                            Width="*"/>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="備考欄"
-                               Margin="0,0,5,0"/>
+                               Margin="0,0,5,0" />
                     <TextBox x:Name="MessageTextBox"
                              AcceptsReturn="True"
                              TextWrapping="Wrap"
@@ -648,78 +644,65 @@
                              Grid.Column="1"
                              BorderThickness="0"
                              Text="{Binding InvoiceVM.CurrentInvoice.Message,Mode=TwoWay}"
-                             Background="#FFF3F3F3"
-                             >
-                        
+                             Background="#FFF3F3F3">
+
                     </TextBox>
                 </Grid>
-                <DataGrid
-                        x:Name="InvoiceItemsDataGrid"
-                        VerticalAlignment="Stretch"
-                        Grid.Row="3"
-                        Margin="0,5,0,0"
-                        CanUserAddRows="False"
-                        CanUserResizeColumns="False"
-                        AutoGenerateColumns="False"
-                        BorderBrush="Gray"
-                        BorderThickness="1"
-                        ItemsSource="{Binding InvoiceVM.CurrentInvoice.InvoiceItems,Mode=TwoWay}"
-                        AlternatingRowBackground="#0C000000"
-                        ColumnHeaderHeight="30"
-                        CanUserDeleteRows="False"
-                        RowHeaderWidth="0"
-                        >
+                <DataGrid x:Name="InvoiceItemsDataGrid"
+                          VerticalAlignment="Stretch"
+                          Grid.Row="3"
+                          Margin="0,5,0,0"
+                          CanUserAddRows="False"
+                          CanUserResizeColumns="False"
+                          AutoGenerateColumns="False"
+                          BorderBrush="Gray"
+                          BorderThickness="1"
+                          ItemsSource="{Binding InvoiceVM.CurrentInvoice.InvoiceItems,Mode=TwoWay}"
+                          AlternatingRowBackground="#0C000000"
+                          ColumnHeaderHeight="30"
+                          CanUserDeleteRows="False"
+                          RowHeaderWidth="0">
                     <DataGrid.ColumnHeaderStyle>
-                        <Style
-                            TargetType="{x:Type DataGridColumnHeader}">
-                            <Setter
-                                Property="FontSize"
-                                Value="15" />
-                            <Setter
-                                Property="HorizontalContentAlignment"
-                                Value="Center" />
+                        <Style TargetType="{x:Type DataGridColumnHeader}">
+                            <Setter Property="FontSize"
+                                    Value="15" />
+                            <Setter Property="HorizontalContentAlignment"
+                                    Value="Center" />
                         </Style>
                     </DataGrid.ColumnHeaderStyle>
 
                     <DataGrid.Columns>
-                        
+
                         <DataGridTemplateColumn  Width="30">
                             <DataGridTemplateColumn.Header>
-                                <CheckBox
-                                    x:Name="SelectAllItemCheckBox"
-                                    Checked="SelectAllCheckBox_Checked"
-                                    Unchecked="SelectAllCheckBox_Unchecked" />
+                                <CheckBox x:Name="SelectAllItemCheckBox"
+                                          Checked="SelectAllCheckBox_Checked"
+                                          Unchecked="SelectAllCheckBox_Unchecked" />
                             </DataGridTemplateColumn.Header>
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <CheckBox
-                                        x:Name="GridRowCheckBox"
-                                        IsChecked="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected, Mode=TwoWay}"
-                                        Style="{StaticResource RowCheckBoxStyle}"
-                                        PreviewMouseLeftButtonDown="InvoiceCheckBox_PreviewMouseLeftButtonDown"
-                                        Width="20">
+                                    <CheckBox x:Name="GridRowCheckBox"
+                                              IsChecked="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected, Mode=TwoWay}"
+                                              Style="{StaticResource RowCheckBoxStyle}"
+                                              PreviewMouseLeftButtonDown="InvoiceCheckBox_PreviewMouseLeftButtonDown"
+                                              Width="20">
                                         <CheckBox.Resources>
-                                            <Style
-                                                TargetType="Grid">
-                                                <Setter
-                                                    Property="Width"
-                                                    Value="20" />
+                                            <Style TargetType="Grid">
+                                                <Setter Property="Width"
+                                                        Value="20" />
                                             </Style>
-                                            <Style
-                                                TargetType="Border">
-                                                <Setter
-                                                    Property="Width"
-                                                    Value="20" />
+                                            <Style TargetType="Border">
+                                                <Setter Property="Width"
+                                                        Value="20" />
                                             </Style>
                                         </CheckBox.Resources>
                                     </CheckBox>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
 
-                            </DataGridTemplateColumn>
-                        <DataGridTemplateColumn
-                            Header="請求項目"
-                            Width="200*">
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="請求項目"
+                                                Width="200*">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <ComboBox x:Name="InvoiceItemName"
@@ -770,7 +753,8 @@
                                 </Style>
                             </DataGridTextColumn.ElementStyle>
                             <DataGridTextColumn.EditingElementStyle>
-                                <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource DataGridTextBoxStyle}">
+                                <Style TargetType="{x:Type TextBox}"
+                                       BasedOn="{StaticResource DataGridTextBoxStyle}">
                                     <Setter Property="Text"
                                             Value="{Binding UnitPrice,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" />
                                     <Setter Property="Background"
@@ -792,20 +776,20 @@
                                             Binding="{Binding Quantity,Mode=TwoWay,StringFormat={}{0:N0},UpdateSourceTrigger=PropertyChanged}"
                                             CellStyle="{StaticResource Cellstyle_HorizontalAlignRight}"
                                             FontSize="16"
-                                            AutomationProperties.IsRequiredForForm="True"/>
+                                            AutomationProperties.IsRequiredForForm="True" />
                         <DataGridTextColumn Header="単位"
                                             Width="50*"
                                             InputMethod.PreferredImeState="Off"
                                             Binding="{Binding Unit,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"
                                             CellStyle="{StaticResource CustomDataGridCellStyle}"
                                             FontSize="16"
-                                            AutomationProperties.IsRequiredForForm="True"/>
+                                            AutomationProperties.IsRequiredForForm="True" />
                         <DataGridTextColumn Header="小計"
                                             Width="90*"
                                             IsReadOnly="True"
                                             FontSize="20"
                                             CellStyle="{StaticResource Cellstyle_HorizontalAlignRight}"
-                                            Binding="{Binding ItemSubTotal,StringFormat={}{0:N0},UpdateSourceTrigger=PropertyChanged}"/>
+                                            Binding="{Binding ItemSubTotal,StringFormat={}{0:N0},UpdateSourceTrigger=PropertyChanged}" />
                         <DataGridComboBoxColumn Header="税種"
                                                 Width="100*"
                                                 x:Name="TaxTypeNameComboBox"
@@ -819,107 +803,90 @@
                                             IsReadOnly="True"
                                             Binding="{Binding Tax, StringFormat={}{0:N0},UpdateSourceTrigger=PropertyChanged}"
                                             FontSize="16"
-                                            CellStyle="{StaticResource Cellstyle_HorizontalAlignRight}"/>
+                                            CellStyle="{StaticResource Cellstyle_HorizontalAlignRight}" />
 
                         <DataGridTextColumn Header="項目計"
                                             Width="90*"
                                             IsReadOnly="True"
                                             FontSize="20"
                                             Binding="{Binding ItemTotal,StringFormat={}{0:N0},UpdateSourceTrigger=PropertyChanged}"
-                                            CellStyle="{StaticResource Cellstyle_HorizontalAlignRight}"/>
+                                            CellStyle="{StaticResource Cellstyle_HorizontalAlignRight}" />
                     </DataGrid.Columns>
                 </DataGrid>
-                <Grid
-                    Grid.Row="4"
-                    HorizontalAlignment="Stretch"
-                    Margin="0,0,0,0"
-                    VerticalAlignment="Bottom">
+                <Grid Grid.Row="4"
+                      HorizontalAlignment="Stretch"
+                      Margin="0,0,0,0"
+                      VerticalAlignment="Bottom">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition
-                            Width="Auto" />
-                        <ColumnDefinition
-                            Width="Auto" />
-                        <ColumnDefinition
-                            Width="*" />
-                        <ColumnDefinition
-                            Width="Auto" />
-                        <ColumnDefinition
-                            Width="Auto" />
-                        <ColumnDefinition
-                            Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
 
-                    <Button
-                        Grid.Column="0"
-                        Margin="2,0"
-                        x:Name="AddInvoiceItemButton"
-                        Content="項目追加"
-                        Width="90"
-                        VerticalAlignment="Bottom"
-                        Click="AddInvoiceItemButton_Click"
-                        Height="32" />
-                    <Button
-                        Grid.Column="1"
-                        Margin="2,0"
-                        x:Name="DeleteInvoiceItemButton"
-                        Content="項目削除"
-                        Width="90"
-                        VerticalAlignment="Bottom"
-                        Click="DeleteInvoiceItemButton_Click"
-                        Height="32" />
-                    <Button
-                        Grid.Column="3"
-                        x:Name="SaveInvoiceButton"
-                        Margin="2,0"
-                        d:Content="保存"
-                        Content="{Binding InvoiceVM.SaveButtonText}"
-                        Width="90"
-                        VerticalAlignment="Bottom"
-                        Click="SaveInvoiceButton_Click"
-                        Height="32" />
-                    <Button
-                        Grid.Column="4"
-                        x:Name="InvoiceCancelButton"
-                        Margin="2,0"
-                        Content="キャンセル"
-                        Width="90"
-                        VerticalAlignment="Bottom"
-                        Click="InvoiceCancelButton_Click"
-                        Height="32" />
-                    <Grid
-                        Margin="2,0"
-                        Grid.Column="5"
-                        VerticalAlignment="Bottom">
+                    <Button Grid.Column="0"
+                            Margin="2,0"
+                            x:Name="AddInvoiceItemButton"
+                            Content="項目追加"
+                            Width="90"
+                            VerticalAlignment="Bottom"
+                            Click="AddInvoiceItemButton_Click"
+                            Height="32" />
+                    <Button Grid.Column="1"
+                            Margin="2,0"
+                            x:Name="DeleteInvoiceItemButton"
+                            Content="項目削除"
+                            Width="90"
+                            VerticalAlignment="Bottom"
+                            Click="DeleteInvoiceItemButton_Click"
+                            Height="32" />
+                    <Button Grid.Column="3"
+                            x:Name="SaveInvoiceButton"
+                            Margin="2,0"
+                            d:Content="保存"
+                            Content="{Binding InvoiceVM.SaveButtonText}"
+                            Width="90"
+                            VerticalAlignment="Bottom"
+                            Click="SaveInvoiceButton_Click"
+                            Height="32" />
+                    <Button Grid.Column="4"
+                            x:Name="InvoiceCancelButton"
+                            Margin="2,0"
+                            Content="キャンセル"
+                            Width="90"
+                            VerticalAlignment="Bottom"
+                            Click="InvoiceCancelButton_Click"
+                            Height="32" />
+                    <Grid Margin="2,0"
+                          Grid.Column="5"
+                          VerticalAlignment="Bottom">
                         <Grid.RowDefinitions>
                             <RowDefinition />
-                            <RowDefinition
-                                Height="32" />
+                            <RowDefinition Height="32" />
                         </Grid.RowDefinitions>
-                        <TextBlock
-                            Grid.Row="0"
-                            Margin="0,0,0,2"
-                            Background="Transparent"
-                            Text="ステータス"
-                            VerticalAlignment="Bottom" />
-                        <ComboBox
-                            x:Name="StatusComboBox"
-                            Grid.Row="1"
-                            BorderThickness="0"
-                            Background="#0C000000"
-                            Width="150"
-                            SelectedIndex="0"
-                            ItemsSource="{Binding InvoiceVM.InvoiceStatusClassList}"
-                            DisplayMemberPath="InvoiceStatus"
-                            SelectedValuePath="InvoiceStatusId"
-                            SelectedValue="{Binding InvoiceVM.CurrentInvoice.InvoiceStatusId,Mode=TwoWay}"
-                            Padding="12,0,0,0"
-                            FontSize="20">
+                        <TextBlock Grid.Row="0"
+                                   Margin="0,0,0,2"
+                                   Background="Transparent"
+                                   Text="ステータス"
+                                   VerticalAlignment="Bottom" />
+                        <ComboBox x:Name="StatusComboBox"
+                                  Grid.Row="1"
+                                  BorderThickness="0"
+                                  Background="#0C000000"
+                                  Width="150"
+                                  SelectedIndex="0"
+                                  ItemsSource="{Binding InvoiceVM.InvoiceStatusClassList}"
+                                  DisplayMemberPath="InvoiceStatus"
+                                  SelectedValuePath="InvoiceStatusId"
+                                  SelectedValue="{Binding InvoiceVM.CurrentInvoice.InvoiceStatusId,Mode=TwoWay}"
+                                  Padding="12,0,0,0"
+                                  FontSize="20">
                             <ComboBox.Resources>
-                                <Style
-                                    TargetType="ComboBoxItem">
-                                    <Setter
-                                        Property="Padding"
-                                        Value="0" />
+                                <Style TargetType="ComboBoxItem">
+                                    <Setter Property="Padding"
+                                            Value="0" />
                                 </Style>
                             </ComboBox.Resources>
                         </ComboBox>

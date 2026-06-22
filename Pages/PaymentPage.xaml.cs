@@ -776,6 +776,29 @@ namespace Invoice
 
         }
 
+        private void FilterNameComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (sender is ComboBox cb)
+            {
+                if (cb.SelectedIndex < 0)
+                {
+                    paymentFilterParam.CustomerId = null;
+                }
+                else if (cb.SelectedItem is CustomerClass customer)
+                {
+                    // treat 0 or negative as 'no filter'
+                    paymentFilterParam.CustomerId = customer.CustomerId > 0 ? customer.CustomerId : (int?)null;
+                }
+                else
+                {
+                    paymentFilterParam.CustomerId = null;
+                }
+                PaymentListFilter();
+                // ensure view refreshes immediately
+                paymentVM?.PaymentListViewSource?.View?.Refresh();
+            }
+        }
+
     }
 
 }

@@ -367,12 +367,12 @@ namespace Invoice.Classes
             return UnitOfWork.ExecuteWithTransaction(uow =>
             {
                 InvoiceItemClass.DeleteInvoiceItemsByInvoiceId(id, uow);
+                DepositClass.DeleteDepositById(TypeOfID.Invoice, id, uow);
+                BalanceClass.DeleteBalanceById(TypeOfID.Invoice, id, uow);
                 string query = "DELETE FROM T_INVOICE WHERE INVOICE_ID = @InvoiceId";
                 var command = uow.CreateCommand(query);
                 command.Parameters.AddWithValue("@InvoiceId", id);
                 command.ExecuteNonQuery();
-                DepositClass.DeleteDepositById(TypeOfID.Invoice, id, uow);
-                BalanceClass.DeleteBalanceById(TypeOfID.Invoice, id, uow);
                 return true;
             }, unitOfWork);
         }

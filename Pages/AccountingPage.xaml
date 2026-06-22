@@ -151,14 +151,16 @@
                                         FontSize="16"
                                         CellStyle="{StaticResource Cellstyle_HorizontalAlignCenter}"
                                         IsReadOnly="True"
-                                        Binding="{Binding SlipNumber}" />
+                                        Binding="{Binding SlipNumber}" 
+                                        ElementStyle="{StaticResource DataGridTextCenterElementStyle}"/>
 
                     <DataGridTextColumn Header="宛先"
                                         Width="100*"
                                         FontSize="16"
                                         CellStyle="{StaticResource Cellstyle_HorizontalAlignCenter}"
                                         IsReadOnly="True"
-                                        Binding="{Binding CustomerName}" />
+                                        Binding="{Binding CustomerName}"
+                                        ElementStyle="{StaticResource DataGridTextCenterElementStyle}" />
 
                     <DataGridTextColumn Header="件名"
                                         Width="200*"
@@ -171,20 +173,23 @@
                                         FontSize="20"
                                         CellStyle="{StaticResource Cellstyle_HorizontalAlignRight}"
                                         IsReadOnly="True"
-                                        Binding="{Binding InvoiceTotal,StringFormat={}{0:N0}, Mode=OneWay}" />
+                                        Binding="{Binding InvoiceTotal,StringFormat={}\\{0:N0}-, Mode=OneWay}"
+                                        ElementStyle="{StaticResource DataGridTextRightElementStyle}" />
 
                     <DataGridTextColumn Header="発行日"
                                         Width="130*"
                                         FontSize="16"
                                         CellStyle="{StaticResource Cellstyle_HorizontalAlignCenter}"
                                         IsReadOnly="True"
-                                        Binding="{Binding IssueDateString}" />
+                                        Binding="{Binding IssueDateString}"
+                                        ElementStyle="{StaticResource DataGridTextCenterElementStyle}"/>
                     <DataGridTextColumn Header="ステータス"
                                         Width="100*"
                                         FontSize="16"
                                         CellStyle="{StaticResource Cellstyle_HorizontalAlignCenter}"
                                         IsReadOnly="True"
-                                        Binding="{Binding InvoiceStatus}" />
+                                        Binding="{Binding InvoiceStatus}"
+                                        ElementStyle="{StaticResource DataGridTextCenterElementStyle}" />
                 </DataGrid.Columns>
 
             </DataGrid>

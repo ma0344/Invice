@@ -298,39 +298,64 @@ namespace Invoice.Classes
 
         public bool TryDeletePayment(UnitOfWork? unitOfWork = null)
         {
-            unitOfWork ??= new UnitOfWork();
             return UnitOfWork.ExecuteWithTransaction(uow =>
             {
-                DeletePayment(unitOfWork);
+                DeletePayment(uow);
                 return true;
             }, unitOfWork);
         }
 
         public void DeletePayment(UnitOfWork unitOfWork)
         {
-
-            string query = "DELETE FROM T_PAYMENT WHERE PAYMENT_ID = @PaymentId";
-            var command = unitOfWork.CreateCommand(query);
-            command.Parameters.AddWithValue("@PaymentId", PaymentId);
-            command.ExecuteNonQuery();
-            DepositClass.DeleteDepositById(TypeOfID.Payment, PaymentId, unitOfWork);
-            BalanceClass.DeleteBalanceById(TypeOfID.Payment, PaymentId, unitOfWork);
+            DeletePaymentCascade(PaymentId, unitOfWork);
         }
 
-        public static bool TryDeletePaymentById(TypeOfID type, int paymentId, UnitOfWork? unitOfWork = null)
+        public static bool TryDeletePaymentById(TypeOfID type, int id, UnitOfWork? unitOfWork = null)
         {
             return UnitOfWork.ExecuteWithTransaction(uow =>
             {
-                DeletePaymentById(type, paymentId, uow);
+                DeletePaymentById(type, id, uow);
                 return true;
             }, unitOfWork);
         }
 
         public static void DeletePaymentById(TypeOfID type, int id, UnitOfWork unitOfWork)
         {
-            string query = QueryBuilder.StringBuilder(command:"DELETE", tableName: "T_PAYMENT", type: type);
-            var command = unitOfWork.CreateCommand(query);
-            command.Parameters.AddWithValue("@PaymentId", id);
+            switch (type)
+            {
+                case TypeOfID.Invoice:
+                    foreach (var paymentId in GetPaymentIdsByInvoiceId(id, unitOfWork))
+                    {
+                        DeletePaymentCascade(paymentId, unitOfWork);
+                    }
+                    break;
+                case TypeOfID.Payment:
+                    DeletePaymentCascade(id, unitOfWork);
+                    break;
+                default:
+                    throw new ArgumentException($"Unsupported type for payment deletion: {type}");
+            }
+        }
+
+        public static List<int> GetPaymentIdsByInvoiceId(int invoiceId, UnitOfWork unitOfWork)
+        {
+            var paymentIds = new List<int>();
+            var command = unitOfWork.CreateCommand("SELECT PAYMENT_ID FROM T_PAYMENT WHERE INVOICE_ID = @InvoiceId");
+            command.Parameters.AddWithValue("@InvoiceId", invoiceId);
+            using var reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                paymentIds.Add(reader.GetInt32(0));
+            }
+            return paymentIds;
+        }
+
+        private static void DeletePaymentCascade(int paymentId, UnitOfWork unitOfWork)
+        {
+            DepositClass.DeleteDepositById(TypeOfID.Payment, paymentId, unitOfWork);
+            BalanceClass.DeleteBalanceById(TypeOfID.Payment, paymentId, unitOfWork);
+            var command = unitOfWork.CreateCommand("DELETE FROM T_PAYMENT WHERE PAYMENT_ID = @PaymentId");
+            command.Parameters.AddWithValue("@PaymentId", paymentId);
             command.ExecuteNonQuery();
         }
 

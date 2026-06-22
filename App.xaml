@@ -15,6 +15,16 @@
             </ResourceDictionary.MergedDictionaries>
             <!-- Other app resources here -->
 
+            <Style x:Key="BaseStyle"
+                   TargetType="Control">
+                
+            </Style>
+            <Style x:Key="BaseGridRowStyle"
+                   TargetType="DataGridRow"
+                   BasedOn="{StaticResource BaseStyle}">
+                
+            </Style>
+            
             <Style TargetType="Button"
                    BasedOn="{StaticResource DefaultButtonStyle}">
                 <Setter Property="FontFamily"
@@ -31,6 +41,10 @@
                         Value="True" />
                 <Setter Property="FontSize"
                         Value="20" />
+                <Setter Property="HorizontalAlignment"
+                        Value="Stretch" />
+                <Setter Property="HorizontalContentAlignment"
+                        Value="Center" />
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="DataGridCell">
@@ -44,11 +58,74 @@
                                                       IsCurrencyVisualVisible="{TemplateBinding IsSelected}"
                                                       IsFocusVisualVisible="{TemplateBinding IsKeyboardFocusWithin}"
                                                       MinHeight="{TemplateBinding MinHeight}"
-                                                      SnapsToDevicePixels="True" />
+                                                      HorizontalAlignment="Stretch"
+                                                      SnapsToDevicePixels="True">
+
+                            </ui:DataGridCellPresenter>
                         </ControlTemplate>
                     </Setter.Value>
                 </Setter>
+
             </Style>
+
+            <Style x:Key="DataGridCellStyle1"
+                   TargetType="{x:Type DataGridCell}">
+                <Setter Property="Background"
+                        Value="Transparent" />
+                <Setter Property="BorderBrush"
+                        Value="Transparent" />
+                <Setter Property="BorderThickness"
+                        Value="1" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type DataGridCell}">
+                            <Border Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    SnapsToDevicePixels="True">
+                                <ContentPresenter SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
+                            </Border>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Style.Triggers>
+                    <Trigger Property="IsSelected"
+                             Value="True">
+                        <Setter Property="Background"
+                                Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}" />
+                        <Setter Property="Foreground"
+                                Value="{DynamicResource {x:Static SystemColors.HighlightTextBrushKey}}" />
+                        <Setter Property="BorderBrush"
+                                Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}" />
+                    </Trigger>
+                    <Trigger Property="IsKeyboardFocusWithin"
+                             Value="True">
+                        <Setter Property="BorderBrush"
+                                Value="{DynamicResource {x:Static DataGrid.FocusBorderBrushKey}}" />
+                    </Trigger>
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsSelected"
+                                       Value="true" />
+                            <Condition Property="Selector.IsSelectionActive"
+                                       Value="false" />
+                        </MultiTrigger.Conditions>
+                        <Setter Property="Background"
+                                Value="{DynamicResource {x:Static SystemColors.InactiveSelectionHighlightBrushKey}}" />
+                        <Setter Property="BorderBrush"
+                                Value="{DynamicResource {x:Static SystemColors.InactiveSelectionHighlightBrushKey}}" />
+                        <Setter Property="Foreground"
+                                Value="{DynamicResource {x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}}" />
+                    </MultiTrigger>
+                    <Trigger Property="IsEnabled"
+                             Value="false">
+                        <Setter Property="Foreground"
+                                Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}" />
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+
+
             <Style x:Key="RowCheckBoxStyle"
                    TargetType="CheckBox"
                    BasedOn="{StaticResource DefaultCheckBoxStyle}">
@@ -63,9 +140,40 @@
                     </Setter.Value>
                 </Setter>
             </Style>
-            
-            
-            
+
+            <!-- DataGridTextColumn の表示用 TextBlock を右寄せ -->
+            <Style x:Key="DataGridTextRightElementStyle"
+                   TargetType="TextBlock">
+                <Setter Property="HorizontalAlignment"
+                        Value="Stretch" />
+                <Setter Property="TextAlignment"
+                        Value="Right" />
+                <Setter Property="VerticalAlignment"
+                        Value="Center" />
+                <Setter Property="Padding"
+                        Value="0,0,10,0" />
+            </Style>
+
+            <!-- DataGridTextColumn の表示用 TextBlock を中央寄せ -->
+            <Style x:Key="DataGridTextCenterElementStyle"
+                   TargetType="TextBlock">
+                <Setter Property="HorizontalAlignment"
+                        Value="Stretch" />
+                <Setter Property="TextAlignment"
+                        Value="Center" />
+                <Setter Property="VerticalAlignment"
+                        Value="Center" />
+            </Style>
+
+            <!-- 編集用 TextBox も中央寄せ（必要な列で使用） -->
+            <Style x:Key="DataGridTextCenterEditingStyle"
+                   TargetType="TextBox"
+                   BasedOn="{StaticResource DataGridTextBoxStyle}">
+                <Setter Property="HorizontalContentAlignment"
+                        Value="Center" />
+                <Setter Property="TextAlignment"
+                        Value="Center" />
+            </Style>
             <Style TargetType="DataGridCell"
                    x:Key="Cellstyle_HorizontalAlignRight"
                    BasedOn="{StaticResource CustomDataGridCellStyle}">
@@ -77,29 +185,44 @@
             <Style x:Key="DataGridAmountCellStyle"
                    TargetType="DataGridCell"
                    BasedOn="{StaticResource Cellstyle_HorizontalAlignRight}">
+                <Setter Property="HorizontalAlignment"
+                        Value="Stretch" />
+                <Setter Property="HorizontalContentAlignment"
+                        Value="Stretch" />
                 <Setter Property="FontSize"
                         Value="20" />
 
             </Style>
-            <Style TargetType="DataGridCell"
-                   x:Key="Cellstyle_HorizontalAlignCenter"
+            <Style x:Key="Cellstyle_HorizontalAlignCenter"
+                   TargetType="DataGridCell"
                    BasedOn="{StaticResource CustomDataGridCellStyle}">
-                <Setter Property="HorizontalAlignment"
-                        Value="Center" />
-                <Setter Property="Padding"
-                        Value="0,0,0,0" />
+                <Setter Property="FontSize"
+                        Value="16" />
             </Style>
             <Style x:Key="DataGridSlipNumberCellStyle"
                    TargetType="DataGridCell"
-                   BasedOn="{StaticResource Cellstyle_HorizontalAlignCenter}">
+                   BasedOn="{StaticResource CustomDataGridCellStyle}">
+                <Setter Property="HorizontalAlignment"
+                        Value="Stretch" />
+                <Setter Property="HorizontalContentAlignment"
+                        Value="Stretch" />
                 <Setter Property="FontSize"
-                        Value="15" />
+                        Value="16" />
             </Style>
             <Style x:Key="DataGridNameCellStyle"
                    TargetType="DataGridCell"
                    BasedOn="{StaticResource Cellstyle_HorizontalAlignCenter}">
+                
                 <Setter Property="FontSize"
                         Value="15" />
+            </Style>
+            <Style x:Key="DataGridSubjectCellStyle"
+                   TargetType="DataGridCell"
+                   BasedOn="{StaticResource CustomDataGridCellStyle}">
+                <Setter Property="HorizontalAlignment"
+                        Value="Stretch" />
+                <Setter Property="Padding"
+                        Value="0,0,5,0" />
             </Style>
             <Style x:Key="DataGridDateCellStyle"
                    TargetType="DataGridCell"
@@ -166,6 +289,164 @@
                 <Setter Property="RowHeaderWidth"
                         Value="0" />
             </Style>
+
+
+            <SolidColorBrush x:Key="Expander.Static.Circle.Stroke"
+                             Color="#FF333333" />
+            <SolidColorBrush x:Key="Expander.Static.Circle.Fill"
+                             Color="#FFFFFFFF" />
+            <SolidColorBrush x:Key="Expander.Static.Arrow.Stroke"
+                             Color="#FF000000" />
+            <SolidColorBrush x:Key="Expander.MouseOver.Circle.Stroke"
+                             Color="Transparent" />
+            <SolidColorBrush x:Key="Expander.MouseOver.Circle.Fill"
+                             Color="Transparent" />
+            <SolidColorBrush x:Key="Expander.MouseOver.Arrow.Stroke"
+                             Color="#FF707070" />
+            <SolidColorBrush x:Key="Expander.Pressed.Circle.Stroke"
+                             Color="Transparent" />
+            <SolidColorBrush x:Key="Expander.Pressed.Circle.Fill"
+                             Color="Transparent" />
+            <SolidColorBrush x:Key="Expander.Pressed.Arrow.Stroke"
+                             Color="#FF000000" />
+            <SolidColorBrush x:Key="Expander.Disabled.Circle.Stroke"
+                             Color="#FFBCBCBC" />
+            <SolidColorBrush x:Key="Expander.Disabled.Circle.Fill"
+                             Color="#FFE6E6E6" />
+            <SolidColorBrush x:Key="Expander.Disabled.Arrow.Stroke"
+                             Color="#FF707070" />
+            <Style x:Key="ExpanderHeaderFocusVisual">
+                <Setter Property="Control.Template">
+                    <Setter.Value>
+                        <ControlTemplate>
+                            <Border>
+                                <Rectangle Margin="0"
+                                           StrokeDashArray="1 2"
+                                           Stroke="Black"
+                                           SnapsToDevicePixels="true"
+                                           StrokeThickness="1" />
+                            </Border>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <Style x:Key="ExpanderDownHeaderStyle"
+                   TargetType="{x:Type ToggleButton}">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type ToggleButton}">
+                            <Border Padding="{TemplateBinding Padding}">
+                                <Grid Background="Transparent"
+                                      SnapsToDevicePixels="False">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="19" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Path x:Name="arrow"
+                                          Data="M -1,1 L 4.5,6 L 10,1"
+                                          HorizontalAlignment="Center"
+                                          Stroke="{StaticResource Expander.Static.Arrow.Stroke}"
+                                          SnapsToDevicePixels="false"
+                                          StrokeThickness="0.8"
+                                          VerticalAlignment="Center" />
+                                    <ContentPresenter Grid.Column="1"
+                                                      HorizontalAlignment="Left"
+                                                      Margin="4,0,0,0"
+                                                      RecognizesAccessKey="True"
+                                                      SnapsToDevicePixels="True"
+                                                      VerticalAlignment="Center" />
+                                </Grid>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsChecked"
+                                         Value="true">
+                                    <Setter Property="Data"
+                                            TargetName="arrow"
+                                            Value="M -1,6  L 4.5,1  L 10,6" />
+                                </Trigger>
+                                <Trigger Property="IsMouseOver"
+                                         Value="true">
+                                    <Setter Property="Stroke"
+                                            TargetName="arrow"
+                                            Value="{StaticResource Expander.MouseOver.Arrow.Stroke}" />
+                                </Trigger>
+                                <Trigger Property="IsPressed"
+                                         Value="true">
+                                    <Setter Property="Stroke"
+                                            TargetName="arrow"
+                                            Value="{StaticResource Expander.Pressed.Arrow.Stroke}" />
+                                </Trigger>
+                                <Trigger Property="IsEnabled"
+                                         Value="false">
+                                    <Setter Property="Stroke"
+                                            TargetName="arrow"
+                                            Value="{StaticResource Expander.Disabled.Arrow.Stroke}" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <Style x:Key="ExpanderAlignRightStyle"
+                   TargetType="{x:Type Expander}"
+                   BasedOn="{StaticResource DefaultExpanderStyle}">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Expander}">
+                            <Border Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="3"
+                                    SnapsToDevicePixels="true">
+                                <DockPanel>
+                                    <ToggleButton x:Name="HeaderSite"
+                                                    ContentTemplate="{TemplateBinding HeaderTemplate}"
+                                                    Content="{TemplateBinding Header}"
+                                                    ContentTemplateSelector="{TemplateBinding HeaderTemplateSelector}"
+                                                    DockPanel.Dock="Top"
+                                                    FontStretch="{TemplateBinding FontStretch}"
+                                                    Foreground="{TemplateBinding Foreground}"
+                                                    FocusVisualStyle="{StaticResource ExpanderHeaderFocusVisual}"
+                                                    FontStyle="{TemplateBinding FontStyle}"
+                                                    FontFamily="{TemplateBinding FontFamily}"
+                                                    FontWeight="{TemplateBinding FontWeight}"
+                                                    FontSize="{TemplateBinding FontSize}"
+                                                    HorizontalAlignment="{TemplateBinding HorizontalAlignment}"
+                                                    HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                    IsChecked="{Binding IsExpanded, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
+                                                    Margin="1"
+                                                    MinWidth="0"
+                                                    MinHeight="0"
+                                                    Padding="{TemplateBinding Padding}"
+                                                    Style="{StaticResource ExpanderDownHeaderStyle}"
+                                                    VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+                                    <ContentPresenter x:Name="ExpandSite"
+                                                        DockPanel.Dock="Bottom"
+                                                        Focusable="false"
+                                                        HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                        Margin="{TemplateBinding Padding}"
+                                                        VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                                        Visibility="Collapsed" />
+                                </DockPanel>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsExpanded"
+                                         Value="true">
+                                    <Setter Property="Visibility"
+                                            TargetName="ExpandSite"
+                                            Value="Visible" />
+                                </Trigger>
+                                <Trigger Property="IsEnabled"
+                                         Value="false">
+                                    <Setter Property="Foreground"
+                                            Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>                        
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
 
         </ResourceDictionary>
         
