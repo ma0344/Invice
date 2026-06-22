@@ -305,42 +305,39 @@ namespace Invoice.Classes
 
         public bool TryUpdateInvoice(UnitOfWork? unitOfWork = null)
         {
-            var res = UnitOfWork.ExecuteWithTransaction(uow =>
+            return UnitOfWork.ExecuteWithTransaction(uow =>
             {
                 UpdateInvoice(uow);
                 InvoiceItemClass.UpdateInvoiceItems(InvoiceId, InvoiceItems, uow);
                 if (ItemsTotal - PaidByDeposit <= 0)
                 {
                     BalanceClass.DeleteBalanceById(new IDs(invoiceId: InvoiceId, paymentId: null), uow);
-                    DepositClass.TryUpdateDeposit(this, uow);
+                    if (!DepositClass.TryUpdateDeposit(this, uow))
+                        return false;
+                }
+                else if (PaidByDeposit >= 0)
+                {
+                    if (!DepositClass.TryUpdateDeposit(this, uow))
+                        return false;
                 }
                 else
                 {
-                    if (PaidByDeposit >= 0)
-                        DepositClass.TryUpdateDeposit(this, uow);
-                    else
-                        System.Diagnostics.Debug.WriteLine("前受金の更新に失敗しました。");
+                    System.Diagnostics.Debug.WriteLine("前受金の更新に失敗しました。");
+                    return false;
                 }
-                return true;
-            }, unitOfWork);
-            if (!res) return false;
 
-            res = UnitOfWork.ExecuteWithTransaction(uow =>
-            {
-                var balances = BalanceClass.GetBalancesById(new IDs(invoiceId: InvoiceId, paymentId: null), new UnitOfWork());
+                var balances = BalanceClass.GetBalancesById(new IDs(invoiceId: InvoiceId, paymentId: null), uow);
                 if (balances.Count > 1)
                 {
                     System.Diagnostics.Debug.WriteLine("請求情報が重複しています。");
                     return false;
                 }
-                else
-                {
-                    BalanceClass.TryUpdateBalance(this, uow);
-                    return true;
-                }
+
+                if (!BalanceClass.TryUpdateBalance(this, uow))
+                    return false;
+
+                return true;
             }, unitOfWork);
-            if (!res) return false;
-            return true;
         }
 
         public void UpdateInvoice(UnitOfWork unitOfWork)

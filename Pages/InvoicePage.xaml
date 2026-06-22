@@ -213,10 +213,7 @@
                     </ContextMenu>
                 </DataGrid.ContextMenu>
                 <DataGrid.ItemContainerStyle>
-                    <Style TargetType="DataGridRow">
-                        <EventSetter Event="PreviewMouseLeftButtonDown"
-                                     Handler="DataGridRow_PreviewMouseLeftButtonDown" />
-                    </Style>
+                    <Style TargetType="DataGridRow" />
                 </DataGrid.ItemContainerStyle>
 
                 <DataGrid.Columns>

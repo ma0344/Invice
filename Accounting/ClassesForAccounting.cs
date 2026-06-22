@@ -159,16 +159,12 @@ namespace Invoice.Accounting
         }
         public string CreateCsv(MakeType type, DateTime targetDate, List<InvoiceClass> selectedInvoices, string dirName = "")
         {
-
-
-            reqData = new RequiredData(targetDate, DateTime.DaysInMonth(targetDate.Year, targetDate.Month));
             string returnString = string.Empty;
             switch (type)
             {
                 case MakeType.file:
-                    outputFileName = $"{dirName}\\";
-                    outputFileName += reqData.ProcessDate.ToString("利用料請求仕訳 yyyy年 MM月 請求分") + ".csv";
-                    if (CreateCsvFile(reqData, selectedInvoices) == string.Empty)
+                    outputFileName = $"{dirName}\\{BuildOutputFileName(selectedInvoices, targetDate)}";
+                    if (CreateCsvFile(selectedInvoices) == string.Empty)
                     {
                         DomainEvents.RaiseError("指定された日付のデータがありませんでした");
                     }
@@ -178,7 +174,7 @@ namespace Invoice.Accounting
                     }
                     break;
                 case MakeType.prev:
-                    string previewString = PreviewCsv(reqData, selectedInvoices);
+                    string previewString = PreviewCsv(selectedInvoices);
                     if (previewString == "false")
                     {
                         DomainEvents.RaiseError("指定された日付のデータがありませんでした");
@@ -192,17 +188,43 @@ namespace Invoice.Accounting
             return returnString;
         }
 
-        public string CreateCsvFile(RequiredData reqData, List<InvoiceClass> invoices)
+        private static string BuildOutputFileName(List<InvoiceClass> invoices, DateTime fallbackDate)
         {
+            var months = invoices
+                .Where(i => i.IssueDate.HasValue)
+                .Select(i => new DateTime(i.IssueDate!.Value.Year, i.IssueDate!.Value.Month, 1))
+                .Distinct()
+                .OrderBy(d => d)
+                .ToList();
 
+            if (months.Count == 0)
+            {
+                var fallback = new RequiredData(fallbackDate, DateTime.DaysInMonth(fallbackDate.Year, fallbackDate.Month));
+                return fallback.ProcessDate.ToString("利用料請求仕訳 yyyy年 MM月 請求分") + ".csv";
+            }
+
+            if (months.Count == 1)
+                return months[0].ToString("利用料請求仕訳 yyyy年 MM月 請求分") + ".csv";
+
+            return $"利用料請求仕訳 {months.First():yyyy年MM月}-{months.Last():yyyy年MM月}請求分.csv";
+        }
+
+        public string CreateCsvFile(List<InvoiceClass> invoices)
+        {
             var convertedData = ConvertData(invoices);
+            if (convertedData.Count == 0)
+                return string.Empty;
+
             WriteCsv(convertedData, outputFileName);
             return outputFileName;
         }
-        public string PreviewCsv(RequiredData reqData, List<InvoiceClass> invoices)
-        {
 
+        public string PreviewCsv(List<InvoiceClass> invoices)
+        {
             var convertedData = ConvertData(invoices);
+            if (convertedData.Count == 0)
+                return "false";
+
             return GetPreviewString(convertedData);
         }
 
@@ -211,63 +233,81 @@ namespace Invoice.Accounting
 
         public List<AccountingDataBaseClass> ConvertData(List<InvoiceClass> invoices)
         {
-
             rowCounter = 0;
-            AccountingDataBaseClass convertedLineData;
             var convertedData = new List<AccountingDataBaseClass>();
-            foreach (InvoiceClass orgInvoice in invoices)
+
+            var invoicesByMonth = invoices
+                .Where(i => i.IssueDate.HasValue)
+                .GroupBy(i => new DateTime(i.IssueDate!.Value.Year, i.IssueDate!.Value.Month, 1))
+                .OrderBy(g => g.Key);
+
+            foreach (var monthGroup in invoicesByMonth)
             {
-                var invoice = orgInvoice.DeepClone();
-                if (reqData is not null)
+                var month = monthGroup.Key;
+                var daysInMonth = DateTime.DaysInMonth(month.Year, month.Month);
+                var monthReqData = new RequiredData(month, daysInMonth);
+                long lineNumber = 0;
+
+                foreach (var orgInvoice in monthGroup.OrderBy(i => i.IssueDate).ThenBy(i => i.CustomerId))
                 {
-                    rowCounter++;
-                    convertedLineData = new AccountingDataBaseClass
-                    (
-                        SlipNumber: reqData.VoucherNumber,
-                        LineNum: rowCounter,
-                        IssueDateString: reqData.VoucherDateString,
-                        DebitAccCode: invoice.TransactionTypeId == TransactionTypeIdsProvider.BalanceId ? AppSettingsProvider.AccountingDebitAccountCodeBalance : AppSettingsProvider.AccountingDebitAccountCodeDeposit,
-                        DebitSubCode: invoice.CustomerId,
-                        DebitDeptCode: AppSettingsProvider.AccountingDepartmentCode,
-                        DebitAmount: invoice.ItemsTotal,
-                        Description: $"利用料 {invoice.CustomerName}",
-                        AuxMemo: invoice.IssueDate!.Value.ToString("ggy年M月")
-                    );
-                    convertedData.Add(convertedLineData);
-                    var accountingDic = convertedLineData.AccountingDic;
-                    foreach (var item in invoice.InvoiceItems)
-                    {
-                        var specialCode = AppSettingsProvider.SpecialItemCode;
-                        var specialName = AppSettingsProvider.SpecialItemName;
-                        if (item.ItemCode == specialCode || item.ItemName == specialName) continue;
-                        rowCounter++;
-                        var creditCode = GetAccountCode(item.ItemName);
-                        var creditSubCode = GetItemSubCode(item.ItemName);
-
-                        if (item.ItemName.Contains("家賃") && invoice.InvoiceItems.Any(i => (i.ItemCode == specialCode || i.ItemName == specialName)))
-                        {
-                            item.UnitPrice = item.UnitPrice * item.Quantity + invoice.InvoiceItems.First(i => (i.ItemCode == specialCode || i.ItemName == specialName)).ItemTotal;
-                            item.Quantity = 1;
-                        }
-                        convertedLineData = new AccountingDataBaseClass
-                        (
-                            SlipNumber: reqData.VoucherNumber,
-                            LineNum: rowCounter,
-                            IssueDateString: reqData.VoucherDateString,
-                            CreditAccCode: creditCode,
-                            CreditSubCode: creditSubCode,
-                            CreditDeptCode: AppSettingsProvider.AccountingDepartmentCode,
-                            CreditAmount: item.ItemTotal,
-                            Description: $"{item.ItemName}" + (item.Quantity > 1 ? $" × {item.Quantity}"
-                            : ""),
-                            AuxMemo: invoice.IssueDate!.Value.ToString("ggy年M月")
-                        );
-                        convertedData.Add(convertedLineData);
-
-                    }
+                    AppendInvoiceRows(convertedData, orgInvoice, monthReqData, ref lineNumber);
                 }
             }
+
+            rowCounter = convertedData.Count;
             return convertedData;
+        }
+
+        private void AppendInvoiceRows(
+            List<AccountingDataBaseClass> convertedData,
+            InvoiceClass orgInvoice,
+            RequiredData monthReqData,
+            ref long lineNumber)
+        {
+            var invoice = orgInvoice.DeepClone();
+            lineNumber++;
+            var convertedLineData = new AccountingDataBaseClass
+            (
+                SlipNumber: monthReqData.VoucherNumber,
+                LineNum: lineNumber,
+                IssueDateString: monthReqData.VoucherDateString,
+                DebitAccCode: invoice.TransactionTypeId == TransactionTypeIdsProvider.BalanceId ? AppSettingsProvider.AccountingDebitAccountCodeBalance : AppSettingsProvider.AccountingDebitAccountCodeDeposit,
+                DebitSubCode: invoice.CustomerId,
+                DebitDeptCode: AppSettingsProvider.AccountingDepartmentCode,
+                DebitAmount: invoice.ItemsTotal,
+                Description: $"利用料 {invoice.CustomerName}",
+                AuxMemo: invoice.IssueDate!.Value.ToString("ggy年M月")
+            );
+            convertedData.Add(convertedLineData);
+
+            foreach (var item in invoice.InvoiceItems)
+            {
+                var specialCode = AppSettingsProvider.SpecialItemCode;
+                var specialName = AppSettingsProvider.SpecialItemName;
+                if (item.ItemCode == specialCode || item.ItemName == specialName) continue;
+                lineNumber++;
+                var creditCode = GetAccountCode(item.ItemName);
+                var creditSubCode = GetItemSubCode(item.ItemName);
+
+                if (item.ItemName.Contains("家賃") && invoice.InvoiceItems.Any(i => (i.ItemCode == specialCode || i.ItemName == specialName)))
+                {
+                    item.UnitPrice = item.UnitPrice * item.Quantity + invoice.InvoiceItems.First(i => (i.ItemCode == specialCode || i.ItemName == specialName)).ItemTotal;
+                    item.Quantity = 1;
+                }
+                convertedLineData = new AccountingDataBaseClass
+                (
+                    SlipNumber: monthReqData.VoucherNumber,
+                    LineNum: lineNumber,
+                    IssueDateString: monthReqData.VoucherDateString,
+                    CreditAccCode: creditCode,
+                    CreditSubCode: creditSubCode,
+                    CreditDeptCode: AppSettingsProvider.AccountingDepartmentCode,
+                    CreditAmount: item.ItemTotal,
+                    Description: $"{item.ItemName}" + (item.Quantity > 1 ? $" × {item.Quantity}" : ""),
+                    AuxMemo: invoice.IssueDate!.Value.ToString("ggy年M月")
+                );
+                convertedData.Add(convertedLineData);
+            }
         }
 
         private long GetAccountCode(string itemName)

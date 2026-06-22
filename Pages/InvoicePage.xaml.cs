@@ -828,9 +828,5 @@ namespace Invoice
             }
         }
 
-        private void DataGridRow_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-        {
-
-        }
     }
 }

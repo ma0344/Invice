@@ -95,25 +95,26 @@ namespace Invoice.Classes
                 // 処理を実行
                 bool result = action(uow);
 
-                // 呼び出し元がトランザクションを管理していない場合、コミット
-                if (unitOfWork == null && result)
+                if (unitOfWork == null)
                 {
-                    uow.Commit();
+                    if (result)
+                        uow.Commit();
+                    else
+                        uow.Rollback();
                 }
 
                 return result;
             }
             catch (Exception e)
             {
-                // エラー発生時にロールバック
                 if (unitOfWork == null)
                 {
                     uow.Rollback();
+                    DomainEvents.RaiseError($"エラーが発生しました: {e.Message}", e);
+                    return false;
                 }
 
-                // UIとの分離: ドメインイベントで通知
-                DomainEvents.RaiseError($"エラーが発生しました: {e.Message}", e);
-                return false;
+                throw;
             }
             finally
             {
@@ -347,6 +348,11 @@ namespace Invoice.Classes
         public static TrackedCommand Builder(IDs ids, string query, UnitOfWork unitOfWork, [CallerMemberName] string callerName = "")
         {
             string condition = "";
+            if (ids.CustomerId != 0)
+            {
+                if (condition != "") condition += " AND ";
+                condition += ids.CustomerId != null ? "CUSTOMER_ID = @CustomerId" : "CUSTOMER_ID IS null";
+            }
             if (ids.InvoiceId != 0)
             {
                 condition += ids.InvoiceId != null ? "INVOICE_ID = @InvoiceId" : "INVOICE_ID IS null";
@@ -376,6 +382,10 @@ namespace Invoice.Classes
             var command = unitOfWork.CreateCommand();
             command.CommandText = query;
             // 引数がnullの場合は条件としてnullを追加する
+            if (ids.CustomerId != 0 && ids.CustomerId != null)
+            {
+                command.Parameters.AddWithValue("@CustomerId", ids.CustomerId);
+            }
             if (ids.InvoiceId != 0 && ids.InvoiceId != null)
             {
                 command.Parameters.AddWithValue("@InvoiceId", ids.InvoiceId);

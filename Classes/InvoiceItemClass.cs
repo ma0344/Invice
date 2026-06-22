@@ -267,25 +267,26 @@ namespace Invoice.Classes
         {
             if (items == null || items.Count == 0) return;
 
-            var query = new StringBuilder("INSERT INTO T_INVOICE_ITEMS (INVOICE_ID, ITEM_ORDER, ITEM_ID, ITEM_NAME, UNIT_PRICE, QUANTITY, UNIT, ITEM_SUBTOTAL, TAX_TYPE_ID, TAX, ITEM_TOTAL) VALUES ");
+            const string insertQuery = @"INSERT INTO T_INVOICE_ITEMS (INVOICE_ID, ITEM_ORDER, ITEM_ID, ITEM_NAME, UNIT_PRICE, QUANTITY, UNIT, ITEM_SUBTOTAL, TAX_TYPE_ID, TAX, ITEM_TOTAL)
+VALUES (@InvoiceId, @ItemOrder, @ItemId, @ItemName, @UnitPrice, @Quantity, @Unit, @ItemSubtotal, @TaxTypeId, @Tax, @ItemTotal)";
 
             foreach (var item in items)
             {
-                query.Append($"({invoiceId}, {item.ItemOrder}, {item.ItemId}, '{item.ItemName}', {item.UnitPrice}, {item.Quantity}, '{item.Unit}', {item.ItemSubTotal}, {item.TaxTypeId}, {item.Tax}, {item.ItemTotal}),");
+                var command = unitOfWork.CreateCommand(insertQuery);
+                command.Parameters.AddWithValue("@InvoiceId", invoiceId);
+                command.Parameters.AddWithValue("@ItemOrder", item.ItemOrder);
+                command.Parameters.AddWithValue("@ItemId", item.ItemId);
+                command.Parameters.AddWithValue("@ItemName", item.ItemName);
+                command.Parameters.AddWithValue("@UnitPrice", item.UnitPrice);
+                command.Parameters.AddWithValue("@Quantity", item.Quantity);
+                command.Parameters.AddWithValue("@Unit", item.Unit);
+                command.Parameters.AddWithValue("@ItemSubtotal", item.ItemSubTotal);
+                command.Parameters.AddWithValue("@TaxTypeId", item.TaxTypeId);
+                command.Parameters.AddWithValue("@Tax", item.Tax);
+                command.Parameters.AddWithValue("@ItemTotal", item.ItemTotal);
+                command.ExecuteNonQuery();
+                item.InvoiceItemId = (int)command.LastInsertedId;
             }
-
-            // 最後のカンマを削除
-            query.Length--;
-
-            var command = unitOfWork.CreateCommand(query.ToString());
-            command.ExecuteNonQuery();
-            var lastInsertedId = (int)command.LastInsertedId;
-            var insertedIds = Enumerable.Range(lastInsertedId, items.Count).ToList();
-            for (int i = 0; i < items.Count; i++)
-            {
-                items[i].InvoiceItemId = insertedIds[i];
-            }
-
         }
 
         public static void UpdateInvoiceItem(InvoiceItemClass invoiceItem, UnitOfWork unitOfWork)

@@ -876,10 +876,6 @@
                               CanUserSortColumns="True"
                               ColumnHeaderHeight="28"
                               CanUserDeleteRows="False"
-                              PreviewMouseRightButtonUp="InvoiceListDataGrid_PreviewMouseRightButtonUp"
-                              PreviewMouseLeftButtonDown="InvoiceListDataGrid_PreviewMouseLeftButtonDown"
-                              ContextMenuOpening="InvoiceListDataGrid_ContextMenuOpening"
-                              ContextMenuClosing="InvoiceListDataGrid_ContextMenuClosing"
                               ColumnHeaderStyle="{StaticResource CustomDataGridColumnHeaderStyle}"
                               RowHeaderWidth="0">
                         

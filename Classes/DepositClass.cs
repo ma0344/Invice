@@ -164,7 +164,10 @@ namespace Invoice.Classes
                     deposit = GetDeposit(TypeOfID.Payment, payment.PaymentId);
                     if (payment.PaymentAmount <= 0)
                     {
-                        deposit?.DeleteDeposit(uow);
+                        if (deposit != null)
+                            deposit.DeleteDeposit(uow);
+                        else
+                            BalanceClass.DeleteBalanceById(TypeOfID.Payment, payment.PaymentId, uow);
                         return true;
                     }
 
@@ -186,7 +189,10 @@ namespace Invoice.Classes
                     deposit = GetDeposit(TypeOfID.Invoice, invoice.InvoiceId);
                     if (invoice.PaidByDeposit <= 0)
                     {
-                        deposit?.DeleteDeposit(uow);
+                        if (deposit != null)
+                            deposit.DeleteDeposit(uow);
+                        else
+                            BalanceClass.DeleteBalanceById(TypeOfID.Invoice, invoice.InvoiceId, uow);
                         return true;
                     }
 
@@ -213,8 +219,24 @@ namespace Invoice.Classes
 
         public static void UpdateDeposit(DepositClass deposit, UnitOfWork unitOfWork)
         {
+            string whereClause;
+            object? id;
+            if (deposit.PaymentId.HasValue)
+            {
+                whereClause = "PAYMENT_ID";
+                id = deposit.PaymentId.Value;
+            }
+            else if (deposit.InvoiceId.HasValue)
+            {
+                whereClause = "INVOICE_ID";
+                id = deposit.InvoiceId.Value;
+            }
+            else
+            {
+                whereClause = "DEPOSIT_ID";
+                id = deposit.DepositId;
+            }
 
-            var whereClause = deposit.SlipNumber.StartsWith('R') ? "PAYMENT_ID" : "INVOICE_ID";
             var query = $"UPDATE T_DEPOSIT SET INVOICE_ID=@InvoiceId, PAYMENT_ID=@PaymentId, CUSTOMER_ID=@CustomerId, DEPOSIT_DATE=@DepositDate, DEPOSIT_AMOUNT=@DepositAmount, SLIP_NUMBER=@SlipNumber, DEBIT_OR_CREDIT_ID=@DebitOrCreditId WHERE {whereClause}=@Id";
             var command = unitOfWork.CreateCommand(query);
 
@@ -225,8 +247,6 @@ namespace Invoice.Classes
             command.Parameters.AddWithValue("@DepositAmount", deposit.DepositAmount);
             command.Parameters.AddWithValue("@SlipNumber", deposit.SlipNumber);
             command.Parameters.AddWithValue("@DebitOrCreditId", deposit.DebOrCreId);
-
-            var id = whereClause == "PAYMENT_ID" ? deposit.PaymentId : deposit.InvoiceId;
             command.Parameters.AddWithValue("@Id", id);
 
             command.ExecuteNonQuery();
@@ -234,6 +254,13 @@ namespace Invoice.Classes
 
         public void DeleteDeposit(UnitOfWork unitOfWork)
         {
+            if (PaymentId.HasValue)
+                BalanceClass.DeleteBalanceById(TypeOfID.Payment, PaymentId.Value, unitOfWork);
+            else if (InvoiceId.HasValue)
+                BalanceClass.DeleteBalanceById(TypeOfID.Invoice, InvoiceId.Value, unitOfWork);
+            else
+                BalanceClass.DeleteBalanceById(TypeOfID.Deposit, DepositId, unitOfWork);
+
             var command = unitOfWork.CreateCommand();
             command.CommandText = "DELETE FROM T_DEPOSIT WHERE DEPOSIT_ID = @DepositId";
             command.Parameters.AddWithValue("@DepositId", DepositId);

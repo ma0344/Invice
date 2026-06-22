@@ -331,30 +331,34 @@ namespace Invoice.Classes
             };
         }
 
-        public static void AddDefaultItems(List<DefaultItemsClass> items)
+        public static bool AddDefaultItems(List<DefaultItemsClass> items)
         {
-            var unitOfWork = new UnitOfWork();
-            CrearDefaultitemsTable(unitOfWork);
-            var command = unitOfWork.CreateCommand();
-            command.CommandText = "INSERT INTO T_DEFAULT_ITEMS (ITEM_ORDER, ITEM_ID, UNIT_PRICE, QUANTITY, UNIT, TAX_TYPE_ID) " + "\r\n" + "VALUES (@itemOrder, @itemId, @unitPrice, @quantity, @unit, @taxTypeId)";
-            foreach (var item in items)
+            return UnitOfWork.ExecuteWithTransaction(uow =>
             {
-                command.Parameters.AddWithValue("@itemOrder", item.ItemOrder);
-                command.Parameters.AddWithValue("@itemId", item.ItemId);
-                command.Parameters.AddWithValue("@unitPrice", item.UnitPrice);
-                command.Parameters.AddWithValue("@quantity", item.Quantity);
-                command.Parameters.AddWithValue("@unit", item.Unit);
-                command.Parameters.AddWithValue("@taxTypeId", item.TaxTypeId);
-                command.ExecuteNonQuery();
-            }
+                var truncate = uow.CreateCommand("TRUNCATE TABLE T_DEFAULT_ITEMS");
+                truncate.ExecuteNonQuery();
+
+                const string insertQuery = "INSERT INTO T_DEFAULT_ITEMS (ITEM_ORDER, ITEM_ID, UNIT_PRICE, QUANTITY, UNIT, TAX_TYPE_ID) " + "\r\n" + "VALUES (@itemOrder, @itemId, @unitPrice, @quantity, @unit, @taxTypeId)";
+                foreach (var item in items)
+                {
+                    var command = uow.CreateCommand(insertQuery);
+                    command.Parameters.AddWithValue("@itemOrder", item.ItemOrder);
+                    command.Parameters.AddWithValue("@itemId", item.ItemId);
+                    command.Parameters.AddWithValue("@unitPrice", item.UnitPrice);
+                    command.Parameters.AddWithValue("@quantity", item.Quantity);
+                    command.Parameters.AddWithValue("@unit", item.Unit);
+                    command.Parameters.AddWithValue("@taxTypeId", item.TaxTypeId);
+                    command.ExecuteNonQuery();
+                }
+                return true;
+            }, null);
         }
 
         public static bool CrearDefaultitemsTable(UnitOfWork unitOfWork)
         {
             return UnitOfWork.ExecuteWithTransaction(uow =>
             {
-                var command = unitOfWork.CreateCommand();
-                command.CommandText = "TRUNCATE TABLE T_DEFAULT_ITEMS";
+                var command = uow.CreateCommand("TRUNCATE TABLE T_DEFAULT_ITEMS");
                 command.ExecuteNonQuery();
                 return true;
             }, unitOfWork);
