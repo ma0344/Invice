@@ -45,6 +45,8 @@ namespace Invoice
             DomainEvents.InfoRaised += OnDomainInfo;
             DomainEvents.ClipboardCopyRequested += OnClipboardCopyRequested;
 
+            DatabaseIntegrityChecker.RunAndNotify();
+
             MainWindowViewModel = new MainWindowViewModel();
             this.DataContext = MainWindowViewModel;
             AccountingPage = new AccountingPage();

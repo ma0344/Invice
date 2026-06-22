@@ -121,6 +121,7 @@ namespace Invoice.Classes
         }
 
         // 追加: 残高再計算 & 反映（T_BALANCEをソースオブトゥルースとする）
+        // 利用者残高は DB トリガーではなく本メソッドで一本管理する（4-G）。
         public static void RecalculateAndPersistBalance(int customerId, UnitOfWork uow)
         {
             // T_BALANCE が無い場合 0

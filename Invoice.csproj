@@ -27,7 +27,6 @@
 
   <ItemGroup>
     <Compile Remove="SettingsPageItemSettingTab.xaml.cs" />
-    <Compile Remove="TablesClasses.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -167,7 +166,6 @@
     <PackageReference Include="ModernWpfUI" Version="0.9.6" />
     <PackageReference Include="MySqlConnector" Version="2.4.0" />
     <PackageReference Include="PDFsharp-MigraDoc" Version="6.1.1" />
-    <PackageReference Include="SqExpress" Version="1.1.1" />
     <PackageReference Include="System.Text.Encoding.CodePages" Version="9.0.4" />
   </ItemGroup>
 
